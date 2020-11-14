@@ -5,15 +5,16 @@ channels:
   - defaults
 dependencies:
   - python=3.7
-  - flask-sqlalchemy
-  - flask-migrate
-  - flask-wtf
-  - flask
-  - flask-login
-  - pyjwt
-  - email_validator
-  - python-dotenv
-  - flask-mail
-  - flask-bootstrap
   - gunicorn
+  - flask
+  - pyjwt
+  - python-dotenv
+  - flask-migrate
+  - flask-sqlalchemy
+  - flask-mail
+  - flask-login
+  - email_validator
+  - flask-bootstrap
+  - flask-wtf
+  - psycopg2
 prefix: /Users/michael/miniconda3/envs/puzle
