@@ -1,0 +1,19 @@
+name: puzle
+channels:
+  - http://ssb.stsci.edu/astroconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.7
+  - flask-sqlalchemy
+  - flask-migrate
+  - flask-wtf
+  - flask
+  - flask-login
+  - pyjwt
+  - email_validator
+  - python-dotenv
+  - flask-mail
+  - flask-bootstrap
+  - gunicorn
+prefix: /Users/michael/miniconda3/envs/puzle

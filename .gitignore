@@ -1,0 +1,36 @@
+.DS_Store
+.env
+.flaskenv
+*.pyc
+*.pyo
+*.swp
+env/
+env*
+!environment.yml
+dist/
+build/
+*.egg
+*.egg-info/
+_mailinglist
+.tox/
+.cache/
+.pytest_cache/
+.idea/
+docs/_build/
+.vscodes
+
+# logs
+logs/
+
+# commands
+.conda
+.docker
+
+# testing database
+app.db
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+*,cover
