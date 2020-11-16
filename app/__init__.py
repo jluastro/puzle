@@ -35,7 +35,7 @@ if not app.debug:
             mailhost=(app.config['MAIL_SERVER'], app.config['MAIL_PORT']),
             fromaddr='no-reply@' + app.config['MAIL_SERVER'],
             toaddrs=app.config['ADMINS'],
-            subject='SIZLE Webapp Failure: %s' % date,
+            subject='PUZLE Webapp Failure: %s' % date,
             credentials=auth, secure=secure)
         mail_handler.setLevel(logging.ERROR)
         app.logger.addHandler(mail_handler)
@@ -50,4 +50,4 @@ if not app.debug:
     app.logger.addHandler(file_handler)
 
     app.logger.setLevel(logging.INFO)
-    app.logger.info('SIZLE Webapp startup')
+    app.logger.info('PUZLE Webapp startup')

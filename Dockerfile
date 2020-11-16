@@ -12,14 +12,13 @@ ENV PATH /opt/conda/envs/puzle/bin:$PATH
 COPY app app
 COPY migrations migrations
 COPY puzleapp.py config.py boot.sh ./
-RUN mkdir /home/puzle/logs
-RUN chown -R puzle:puzle /home/puzle/logs
-RUN chmod +x boot.sh
+RUN mkdir /home/puzle/logs &&\
+    chown -R puzle:puzle /home/puzle/logs &&\
+    chmod -R 775 /home/puzle/logs &&\
+    chmod +x boot.sh &&\
+    chown -R puzle:puzle ./
 
 ENV FLASK_APP puzleapp.py
-
-RUN chown -R puzle:puzle ./
-
 USER puzle
 EXPOSE 5000
 ENTRYPOINT ["./boot.sh"]
