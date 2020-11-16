@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-for f in test*objects; do
+for f in field*objects; do
   echo "Uploading $f";
   f_db=${f}_db;
   f_comp=${f_db}.comp;
