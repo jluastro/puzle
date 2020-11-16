@@ -3,6 +3,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from time import time
 import jwt
+import os
+from zort.object import Object as zort_object
 from app import app
 from app import db
 from app import login
@@ -81,3 +83,52 @@ class Source(db.Model):
                                backref=db.backref('object_r', lazy='dynamic'))
     object_i = db.relationship('Object', foreign_keys=[object_id_i],
                                backref=db.backref('object_i', lazy='dynamic'))
+
+    def set_parent(self):
+        object_ids = [self.object_id_g, self.object_id_r, self.object_id_i]
+        lightcurve_positions = [self.lightcurve_position_g,
+                                self.lightcurve_position_r,
+                                self.lightcurve_position_i]
+        self.parent_id = None
+        self.parent_lightcurve_position = None
+        self.child_ids = []
+        self.child_lightcurve_positions = []
+        for i in range(3):
+            if object_ids[i] is None:
+                continue
+
+            self.parent_id = object_ids[i]
+            self.parent_lightcurve_position = lightcurve_positions[i]
+
+            for j in range(i+1, 3):
+                if object_ids[j] is None:
+                    continue
+
+                self.child_ids.append(object_ids[j])
+                self.child_lightcurve_positions.append(lightcurve_positions[j])
+
+            break
+
+    def load_zort_object(self):
+        dir_path_puzle = os.path.dirname(os.path.dirname(
+            os.path.realpath(__file__)))
+        dir_path_DR3 = f'{dir_path_puzle}/data/DR3'
+        fname = '%s/%s' % (dir_path_DR3, self.lightcurve_filename)
+        obj = zort_object(fname, self.parent_lightcurve_position)
+        for lc_pos in self.child_lightcurve_positions:
+            sib = zort_object(fname, lc_pos)
+            obj.siblings.append(sib)
+        self.zort_object = obj
+
+    def set_lightcurve_plot_filename(self):
+        folder = f'app/static/sources/{self.id}'
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        lightcurve_plot_filename = f'{folder}/lightcurve.png'
+        if not os.path.exists(lightcurve_plot_filename):
+            self.set_parent()
+            self.load_zort_object()
+            self.zort_object.plot_lightcurves(filename=lightcurve_plot_filename)
+        self.lightcurve_plot_filename = \
+            lightcurve_plot_filename.replace('app', '')

@@ -1,14 +1,24 @@
 {% extends "base.html" %}
 
+{% block styles %}
+    {{super()}}
+    <style>
+        img {
+            max-width: 80%;
+            height: auto;
+        }
+    </style>
+{% endblock %}
+
 {% block app_content %}
-    <table class="table table-hover">
+    <table class="table table-hover" width="auto">
         <tr>
             <td>
                 <h1>Source: {{ source.id }}</h1>
-                <table style="width:40%">
+                <table>
                     <tr>
                         <th>Filter</th>
-                        <th>N epochs</th>
+                        <th>Nepochs</th>
                         <th>Object ID</th>
                     </tr>
                 {% if source.object_id_g %}
@@ -33,6 +43,9 @@
                     </tr>
                 {% endif %}
                 </table>
+            </td>
+            <td>
+                <img src="{{ source.lightcurve_plot_filename }}" align="right"/>
             </td>
         </tr>
     </table>
