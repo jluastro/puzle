@@ -45,3 +45,33 @@ class User(UserMixin, db.Model):
         except:
             return
         return User.query.get(id)
+
+
+class Object(db.Model):
+    __table_args__ = {'schema': 'puzle'}
+
+    id = db.Column(db.BigInteger, primary_key=True, autoincrement=False)
+    nepochs = db.Column(db.Integer, nullable=False)
+    filterid = db.Column(db.Integer, index=True, nullable=False)
+    fieldid = db.Column(db.Integer, nullable=False)
+    rcid = db.Column(db.Integer, nullable=False)
+    ra = db.Column(db.Float, nullable=False)
+    dec = db.Column(db.Float, nullable=False)
+    lightcurve_position = db.Column(db.BigInteger, nullable=False)
+    lightcurve_filename = db.Column(db.String(128), index=True, nullable=False)
+    sources = db.relationship('Source', backref='object', lazy='dynamic')
+
+
+class Source(db.Model):
+    __table_args__ = {'schema': 'puzle'}
+
+    id = db.Column(db.BigInteger, primary_key=True, nullable=False)
+    object_id_g = db.Column(db.BigInteger, db.ForeignKey('puzle.object.id'))
+    object_id_r = db.Column(db.BigInteger, db.ForeignKey('puzle.object.id'))
+    object_id_i = db.Column(db.BigInteger, db.ForeignKey('puzle.object.id'))
+    lightcurve_position_g = db.Column(db.BigInteger)
+    lightcurve_position_r = db.Column(db.BigInteger)
+    lightcurve_position_i = db.Column(db.BigInteger)
+    ra = db.Column(db.Float, nullable=False)
+    dec = db.Column(db.Float, nullable=False)
+    lightcurve_filename = db.Column(db.String(128), index=True, nullable=False)
