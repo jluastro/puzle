@@ -15,6 +15,9 @@ COPY puzleapp.py config.py boot.sh ./
 RUN mkdir /home/puzle/logs &&\
     chown -R puzle:puzle /home/puzle/logs &&\
     chmod -R 775 /home/puzle/logs &&\
+    mkdir /home/puzle/data &&\
+    chown -R puzle:puzle /home/puzle/data &&\
+    chmod -R 775 /home/puzle/data &&\
     chmod +x boot.sh &&\
     chown -R puzle:puzle ./
 
