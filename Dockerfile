@@ -12,7 +12,8 @@ ENV PATH /opt/conda/envs/puzle/bin:$PATH
 COPY app app
 COPY migrations migrations
 COPY puzleapp.py config.py boot.sh ./
-RUN mkdir logs
+RUN mkdir /home/puzle/logs
+RUN chown -R puzle:puzle /home/puzle/logs
 RUN chmod +x boot.sh
 
 ENV FLASK_APP puzleapp.py
