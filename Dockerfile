@@ -21,6 +21,7 @@ RUN mkdir /home/puzle/logs &&\
     chmod +x boot.sh &&\
     chown -R puzle:puzle ./
 
+ENV MPLCONFIGDIR /tmp/
 ENV FLASK_APP puzleapp.py
 USER puzle
 EXPOSE 5000

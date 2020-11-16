@@ -121,7 +121,6 @@ def reset_password(token):
 @app.route('/source/<sourceid>')
 @login_required
 def source(sourceid):
-    print(sourceid)
-    source = Source.query.filter_by(id=sourceid).first_or_404()
+    source = Source.query.filter_by(id=int(sourceid)).first_or_404()
     source.set_lightcurve_plot_filename()
     return render_template('source.html', source=source)
