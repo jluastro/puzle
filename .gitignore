@@ -1,6 +1,7 @@
 .DS_Store
 .env
 .flaskenv
+.flaskenv_docker
 *.pyc
 *.pyo
 *.swp
