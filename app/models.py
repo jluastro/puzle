@@ -65,12 +65,19 @@ class Source(db.Model):
     __table_args__ = {'schema': 'puzle'}
 
     id = db.Column(db.BigInteger, primary_key=True, nullable=False)
-    object_id_g = db.Column(db.BigInteger)
-    object_id_r = db.Column(db.BigInteger)
-    object_id_i = db.Column(db.BigInteger)
+    object_id_g = db.Column(db.BigInteger, db.ForeignKey('puzle.object.id'))
+    object_id_r = db.Column(db.BigInteger, db.ForeignKey('puzle.object.id'))
+    object_id_i = db.Column(db.BigInteger, db.ForeignKey('puzle.object.id'))
     lightcurve_position_g = db.Column(db.BigInteger)
     lightcurve_position_r = db.Column(db.BigInteger)
     lightcurve_position_i = db.Column(db.BigInteger)
     ra = db.Column(db.Float, nullable=False)
     dec = db.Column(db.Float, nullable=False)
     lightcurve_filename = db.Column(db.String(128), index=True, nullable=False)
+
+    object_g = db.relationship('Object', foreign_keys=[object_id_g],
+                               backref=db.backref('object_g', lazy='dynamic'))
+    object_r = db.relationship('Object', foreign_keys=[object_id_r],
+                               backref=db.backref('object_r', lazy='dynamic'))
+    object_i = db.relationship('Object', foreign_keys=[object_id_i],
+                               backref=db.backref('object_i', lazy='dynamic'))

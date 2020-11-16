@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+    <table class="table table-hover">
+        <tr>
+            <td>
+                <h1>Source: {{ source.id }}</h1>
+                <table style="width:40%">
+                    <tr>
+                        <th>Filter</th>
+                        <th>N epochs</th>
+                        <th>Object ID</th>
+                    </tr>
+                {% if source.object_id_g %}
+                    <tr>
+                        <td>g-band</td>
+                        <td>{{ source.object_g.nepochs }}</td>
+                        <td>{{ source.object_id_g }}</td>
+                    </tr>
+                {% endif %}
+                {% if source.object_id_r %}
+                    <tr>
+                        <td>r-band</td>
+                        <td>{{ source.object_r.nepochs }}</td>
+                        <td>{{ source.object_id_r }}</td>
+                    </tr>
+                {% endif %}
+                {% if source.object_id_i %}
+                    <tr>
+                        <td>i-band</td>
+                        <td>{{ source.object_i.nepochs }}</td>
+                        <td>{{ source.object_id_i }}</td>
+                    </tr>
+                {% endif %}
+                </table>
+            </td>
+        </tr>
+    </table>
+{% endblock %}
