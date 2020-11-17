@@ -4,28 +4,40 @@
     {{super()}}
     <style>
         img {
-            max-width: 80%;
+            max-width: 100%;
             height: auto;
+        }
+        .blank_row
+        {
+            height: 10px !important; /* overwrites any other rules */
         }
     </style>
 {% endblock %}
 
 {% block app_content %}
     <table class="table table-hover" width="auto">
+        <col style="width:40%">
+       	<col style="width:60%">
         <tr>
             <td>
-                <h1>Source: {{ source.id }}</h1>
-                <table>
+                <h1>Source {{ source.id }}</h1>
+                <h4>RA Dec &nbsp; &nbsp; &nbsp; {{ source.ra }} , {{ source.dec }}</h4>
+                <h4>Glon Glat &nbsp; &nbsp;{{ "%.5f" % source.glon }} , {{ "%.5f" % source.glat }}</h4>
+                <table width="100%">
                     <tr>
                         <th>Filter</th>
                         <th>Nepochs</th>
                         <th>Object ID</th>
+                        <th>RA</th>
+                        <th>Dec</th>
                     </tr>
                 {% if source.object_id_g %}
                     <tr>
                         <td>g-band</td>
                         <td>{{ source.object_g.nepochs }}</td>
                         <td>{{ source.object_id_g }}</td>
+                        <td>{{ source.object_g.ra }}</td>
+                        <td>{{ source.object_g.dec }}</td>
                     </tr>
                 {% endif %}
                 {% if source.object_id_r %}
@@ -33,6 +45,8 @@
                         <td>r-band</td>
                         <td>{{ source.object_r.nepochs }}</td>
                         <td>{{ source.object_id_r }}</td>
+                        <td>{{ source.object_r.ra }}</td>
+                        <td>{{ source.object_r.dec }}</td>
                     </tr>
                 {% endif %}
                 {% if source.object_id_i %}
@@ -40,9 +54,56 @@
                         <td>i-band</td>
                         <td>{{ source.object_i.nepochs }}</td>
                         <td>{{ source.object_id_i }}</td>
+                        <td>{{ source.object_i.ra }}</td>
+                        <td>{{ source.object_i.dec }}</td>
                     </tr>
                 {% endif %}
-                </table>
+                <tr class="blank_row"></tr>
+                <tr>
+                    <th>t<sub>0</sub></th>
+                    <td>
+                        0
+                    </td>
+                </tr>
+                <tr>
+                    <th>t<sub>E</sub></th>
+                    <td>
+                        0
+                    </td>
+                </tr>
+                <tr>
+                    <th>mag<sub>src</sub></th>
+                    <td>
+                        0
+                    </td>
+                </tr>
+                <tr>
+                    <th>b<sub>sff</sub></th>
+                    <td>
+                        0
+                    </td>
+                </tr>
+                <tr>
+                    <th>pi<sub>E</sub></th>
+                    <td>
+                        0
+                    </td>
+                </tr>
+                <tr class="blank_row"></tr>
+                <tr>
+                    <th>Comments</th>
+                    <td>
+                        <p><a href="{{ url_for('edit_source_comments', sourceid=source.id) }}">Edit comments</a></p>
+                    </td>
+                </tr>
+                {% if source.comments %}
+                <tr>
+                    <td colspan="5">
+                        <p>{{ source.comments }}</p>
+                    </td>
+                </tr>
+                {% endif %}
+            </table>
             </td>
             <td>
                 <img src="{{ source.lightcurve_plot_filename }}" align="right"/>

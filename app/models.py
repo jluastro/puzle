@@ -1,9 +1,12 @@
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.ext.hybrid import hybrid_property
 from flask_login import UserMixin
 from time import time
 import jwt
 import os
+from astropy.coordinates import SkyCoord
+import astropy.units as u
 from zort.object import Object as zort_object
 from app import app
 from app import db
@@ -76,6 +79,7 @@ class Source(db.Model):
     ra = db.Column(db.Float, nullable=False)
     dec = db.Column(db.Float, nullable=False)
     lightcurve_filename = db.Column(db.String(128), index=True, nullable=False)
+    comments = db.Column(db.String(1024))
 
     object_g = db.relationship('Object', foreign_keys=[object_id_g],
                                backref=db.backref('object_g', lazy='dynamic'))
@@ -83,6 +87,17 @@ class Source(db.Model):
                                backref=db.backref('object_r', lazy='dynamic'))
     object_i = db.relationship('Object', foreign_keys=[object_id_i],
                                backref=db.backref('object_i', lazy='dynamic'))
+
+    @hybrid_property
+    def glon(self):
+        coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
+        return coord.galactic.l.value
+
+    @hybrid_property
+    def glat(self):
+        coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
+        return coord.galactic.b.value
+
 
     def set_parent(self):
         object_ids = [self.object_id_g, self.object_id_r, self.object_id_i]

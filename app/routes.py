@@ -4,7 +4,8 @@ from werkzeug.urls import url_parse
 from datetime import datetime
 from app import app, db
 from app.forms import LoginForm, RegistrationForm, \
-    EditProfileForm, ResetPasswordRequestForm, ResetPasswordForm
+    EditProfileForm, ResetPasswordRequestForm, ResetPasswordForm, \
+    EditSourceCommentForm
 from app.models import User, Source
 from app.email import send_password_reset_email
 
@@ -124,3 +125,19 @@ def source(sourceid):
     source = Source.query.filter_by(id=int(sourceid)).first_or_404()
     source.set_lightcurve_plot_filename()
     return render_template('source.html', source=source)
+
+
+@app.route('/edit_source_comments/<sourceid>', methods=['GET', 'POST'])
+@login_required
+def edit_source_comments(sourceid):
+    source = Source.query.filter_by(id=sourceid).first_or_404()
+    form = EditSourceCommentForm()
+    if form.validate_on_submit():
+        source.comments = form.comments.data
+        db.session.commit()
+        flash('Your changes have been saved.')
+        return redirect(url_for('source', sourceid=sourceid))
+    elif request.method == 'GET':
+        form.comments.data = source.comments
+    return render_template('edit_source_comments.html',
+                           form=form)

@@ -17,6 +17,8 @@ dependencies:
   - flask-bootstrap
   - flask-wtf
   - psycopg2
+  - numpy
+  - astropy
   - pip
   - pip:
       - zort
