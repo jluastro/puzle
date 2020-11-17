@@ -210,13 +210,7 @@ class SourceIngestJob(db.Model):
     datetime = db.Column(db.DateTime, nullable=True)
     node = db.Column(db.String(128), nullable=True)
 
-    def __init__(self, id, lightcurve_filename, process_rank, process_size,
-                 started, ended, datetime, node):
-        self.id = id
+    def __init__(self, lightcurve_filename, process_rank, process_size):
         self.lightcurve_filename = lightcurve_filename
         self.process_rank = process_rank
         self.process_size = process_size
-        self.started = started
-        self.ended = ended
-        self.datetime = datetime
-        self.node = node
