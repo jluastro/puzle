@@ -19,8 +19,16 @@ login = LoginManager(app)
 login.login_view = 'login'
 mail = Mail(app)
 bootstrap = Bootstrap(app)
+#
+# # set static folder to within custom named folder
+# app.config.from_object('config')
+# # config file has STATIC_FOLDER='/core/static'
+# app.static_url_path = app.config.get('STATIC_FOLDER')
+# # set the absolute path to the static folder
+# app.static_folder = app.root_path + app.static_url_path
+# print(app.static_folder)
 
-from app import routes, models, errors
+from puzle import routes, models, errors
 
 if not app.debug:
     if app.config['MAIL_SERVER']:

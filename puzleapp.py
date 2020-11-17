@@ -1,5 +1,5 @@
-from app import app, db
-from app.models import User
+from puzle import app, db
+from puzle.models import User
 
 
 @app.shell_context_processor

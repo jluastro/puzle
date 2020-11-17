@@ -2,12 +2,12 @@ from flask import render_template, flash, redirect, url_for, request
 from flask_login import current_user, login_user, logout_user, login_required
 from werkzeug.urls import url_parse
 from datetime import datetime
-from app import app, db
-from app.forms import LoginForm, RegistrationForm, \
+from puzle import app, db
+from puzle.forms import LoginForm, RegistrationForm, \
     EditProfileForm, ResetPasswordRequestForm, ResetPasswordForm, \
     EditSourceCommentForm
-from app.models import User, Source
-from app.email import send_password_reset_email
+from puzle.models import User, Source
+from puzle.email import send_password_reset_email
 
 
 @app.before_request
@@ -123,7 +123,7 @@ def reset_password(token):
 @login_required
 def source(sourceid):
     source = Source.query.filter_by(id=int(sourceid)).first_or_404()
-    source.set_lightcurve_plot_filename()
+    source.load_lightcurve_plot()
     return render_template('source.html', source=source)
 
 

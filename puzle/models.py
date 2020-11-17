@@ -9,9 +9,9 @@ import requests
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 from zort.object import Object as zort_object
-from app import app
-from app import db
-from app import login
+from puzle import app
+from puzle import db
+from puzle import login
 
 
 @login.user_loader
@@ -90,6 +90,23 @@ class Source(db.Model):
     object_i = db.relationship('Object', foreign_keys=[object_id_i],
                                backref=db.backref('object_i', lazy='dynamic'))
 
+    def __init__(self, object_id_g, object_id_r, object_id_i,
+                 lightcurve_position_g, lightcurve_position_r,
+                 lightcurve_position_i, ra, dec, lightcurve_filename,
+                 comments=None, _ztf_ids=None):
+        self.object_id_g = object_id_g
+        self.object_id_r = object_id_r
+        self.object_id_i = object_id_i
+        self.lightcurve_position_g = lightcurve_position_g
+        self.lightcurve_position_r = lightcurve_position_r
+        self.lightcurve_position_i = lightcurve_position_i
+        self.ra = ra
+        self.dec = dec
+        self.lightcurve_filename = lightcurve_filename
+        self.comments = comments
+        self._ztf_ids = _ztf_ids
+
+
     @hybrid_property
     def glon(self):
         coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
@@ -147,8 +164,8 @@ class Source(db.Model):
             obj.siblings.append(sib)
         self.zort_object = obj
 
-    def set_lightcurve_plot_filename(self):
-        folder = f'app/static/sources/{self.id}'
+    def load_lightcurve_plot(self):
+        folder = f'puzle/static/sources/{self.id}'
         if not os.path.exists(folder):
             os.makedirs(folder)
 
@@ -157,8 +174,6 @@ class Source(db.Model):
             self.set_parent()
             self.load_zort_object()
             self.zort_object.plot_lightcurves(filename=lightcurve_plot_filename)
-        self.lightcurve_plot_filename = \
-            lightcurve_plot_filename.replace('app', '')
 
     def fetch_ztf_ids(self):
         radius_deg = 2. / 3600.

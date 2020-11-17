@@ -123,7 +123,7 @@
             </table>
             </td>
             <td>
-                <img src="{{ source.lightcurve_plot_filename }}" align="right"/>
+                <img src="{{ url_for('static', filename='sources/') }}{{ source.id }}/lightcurve.png">
             </td>
         </tr>
     </table>

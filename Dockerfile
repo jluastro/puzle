@@ -9,7 +9,7 @@ RUN conda init bash
 RUN echo "source activate puzle" >> /home/puzle/.bashrc
 ENV PATH /opt/conda/envs/puzle/bin:$PATH
 
-COPY app app
+COPY puzle puzle
 COPY migrations migrations
 COPY puzleapp.py config.py boot.sh ./
 RUN mkdir /home/puzle/logs &&\
