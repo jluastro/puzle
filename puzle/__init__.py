@@ -19,14 +19,6 @@ login = LoginManager(app)
 login.login_view = 'login'
 mail = Mail(app)
 bootstrap = Bootstrap(app)
-#
-# # set static folder to within custom named folder
-# app.config.from_object('config')
-# # config file has STATIC_FOLDER='/core/static'
-# app.static_url_path = app.config.get('STATIC_FOLDER')
-# # set the absolute path to the static folder
-# app.static_folder = app.root_path + app.static_url_path
-# print(app.static_folder)
 
 from puzle import routes, models, errors
 
@@ -56,6 +48,4 @@ if not app.debug:
         '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
     file_handler.setLevel(logging.INFO)
     app.logger.addHandler(file_handler)
-
     app.logger.setLevel(logging.INFO)
-    app.logger.info('PUZLE Webapp startup')
