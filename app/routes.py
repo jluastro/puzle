@@ -141,3 +141,12 @@ def edit_source_comments(sourceid):
         form.comments.data = source.comments
     return render_template('edit_source_comments.html',
                            form=form)
+
+@app.route('/fetch_ztf_ids/<sourceid>', methods=['POST'])
+@login_required
+def fetch_ztf_ids(sourceid):
+    source = Source.query.filter_by(id=int(sourceid)).first_or_404()
+    n_ids = source.fetch_ztf_ids()
+    flash('%i ZTF IDs Found' % n_ids)
+    db.session.commit()
+    return redirect(url_for('source', sourceid=sourceid))

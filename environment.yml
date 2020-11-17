@@ -19,6 +19,7 @@ dependencies:
   - psycopg2
   - numpy
   - astropy
+  - requests
   - pip
   - pip:
       - zort

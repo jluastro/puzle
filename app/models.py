@@ -5,6 +5,7 @@ from flask_login import UserMixin
 from time import time
 import jwt
 import os
+import requests
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 from zort.object import Object as zort_object
@@ -80,6 +81,7 @@ class Source(db.Model):
     dec = db.Column(db.Float, nullable=False)
     lightcurve_filename = db.Column(db.String(128), index=True, nullable=False)
     comments = db.Column(db.String(1024))
+    _ztf_ids = db.Column(db.String(256))
 
     object_g = db.relationship('Object', foreign_keys=[object_id_g],
                                backref=db.backref('object_g', lazy='dynamic'))
@@ -98,6 +100,16 @@ class Source(db.Model):
         coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
         return coord.galactic.b.value
 
+    @property
+    def ztf_ids(self):
+        return [x for x in self._ztf_ids.split(';') if len(x) != 0]
+
+    @ztf_ids.setter
+    def ztf_ids(self, ztf_id):
+        if ztf_id:
+            self._ztf_ids += ';%s' % ztf_id
+        else:
+            self._ztf_ids = ''
 
     def set_parent(self):
         object_ids = [self.object_id_g, self.object_id_r, self.object_id_i]
@@ -147,3 +159,20 @@ class Source(db.Model):
             self.zort_object.plot_lightcurves(filename=lightcurve_plot_filename)
         self.lightcurve_plot_filename = \
             lightcurve_plot_filename.replace('app', '')
+
+    def fetch_ztf_ids(self):
+        radius_deg = 2. / 3600.
+        cone = '%f,%f,%f' % (self.ra, self.dec, radius_deg)
+        query = {"queries": [{"cone": cone}]}
+        results = requests.post('https://mars.lco.global/', json=query).json()
+        if results['total'] == 0:
+            return 0
+
+        ztf_ids = [str(r['objectId']) for r in
+                   results['results'][0]['results']]
+        ztf_ids = list(set(ztf_ids))
+        self.ztf_ids = None
+        for ztf_id in ztf_ids:
+            self.ztf_ids = ztf_id
+
+        return len(ztf_ids)
