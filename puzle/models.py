@@ -30,7 +30,7 @@ class User(UserMixin, db.Model):
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
-        return '<User {}>'.format(self.username)
+        return f"User('{self.username}', '{self.email}')"
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -65,6 +65,11 @@ class Object(db.Model):
     dec = db.Column(db.Float, nullable=False)
     lightcurve_position = db.Column(db.BigInteger, nullable=False)
     lightcurve_filename = db.Column(db.String(128), index=True, nullable=False)
+
+    def __repr__(self):
+        return f"Object(id: '{self.id}', nepochs: '{self.nepochs} \n " \
+               f"lightcurve_filename: {self.lightcurve_filename} \n " \
+               f"lightcurve_position: {self.lightcurve_position}')"
 
 
 class Source(db.Model):
