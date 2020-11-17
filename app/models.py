@@ -1,8 +1,14 @@
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.ext.hybrid import hybrid_property
 from flask_login import UserMixin
 from time import time
 import jwt
+import os
+import requests
+from astropy.coordinates import SkyCoord
+import astropy.units as u
+from zort.object import Object as zort_object
 from app import app
 from app import db
 from app import login
@@ -65,12 +71,108 @@ class Source(db.Model):
     __table_args__ = {'schema': 'puzle'}
 
     id = db.Column(db.BigInteger, primary_key=True, nullable=False)
-    object_id_g = db.Column(db.BigInteger)
-    object_id_r = db.Column(db.BigInteger)
-    object_id_i = db.Column(db.BigInteger)
+    object_id_g = db.Column(db.BigInteger, db.ForeignKey('puzle.object.id'))
+    object_id_r = db.Column(db.BigInteger, db.ForeignKey('puzle.object.id'))
+    object_id_i = db.Column(db.BigInteger, db.ForeignKey('puzle.object.id'))
     lightcurve_position_g = db.Column(db.BigInteger)
     lightcurve_position_r = db.Column(db.BigInteger)
     lightcurve_position_i = db.Column(db.BigInteger)
     ra = db.Column(db.Float, nullable=False)
     dec = db.Column(db.Float, nullable=False)
     lightcurve_filename = db.Column(db.String(128), index=True, nullable=False)
+    comments = db.Column(db.String(1024))
+    _ztf_ids = db.Column(db.String(256))
+
+    object_g = db.relationship('Object', foreign_keys=[object_id_g],
+                               backref=db.backref('object_g', lazy='dynamic'))
+    object_r = db.relationship('Object', foreign_keys=[object_id_r],
+                               backref=db.backref('object_r', lazy='dynamic'))
+    object_i = db.relationship('Object', foreign_keys=[object_id_i],
+                               backref=db.backref('object_i', lazy='dynamic'))
+
+    @hybrid_property
+    def glon(self):
+        coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
+        return coord.galactic.l.value
+
+    @hybrid_property
+    def glat(self):
+        coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
+        return coord.galactic.b.value
+
+    @property
+    def ztf_ids(self):
+        return [x for x in self._ztf_ids.split(';') if len(x) != 0]
+
+    @ztf_ids.setter
+    def ztf_ids(self, ztf_id):
+        if ztf_id:
+            self._ztf_ids += ';%s' % ztf_id
+        else:
+            self._ztf_ids = ''
+
+    def set_parent(self):
+        object_ids = [self.object_id_g, self.object_id_r, self.object_id_i]
+        lightcurve_positions = [self.lightcurve_position_g,
+                                self.lightcurve_position_r,
+                                self.lightcurve_position_i]
+        self.parent_id = None
+        self.parent_lightcurve_position = None
+        self.child_ids = []
+        self.child_lightcurve_positions = []
+        for i in range(3):
+            if object_ids[i] is None:
+                continue
+
+            self.parent_id = object_ids[i]
+            self.parent_lightcurve_position = lightcurve_positions[i]
+
+            for j in range(i+1, 3):
+                if object_ids[j] is None:
+                    continue
+
+                self.child_ids.append(object_ids[j])
+                self.child_lightcurve_positions.append(lightcurve_positions[j])
+
+            break
+
+    def load_zort_object(self):
+        dir_path_puzle = os.path.dirname(os.path.dirname(
+            os.path.realpath(__file__)))
+        dir_path_DR3 = f'{dir_path_puzle}/data/DR3'
+        fname = '%s/%s' % (dir_path_DR3, self.lightcurve_filename)
+        obj = zort_object(fname, self.parent_lightcurve_position)
+        for lc_pos in self.child_lightcurve_positions:
+            sib = zort_object(fname, lc_pos)
+            obj.siblings.append(sib)
+        self.zort_object = obj
+
+    def set_lightcurve_plot_filename(self):
+        folder = f'app/static/sources/{self.id}'
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        lightcurve_plot_filename = f'{folder}/lightcurve.png'
+        if not os.path.exists(lightcurve_plot_filename):
+            self.set_parent()
+            self.load_zort_object()
+            self.zort_object.plot_lightcurves(filename=lightcurve_plot_filename)
+        self.lightcurve_plot_filename = \
+            lightcurve_plot_filename.replace('app', '')
+
+    def fetch_ztf_ids(self):
+        radius_deg = 2. / 3600.
+        cone = '%f,%f,%f' % (self.ra, self.dec, radius_deg)
+        query = {"queries": [{"cone": cone}]}
+        results = requests.post('https://mars.lco.global/', json=query).json()
+        if results['total'] == 0:
+            return 0
+
+        ztf_ids = [str(r['objectId']) for r in
+                   results['results'][0]['results']]
+        ztf_ids = list(set(ztf_ids))
+        self.ztf_ids = None
+        for ztf_id in ztf_ids:
+            self.ztf_ids = ztf_id
+
+        return len(ztf_ids)

@@ -17,4 +17,10 @@ dependencies:
   - flask-bootstrap
   - flask-wtf
   - psycopg2
+  - numpy
+  - astropy
+  - requests
+  - pip
+  - pip:
+      - zort
 prefix: /Users/michael/miniconda3/envs/puzle

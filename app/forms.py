@@ -66,3 +66,9 @@ class ResetPasswordForm(FlaskForm):
     password2 = PasswordField(
         'Repeat Password', validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('Request Password Reset')
+
+
+class EditSourceCommentForm(FlaskForm):
+    comments = TextAreaField('Comments',
+                             validators=[Length(min=0, max=1024)])
+    submit = SubmitField('Submit')

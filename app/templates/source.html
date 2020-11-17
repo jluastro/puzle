@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block styles %}
+    {{super()}}
+    <style>
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+        .blank_row
+        {
+            height: 10px !important; /* overwrites any other rules */
+        }
+    </style>
+{% endblock %}
+
+{% block app_content %}
+    <table class="table table-hover" width="auto">
+        <col style="width:45%">
+       	<col style="width:55%">
+        <tr>
+            <td>
+                <h1>Source {{ source.id }}</h1>
+                <h4>RA Dec &nbsp; &nbsp; &nbsp; {{ source.ra }} , {{ source.dec }}</h4>
+                <h4>Glon Glat &nbsp; &nbsp;{{ "%.5f" % source.glon }} , {{ "%.5f" % source.glat }}</h4>
+                <table width="100%">
+                    <tr>
+                        <th>Filter</th>
+                        <th>Nepochs</th>
+                        <th>Object ID</th>
+                        <th>RA</th>
+                        <th>Dec</th>
+                    </tr>
+                {% if source.object_id_g %}
+                    <tr>
+                        <td>g-band</td>
+                        <td>{{ source.object_g.nepochs }}</td>
+                        <td>{{ source.object_id_g }}</td>
+                        <td>{{ source.object_g.ra }}</td>
+                        <td>{{ source.object_g.dec }}</td>
+                    </tr>
+                {% endif %}
+                {% if source.object_id_r %}
+                    <tr>
+                        <td>r-band</td>
+                        <td>{{ source.object_r.nepochs }}</td>
+                        <td>{{ source.object_id_r }}</td>
+                        <td>{{ source.object_r.ra }}</td>
+                        <td>{{ source.object_r.dec }}</td>
+                    </tr>
+                {% endif %}
+                {% if source.object_id_i %}
+                    <tr>
+                        <td>i-band</td>
+                        <td>{{ source.object_i.nepochs }}</td>
+                        <td>{{ source.object_id_i }}</td>
+                        <td>{{ source.object_i.ra }}</td>
+                        <td>{{ source.object_i.dec }}</td>
+                    </tr>
+                {% endif %}
+                <tr class="blank_row"></tr>
+                <tr>
+                    <th>t<sub>0</sub></th>
+                    <td>
+                        0
+                    </td>
+                </tr>
+                <tr>
+                    <th>t<sub>E</sub></th>
+                    <td>
+                        0
+                    </td>
+                </tr>
+                <tr>
+                    <th>mag<sub>src</sub></th>
+                    <td>
+                        0
+                    </td>
+                </tr>
+                <tr>
+                    <th>b<sub>sff</sub></th>
+                    <td>
+                        0
+                    </td>
+                </tr>
+                <tr>
+                    <th>pi<sub>E</sub></th>
+                    <td>
+                        0
+                    </td>
+                </tr>
+                <tr class="blank_row"></tr>
+                <tr>
+                    <td><p><b>ZTF IDs</b></p></td>
+                    <td colspan="4">
+                        <form action="/fetch_ztf_ids/{{ source.id }}" method="post">
+                            <button name="ztf_ids" type="submit">Fetch ZTF IDs</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr class="blank_row"></tr>
+                <tr>
+                    <td>
+                        {% for ztf_id in source.ztf_ids %}
+                        <p><a href="https://lasair.roe.ac.uk/object/{{ ztf_id }}/" target="_blank">{{ ztf_id }}</a></p>
+                        {% endfor %}
+                    </td>
+                </tr>
+                <tr class="blank_row"></tr>
+                <tr>
+                    <th>Comments</th>
+                </tr>
+                <tr>
+                    <td colspan="5">
+                        <p>{{ source.comments }}</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspace="5">
+                        <p><a href="{{ url_for('edit_source_comments', sourceid=source.id) }}">Edit comments</a></p>
+                    </td>
+                </tr>
+            </table>
+            </td>
+            <td>
+                <img src="{{ source.lightcurve_plot_filename }}" align="right"/>
+            </td>
+        </tr>
+    </table>
+{% endblock %}
