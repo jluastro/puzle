@@ -11,6 +11,11 @@ for f in field*objects; do
     continue
   fi
 
+  if test -f $f_db; then
+    echo "--Skipping due to $f_db"
+    continue
+  fi
+
 	sed "s/$/,$f_txt/" $f > ${f_db};
 	psql -U ulens_admin -d ulens -h nerscdb03.nersc.gov -c "\copy object (id, nepochs, filterid, fieldid, rcid, ra, dec, lightcurve_position, lightcurve_filename) FROM '$PWD/$f_db' WITH DELIMITER ',' CSV HEADER;"
 	touch $f_comp
