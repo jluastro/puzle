@@ -120,7 +120,8 @@ def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
             source_list.append(source)
 
             if job_enddate and datetime.now() >= script_enddate:
-                print(f'Within {shutdown_time} minutes of job end, shutting down')
+                print(f'Within {shutdown_time} minutes of job end, '
+                      f'shutting down...')
                 reset_job(job_id)
                 time.sleep(2 * 60 * shutdown_time)
                 return
