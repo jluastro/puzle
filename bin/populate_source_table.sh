@@ -13,6 +13,7 @@ hostname
 date
 echo "---------------------------"
 
+conda activate puzle
 cd /global/cfs/cdirs/uLens/ZTF/DR3
 srun -N 2 -n 128 python /global/homes/m/mmedford/puzle/bin/populate_source_table.py
 
