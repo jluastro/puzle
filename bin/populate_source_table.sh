@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --account=ulens
-#SBATCH --qos=premium
+#SBATCH --qos=regular
 #SBATCH --constraint=haswell
 #SBATCH --nodes=1
-#SBATCH --time=12:00:00
+#SBATCH --time=06:00:00
 #SBATCH --job-name=source_table
 #SBATCH --output=source_table_%j.out
 echo "---------------------------"
