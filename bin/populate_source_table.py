@@ -31,7 +31,6 @@ def convert_obj_to_source(obj, lightcurve_filename):
         'lightcurve_filename': lightcurve_filename
     }
 
-
     obj_filt = filter_dict[obj.filterid]
     source_dict[f'object_id_{obj_filt}'] = obj.objectid
     source_dict[f'lightcurve_position_{obj_filt}'] = obj.lightcurve_position
@@ -77,7 +76,6 @@ def reset_job(job_id):
     job = db.session.query(SourceIngestJob).filter(
         SourceIngestJob.id == job_id).one()
     job.started = False
-    job.datetime = None
     db.session.commit()
 
 
@@ -99,9 +97,9 @@ def ingest_sources(nepochs_min=20, shutdown_time=5):
         return
 
     job_id, lightcurve_filename, rank, size = job_data
-    print(f'Source ingest job {job_id}')
-    print(f'Lightcurve file: {lightcurve_filename}')
-    print(f'Rank: {rank} | Size: {size}')
+    print(f'Job {job_id}: Lightcurve file: {lightcurve_filename}')
+    print(f'Job {job_id}: Rank: {rank}')
+    print(f'Job {job_id}: Size: {size}')
 
     source_list = []
     lightcurveFile = LightcurveFile(lightcurve_filename, proc_rank=rank,
@@ -121,20 +119,20 @@ def ingest_sources(nepochs_min=20, shutdown_time=5):
         source_list.append(source)
 
         if job_enddate and datetime.now() >= script_enddate:
-            print(f'Within {shutdown_time} minutes of the end of job. '
-                  'Shutting down...')
+            print(f'Within {shutdown_time} minutes of job end, shutting down')
             reset_job(job_id)
             time.sleep(2 * 60 * shutdown_time)
             return
 
-    print('Uploading %i sources to database' % len(source_list))
+    num_sources = len(source_list)
+    print(f'Job {job_id}: Uploading {num_sources} sources to database')
     for source in source_list:
         db.session.add(source)
     db.session.commit()
-    print('Upload complete')
+    print(f'Job {job_id}: Upload complete')
 
     finish_job(job_id)
-    print(f'Job {job_id} Complete')
+    print(f'Job {job_id}: Job complete')
 
 
 if __name__ == '__main__':
