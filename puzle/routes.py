@@ -179,9 +179,8 @@ def search():
                   'must be entered.', 'danger')
             return redirect(url_for('search'))
 
-        radius = form.radius.data / 3600.
         sources = db.session.query(Source).filter(
-            Source.cone_search(ra, dec, radius)).all()
+            Source.cone_search(ra, dec, form.radius.data)).all()
         sources.sort(key=lambda x: x.id)
         return render_template('search.html', form=form, sources=sources)
     return render_template('search.html', form=form)

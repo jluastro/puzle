@@ -138,10 +138,11 @@ class Source(db.Model):
             self._ztf_ids = ''
 
     @hybrid_method
-    def cone_search(self, ra, dec, radius=2/3600.):
-        return func.q3c_radial_query(text('ra'), text('dec'), ra, dec, radius)
+    def cone_search(self, ra, dec, radius=2):
+        radius_deg = radius / 3600.
+        return func.q3c_radial_query(text('ra'), text('dec'), ra, dec, radius_deg)
 
-    def set_parent(self):
+    def set_parent_and_children(self):
         object_ids = [self.object_id_g, self.object_id_r, self.object_id_i]
         lightcurve_positions = [self.lightcurve_position_g,
                                 self.lightcurve_position_r,
@@ -184,7 +185,7 @@ class Source(db.Model):
 
         lightcurve_plot_filename = f'{folder}/lightcurve.png'
         if not os.path.exists(lightcurve_plot_filename):
-            self.set_parent()
+            self.set_parent_and_children()
             self.load_zort_object()
             self.zort_object.plot_lightcurves(filename=lightcurve_plot_filename)
 
