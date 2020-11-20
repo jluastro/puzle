@@ -21,7 +21,14 @@
         <tr>
             <td>
                 <h1>Source {{ source.id }}</h1>
-                <h4>RA Dec &nbsp; &nbsp; &nbsp; {{ source.ra }} , {{ source.dec }}</h4>
+                {% if source.object_id_g %}
+                    <h4>Field {{ source.object_g.fieldid }} &nbsp; | &nbsp; RCID {{ source.object_g.rcid }}</h4>
+                {% elif source.object_id_r %}
+                    <h4>Field {{ source.object_r.fieldid }} &nbsp; | &nbsp; RCID {{ source.object_r.rcid }}</h4>
+                {% else %}
+                    <h4>Field {{ source.object_i.fieldid }} &nbsp; | &nbsp; RCID {{ source.object_i.rcid }}</h4>
+                {% endif %}
+                <h4>RA Dec &nbsp; &nbsp; &nbsp; {{ "%.5f" % source.ra }} , {{ "%.5f" % source.dec }}</h4>
                 <h4>Glon Glat &nbsp; &nbsp;{{ "%.5f" % source.glon }} , {{ "%.5f" % source.glat }}</h4>
                 <table width="100%">
                     <tr>
@@ -123,7 +130,7 @@
             </table>
             </td>
             <td>
-                <img src="{{ source.lightcurve_plot_filename }}" align="right"/>
+                <img src="{{ url_for('static', filename='source/') }}{{ source.id }}/lightcurve.png">
             </td>
         </tr>
     </table>

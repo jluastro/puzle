@@ -12,3 +12,5 @@ class Config(object):
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     ADMINS = ['puzleweb@gmail.com']
+
+    STATIC_FOLDER = '/static'

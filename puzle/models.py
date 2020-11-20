@@ -1,6 +1,9 @@
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.sql.expression import func
+from sqlalchemy.ext.hybrid import hybrid_method
+from sqlalchemy import text
 from flask_login import UserMixin
 from time import time
 import jwt
@@ -9,9 +12,10 @@ import requests
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 from zort.object import Object as zort_object
-from app import app
-from app import db
-from app import login
+
+from puzle import app
+from puzle import db
+from puzle import login
 
 
 @login.user_loader
@@ -30,7 +34,7 @@ class User(UserMixin, db.Model):
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
-        return '<User {}>'.format(self.username)
+        return f"User('{self.username}', '{self.email}')"
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -66,6 +70,11 @@ class Object(db.Model):
     lightcurve_position = db.Column(db.BigInteger, nullable=False)
     lightcurve_filename = db.Column(db.String(128), index=True, nullable=False)
 
+    def __repr__(self):
+        return f"Object(id: '{self.id}', nepochs: '{self.nepochs} \n " \
+               f"lightcurve_filename: {self.lightcurve_filename} \n " \
+               f"lightcurve_position: {self.lightcurve_position}')"
+
 
 class Source(db.Model):
     __table_args__ = {'schema': 'puzle'}
@@ -90,6 +99,23 @@ class Source(db.Model):
     object_i = db.relationship('Object', foreign_keys=[object_id_i],
                                backref=db.backref('object_i', lazy='dynamic'))
 
+    def __init__(self, object_id_g, object_id_r, object_id_i,
+                 lightcurve_position_g, lightcurve_position_r,
+                 lightcurve_position_i, ra, dec, lightcurve_filename,
+                 comments=None, _ztf_ids=None):
+        self.object_id_g = object_id_g
+        self.object_id_r = object_id_r
+        self.object_id_i = object_id_i
+        self.lightcurve_position_g = lightcurve_position_g
+        self.lightcurve_position_r = lightcurve_position_r
+        self.lightcurve_position_i = lightcurve_position_i
+        self.ra = ra
+        self.dec = dec
+        self.lightcurve_filename = lightcurve_filename
+        self.comments = comments
+        self._ztf_ids = _ztf_ids
+
+
     @hybrid_property
     def glon(self):
         coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
@@ -111,7 +137,12 @@ class Source(db.Model):
         else:
             self._ztf_ids = ''
 
-    def set_parent(self):
+    @hybrid_method
+    def cone_search(self, ra, dec, radius=2):
+        radius_deg = radius / 3600.
+        return func.q3c_radial_query(text('ra'), text('dec'), ra, dec, radius_deg)
+
+    def set_parent_and_children(self):
         object_ids = [self.object_id_g, self.object_id_r, self.object_id_i]
         lightcurve_positions = [self.lightcurve_position_g,
                                 self.lightcurve_position_r,
@@ -147,18 +178,16 @@ class Source(db.Model):
             obj.siblings.append(sib)
         self.zort_object = obj
 
-    def set_lightcurve_plot_filename(self):
-        folder = f'app/static/sources/{self.id}'
+    def load_lightcurve_plot(self):
+        folder = f'puzle/static/source/{self.id}'
         if not os.path.exists(folder):
             os.makedirs(folder)
 
         lightcurve_plot_filename = f'{folder}/lightcurve.png'
         if not os.path.exists(lightcurve_plot_filename):
-            self.set_parent()
+            self.set_parent_and_children()
             self.load_zort_object()
             self.zort_object.plot_lightcurves(filename=lightcurve_plot_filename)
-        self.lightcurve_plot_filename = \
-            lightcurve_plot_filename.replace('app', '')
 
     def fetch_ztf_ids(self):
         radius_deg = 2. / 3600.
@@ -176,3 +205,21 @@ class Source(db.Model):
             self.ztf_ids = ztf_id
 
         return len(ztf_ids)
+
+
+class SourceIngestJob(db.Model):
+    __table_args__ = {'schema': 'puzle'}
+
+    id = db.Column(db.BigInteger, primary_key=True, nullable=False)
+    lightcurve_filename = db.Column(db.String(128), index=True, nullable=False)
+    process_rank = db.Column(db.Integer, nullable=False)
+    process_size = db.Column(db.Integer, nullable=False)
+    started = db.Column(db.Boolean, nullable=False, server_default='f')
+    finished = db.Column(db.Boolean, nullable=False, server_default='f')
+    datetime = db.Column(db.DateTime, nullable=True)
+    slurm_job_id = db.Column(db.Integer, nullable=True)
+
+    def __init__(self, lightcurve_filename, process_rank, process_size):
+        self.lightcurve_filename = lightcurve_filename
+        self.process_rank = process_rank
+        self.process_size = process_size

@@ -20,6 +20,7 @@ dependencies:
   - numpy
   - astropy
   - requests
+  - ipython
   - pip
   - pip:
       - zort
