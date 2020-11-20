@@ -170,7 +170,7 @@ class Source(db.Model):
         self.zort_object = obj
 
     def load_lightcurve_plot(self):
-        folder = f'puzle/static/sources/{self.id}'
+        folder = f'puzle/static/source/{self.id}'
         if not os.path.exists(folder):
             os.makedirs(folder)
 

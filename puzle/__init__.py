@@ -14,6 +14,10 @@ import os
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+app.static_url_path = app.config.get('STATIC_FOLDER')
+app.static_folder = app.root_path + app.static_url_path
+
 db = SQLAlchemy(app, engine_options={'poolclass': NullPool})
 migrate = Migrate(app, db)
 login = LoginManager(app)
@@ -41,12 +45,12 @@ if not app.debug:
         mail_handler.setLevel(logging.ERROR)
         app.logger.addHandler(mail_handler)
 
-    if not os.path.exists('logs'):
-        os.mkdir('logs')
-    file_handler = RotatingFileHandler('logs/puzle_webapp.log', maxBytes=10240,
-                                       backupCount=10)
-    file_handler.setFormatter(logging.Formatter(
-        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
-    file_handler.setLevel(logging.INFO)
-    app.logger.addHandler(file_handler)
-    app.logger.setLevel(logging.INFO)
+if not os.path.exists('logs'):
+    os.mkdir('logs')
+file_handler = RotatingFileHandler('logs/puzle_webapp.log', maxBytes=10240,
+                                   backupCount=10)
+file_handler.setFormatter(logging.Formatter(
+    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
+file_handler.setLevel(logging.INFO)
+app.logger.addHandler(file_handler)
+app.logger.setLevel(logging.INFO)
