@@ -124,12 +124,7 @@ def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
             if obj.lightcurve.nepochs < nepochs_min:
                 continue
 
-            if obj.filterid == 1:
-                obj.locate_siblings()
-            elif obj.filterid == 2:
-                obj.locate_siblings(skip_filterids=[1])
-            else:
-                pass
+            obj.locate_siblings()
 
             source = convert_obj_to_source(obj, lightcurve_filename)
             source_list.append(source)
