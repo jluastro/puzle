@@ -213,8 +213,8 @@ class SourceIngestJob(db.Model):
     lightcurve_filename = db.Column(db.String(128), index=True, nullable=False)
     process_rank = db.Column(db.Integer, nullable=False)
     process_size = db.Column(db.Integer, nullable=False)
-    started = db.Column(db.Boolean, nullable=False, default=False)
-    ended = db.Column(db.Boolean, nullable=False, default=False)
+    started = db.Column(db.Boolean, nullable=False, server_default='f')
+    finished = db.Column(db.Boolean, nullable=False, server_default='f')
     datetime = db.Column(db.DateTime, nullable=True)
     slurm_job_id = db.Column(db.Integer, nullable=True)
 
