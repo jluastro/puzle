@@ -53,7 +53,7 @@ def convert_obj_to_source(obj, lightcurve_filename):
 
 def fetch_job():
     job = db.session.query(SourceIngestJob).\
-        filter(SourceIngestJob.started==False, SourceIngestJob.ended==False).\
+        filter(SourceIngestJob.started==False, SourceIngestJob.finished==False).\
         order_by(SourceIngestJob.id).\
         with_for_update().\
         first()
@@ -82,7 +82,7 @@ def reset_job(job_id):
 def finish_job(job_id):
     job = db.session.query(SourceIngestJob).filter(
         SourceIngestJob.id == job_id).one()
-    job.ended = True
+    job.finished = True
     job.datetime = datetime.now()
     db.session.commit()
 
