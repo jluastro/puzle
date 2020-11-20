@@ -87,6 +87,21 @@ def finish_job(job_id):
     db.session.commit()
 
 
+def upload_sources(lightcurve_filename, source_list):
+    sources_db = db.session.query(Source).\
+        with_for_update().\
+        filter(Source.lightcurve_filename == lightcurve_filename).\
+        all()
+    keys_db = set([(s.object_id_g, s.object_id_r, s.object_id_i)
+                   for s in sources_db])
+
+    for source in source_list:
+        key = (source.object_id_g, source.object_id_r, source.object_id_i)
+        if key not in keys_db:
+            db.session.add(source)
+    db.session.commit()
+
+
 def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
     while True:
         job_enddate = fetch_job_enddate()
@@ -128,9 +143,7 @@ def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
 
         num_sources = len(source_list)
         print(f'Job {job_id}: Uploading {num_sources} sources to database')
-        for source in source_list:
-            db.session.add(source)
-        db.session.commit()
+        upload_sources(lightcurve_filename, source_list)
         print(f'Job {job_id}: Upload complete')
 
         finish_job(job_id)
