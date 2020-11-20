@@ -1,6 +1,9 @@
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.sql.expression import func
+from sqlalchemy.ext.hybrid import hybrid_method
+from sqlalchemy import text
 from flask_login import UserMixin
 from time import time
 import jwt
@@ -9,6 +12,7 @@ import requests
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 from zort.object import Object as zort_object
+
 from puzle import app
 from puzle import db
 from puzle import login
@@ -132,6 +136,10 @@ class Source(db.Model):
             self._ztf_ids += ';%s' % ztf_id
         else:
             self._ztf_ids = ''
+
+    @hybrid_method
+    def cone_search(self, ra, dec, radius=2/3600.):
+        return func.q3c_radial_query(text('ra'), text('dec'), ra, dec, radius)
 
     def set_parent(self):
         object_ids = [self.object_id_g, self.object_id_r, self.object_id_i]
