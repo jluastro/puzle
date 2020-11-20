@@ -1,8 +1,8 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, \
-    SubmitField, TextAreaField
+    SubmitField, TextAreaField, FloatField
 from wtforms.validators import ValidationError, DataRequired, \
-    Email, EqualTo, Length
+    Email, EqualTo, Length, NumberRange, Optional
 from puzle.models import User
 
 
@@ -72,3 +72,17 @@ class EditSourceCommentForm(FlaskForm):
     comments = TextAreaField('Comments',
                              validators=[Length(min=0, max=1024)])
     submit = SubmitField('Submit')
+
+
+class SearchForm(FlaskForm):
+    ra = FloatField('ra (degrees)',
+                    validators=[Optional(), NumberRange(min=0, max=360)])
+    dec = FloatField('dec (degrees)',
+                     validators=[Optional(), NumberRange(min=-90, max=90)])
+    glon = FloatField('galactic longitude (degrees)',
+                      validators=[Optional(), NumberRange(min=-180, max=180)])
+    glat = FloatField('galactic latitude (degrees)',
+                      validators=[Optional(), NumberRange(min=-90, max=90)])
+    radius = FloatField('radius (arcseconds)',
+                        validators=[DataRequired()])
+    submit = SubmitField('Search')

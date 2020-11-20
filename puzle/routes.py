@@ -2,10 +2,12 @@ from flask import render_template, flash, redirect, url_for, request
 from flask_login import current_user, login_user, logout_user, login_required
 from werkzeug.urls import url_parse
 from datetime import datetime
+from astropy.coordinates import SkyCoord
+import astropy.units as u
 from puzle import app, db
 from puzle.forms import LoginForm, RegistrationForm, \
     EditProfileForm, ResetPasswordRequestForm, ResetPasswordForm, \
-    EditSourceCommentForm
+    EditSourceCommentForm, SearchForm
 from puzle.models import User, Source
 from puzle.email import send_password_reset_email
 
@@ -142,6 +144,7 @@ def edit_source_comments(sourceid):
     return render_template('edit_source_comments.html',
                            form=form)
 
+
 @app.route('/fetch_ztf_ids/<sourceid>', methods=['POST'])
 @login_required
 def fetch_ztf_ids(sourceid):
@@ -150,3 +153,31 @@ def fetch_ztf_ids(sourceid):
     flash('%i ZTF IDs Found' % n_ids)
     db.session.commit()
     return redirect(url_for('source', sourceid=sourceid))
+
+
+@app.route('/search', methods=['GET', 'POST'])
+@login_required
+def search():
+    form = SearchForm()
+    if form.validate_on_submit():
+        if form.ra.data and form.dec.data:
+            ra, dec = form.ra.data, form.dec.data
+            flash('Searching (ra,dec) = (%.5f, %.5f)' % (ra, dec))
+        elif form.glon.data and form.glat.data:
+            glon, glat = form.glon.data, form.glat.data
+            flash('Searching (glon, glat) = (%.5f, %.5f)' % (glon, glat))
+            coord = SkyCoord(glon, glat,
+                             unit=u.degree, frame='galactic')
+            ra = coord.icrs.ra.value
+            dec = coord.icrs.dec.value
+        else:
+            flash('Either (ra, dec) or '
+                  '(glon, glat) '
+                  'must be entered.')
+            return redirect(url_for('search'))
+
+        radius = form.radius.data / 3600.
+        sources = db.session.query(Source).filter(
+            Source.cone_search(ra, dec, radius)).all()
+        return render_template('search.html', form=form, sources=sources)
+    return render_template('search.html', form=form)
