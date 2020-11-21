@@ -227,3 +227,16 @@ def unfollow(sourceid):
         return redirect(url_for('source', sourceid=sourceid))
     else:
         return redirect(url_for('source', sourceid=sourceid))
+
+
+@app.route('/sources', methods=['GET', 'POST'])
+@login_required
+def sources():
+    page = request.args.get('page', 1, type=int)
+    sources = Source.query.order_by(Source.id.asc()).paginate(page, app.config['SOURCES_PER_PAGE'], False)
+    next_url = url_for('sources', page=sources.next_num) \
+        if sources.has_next else None
+    prev_url = url_for('sources', page=sources.prev_num) \
+        if sources.has_prev else None
+    return render_template('sources.html', sources=sources.items,
+                           next_url=next_url, prev_url=prev_url)

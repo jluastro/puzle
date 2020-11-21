@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+    <table class="table table-hover">
+        <tr>
+            <td>
+                <h3>Sources:</h3>
+                <table width="100%">
+                    <tr>
+                        <th>Source</th>
+                        <th>Filter</th>
+                        <th>Nepochs</th>
+                        <th>t<sub>0</sub></th>
+                        <th>t<sub>E</sub></th>
+                        <th>mag<sub>src</sub></th>
+                        <th>b<sub>sff</sub></th>
+                        <th>pi<sub>E</sub></th>
+                        <th>Followers</th>
+                    </tr>
+                {% for source in sources %}
+                    <td>
+                    <a href="{{ url_for('source', sourceid=source.id) }}">Source {{ source.id }}</a>
+                    </td>
+                    <td></td>
+                    <td></td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>
+                    {% for user in source.users.all() %}
+                        <a href="{{ url_for('user', username=user.username) }}">{{ user.username }}</a> |
+                    {% endfor %}
+                    </td>
+                    {% if source.object_id_g %}
+                        <tr>
+                            <td></td>
+                            <td>g-band</td>
+                            <td>{{ source.object_g.nepochs }}</td>
+                        </tr>
+                    {% endif %}
+                    {% if source.object_id_r %}
+                        <tr>
+                            <td></td>
+                            <td>r-band</td>
+                            <td>{{ source.object_r.nepochs }}</td>
+                        </tr>
+                    {% endif %}
+                    {% if source.object_id_i %}
+                        <tr>
+                            <td></td>
+                            <td>i-band</td>
+                            <td>{{ source.object_i.nepochs }}</td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+                </table>
+                <nav aria-label="...">
+                    <ul class="pager">
+                        <li class="previous{% if not prev_url %} disabled{% endif %}">
+                            <a href="{{ prev_url or '#' }}">
+                                <span aria-hidden="true">&larr;</span> Previous sources
+                            </a>
+                        </li>
+                        <li class="next{% if not next_url %} disabled{% endif %}">
+                            <a href="{{ next_url or '#' }}">
+                                More sources <span aria-hidden="true">&rarr;</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </td>
+        </tr>
+    </table>
+{% endblock %}
