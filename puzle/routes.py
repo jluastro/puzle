@@ -7,7 +7,7 @@ import astropy.units as u
 from puzle import app, db
 from puzle.forms import LoginForm, RegistrationForm, \
     EditProfileForm, ResetPasswordRequestForm, ResetPasswordForm, \
-    EditSourceCommentForm, SearchForm
+    EditSourceCommentForm, SearchForm, EmptyForm
 from puzle.models import User, Source
 from puzle.email import send_password_reset_email
 
@@ -65,11 +65,19 @@ def register():
     return render_template('register.html', title='Register', form=form)
 
 
-@app.route('/user/<username>')
+@app.route('/user/<username>', methods=['GET', 'POST'])
 @login_required
 def user(username):
     user = User.query.filter_by(username=username).first_or_404()
-    return render_template('user.html', user=user)
+    page = request.args.get('page', 1, type=int)
+    sources = user.followed_sources().paginate(page, app.config['SOURCES_PER_PAGE'], False)
+    next_url = url_for('user', username=username, page=sources.next_num) \
+        if sources.has_next else None
+    prev_url = url_for('user', username=username, page=sources.prev_num) \
+        if sources.has_prev else None
+    print(sources.items, app.config['SOURCES_PER_PAGE'])
+    return render_template('user.html', user=user, sources=sources.items,
+                           next_url=next_url, prev_url=prev_url)
 
 
 @app.route('/edit_profile', methods=['GET', 'POST'])
@@ -125,9 +133,10 @@ def reset_password(token):
 @app.route('/source/<sourceid>')
 @login_required
 def source(sourceid):
+    form = EmptyForm()
     source = Source.query.filter_by(id=int(sourceid)).first_or_404()
     source.load_lightcurve_plot()
-    return render_template('source.html', source=source)
+    return render_template('source.html', source=source, form=form)
 
 
 @app.route('/edit_source_comments/<sourceid>', methods=['GET', 'POST'])
@@ -184,3 +193,37 @@ def search():
         sources.sort(key=lambda x: x.id)
         return render_template('search.html', form=form, sources=sources)
     return render_template('search.html', form=form)
+
+
+@app.route('/follow/<sourceid>', methods=['POST'])
+@login_required
+def follow(sourceid):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        source = Source.query.filter_by(id=sourceid).first()
+        if user is None:
+            flash('Source {} not found.'.format(source.id), 'danger')
+            return redirect(url_for('source', sourceid=sourceid))
+        current_user.follow_source(source)
+        db.session.commit()
+        flash('You are following Source {}'.format(source.id), 'success')
+        return redirect(url_for('source', sourceid=sourceid))
+    else:
+        return redirect(url_for('source', sourceid=sourceid))
+
+
+@app.route('/unfollow/<sourceid>', methods=['POST'])
+@login_required
+def unfollow(sourceid):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        source = Source.query.filter_by(id=sourceid).first()
+        if user is None:
+            flash('Source {} not found.'.format(source.id), 'danger')
+            return redirect(url_for('source', sourceid=sourceid))
+        current_user.unfollow_source(source)
+        db.session.commit()
+        flash('You are not following Source {}'.format(source.id), 'success')
+        return redirect(url_for('source', sourceid=sourceid))
+    else:
+        return redirect(url_for('source', sourceid=sourceid))
