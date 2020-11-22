@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block app_content %}
+    <h5 align="right">Hi, {{ current_user.username }}!</h5>
+    <hr>
+    <h1>PUZLE</h1>
+    <h3>Pipeline Utility for ZTF Lensing Events</h3>
+    <p> Navigate the above toolbar to navigate to the following pages: </p>
+    <ul>
+        <li><b>PUZLE</b> : Back to this home page </li>
+        <li><b>Search</b> : Search for objects in the database by sky coordinates </li>
+        <li><b>Sources</b> : Browse sources and their microlensing parameters </li>
+        <li><b>Profile</b> : Personal page of sources you follow </li>
+   </ul>
+{% endblock %}
