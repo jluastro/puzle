@@ -76,7 +76,7 @@ def user(username):
     prev_url = url_for('user', username=username, page=sources.prev_num) \
         if sources.has_prev else None
     print(sources.items, app.config['SOURCES_PER_PAGE'])
-    return render_template('user.html', user=user, sources=sources.items,
+    return render_template('user.html', user=user, sources=sources,
                            next_url=next_url, prev_url=prev_url)
 
 
@@ -238,5 +238,5 @@ def sources():
         if sources.has_next else None
     prev_url = url_for('sources', page=sources.prev_num) \
         if sources.has_prev else None
-    return render_template('sources.html', sources=sources.items,
+    return render_template('sources.html', sources=sources,
                            next_url=next_url, prev_url=prev_url)

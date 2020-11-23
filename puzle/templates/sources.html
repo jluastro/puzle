@@ -17,7 +17,7 @@
                         <th>pi<sub>E</sub></th>
                         <th>Followers</th>
                     </tr>
-                {% for source in sources %}
+                {% for source in sources.items %}
                     <td>
                     <a href="{{ url_for('source', sourceid=source.id) }}">Source {{ source.id }}</a>
                     </td>
@@ -30,7 +30,7 @@
                     <td>0</td>
                     <td>
                     {% for user in source.users.all() %}
-                        <a href="{{ url_for('user', username=user.username) }}">{{ user.username }}</a> |
+                        | <a href="{{ url_for('user', username=user.username) }}">{{ user.username }}</a>
                     {% endfor %}
                     </td>
                     {% if source.object_id_g %}
@@ -56,20 +56,38 @@
                     {% endif %}
                 {% endfor %}
                 </table>
-                <nav aria-label="...">
-                    <ul class="pager">
-                        <li class="previous{% if not prev_url %} disabled{% endif %}">
-                            <a href="{{ prev_url or '#' }}">
-                                <span aria-hidden="true">&larr;</span> Previous sources
+                <!-- Pagination Links-->
+                <div class="text-right">
+                    <a href="{{ url_for('sources', page=sources.prev_num) }}"
+                       class="btn btn-outline-dark
+                       {% if sources.page == 1 %}disabled{% endif %}">
+                        &laquo;
+                    </a><!-- Loop through the number of pages to display a link for each-->
+                    {% for page_num in sources.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}{% if page_num %}
+                <!-- Check for the active page and set the link to "Active"-->
+                            {% if sources.page == page_num %}
+                            <a href="{{ url_for('sources', page=page_num) }}"
+                               class="btn btn-dark">
+                                {{ page_num }}
                             </a>
-                        </li>
-                        <li class="next{% if not next_url %} disabled{% endif %}">
-                            <a href="{{ next_url or '#' }}">
-                                More sources <span aria-hidden="true">&rarr;</span>
+                            {% else %}
+                            <a href="{{ url_for('sources', page=page_num) }}"
+                               class="btn btn-outline-dark">
+                                {{ page_num }}
                             </a>
-                        </li>
-                    </ul>
-                </nav>
+                            {% endif %}
+                        {% else %}
+                            ...
+                        {% endif %}
+                    {% endfor %}    <a href="{{ url_for('sources', page=sources.next_num) }}"
+                       class="btn btn-outline-dark
+                       {% if sources.page == sources.pages %}disabled{% endif %}">
+                        &raquo;
+                    </a>
+                </div>
+                <p class="text-right mt-3">
+                   Showing page {{ sources.page }} of {{ sources.pages }}
+                </p>
             </td>
         </tr>
     </table>
