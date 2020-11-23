@@ -87,7 +87,8 @@ def finish_job(job_id):
     db.session.commit()
 
 
-def upload_sources(lightcurve_filename, source_list):
+def upload_sources(lightcurve_filename, source_set):
+
     sources_db = db.session.query(Source).\
         with_for_update().\
         filter(Source.lightcurve_filename == lightcurve_filename).\
@@ -95,7 +96,7 @@ def upload_sources(lightcurve_filename, source_list):
     keys_db = set([(s.object_id_g, s.object_id_r, s.object_id_i)
                    for s in sources_db])
 
-    for source in source_list:
+    for source in source_set:
         key = (source.object_id_g, source.object_id_r, source.object_id_i)
         if key not in keys_db:
             db.session.add(source)
@@ -117,7 +118,7 @@ def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
         print(f'Job {job_id}: Rank: {rank}')
         print(f'Job {job_id}: Size: {size}')
 
-        source_list = []
+        source_set = set()
         lightcurveFile = LightcurveFile(lightcurve_filename, proc_rank=rank,
                                         proc_size=size, apply_catmask=True)
         for obj in lightcurveFile:
@@ -127,7 +128,7 @@ def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
             obj.locate_siblings()
 
             source = convert_obj_to_source(obj, lightcurve_filename)
-            source_list.append(source)
+            source_set.add(source)
 
             if job_enddate and datetime.now() >= script_enddate:
                 print(f'Within {shutdown_time} minutes of job end, '
@@ -136,9 +137,9 @@ def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
                 time.sleep(2 * 60 * shutdown_time)
                 return
 
-        num_sources = len(source_list)
+        num_sources = len(source_set)
         print(f'Job {job_id}: Uploading {num_sources} sources to database')
-        upload_sources(lightcurve_filename, source_list)
+        upload_sources(lightcurve_filename, source_set)
         print(f'Job {job_id}: Upload complete')
 
         finish_job(job_id)
