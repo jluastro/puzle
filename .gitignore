@@ -20,9 +20,6 @@ _mailinglist
 docs/_build/
 .vscodes
 
-# logs
-logs/
-
 # commands
 .conda
 .docker
