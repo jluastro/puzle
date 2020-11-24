@@ -7,6 +7,7 @@ import os
 import numpy as np
 from datetime import datetime, timedelta
 from zort.lightcurveFile import LightcurveFile
+from sqlalchemy.sql.expression import func
 
 from puzle.models import Source, SourceIngestJob
 from puzle.utils import fetch_job_enddate
@@ -55,7 +56,7 @@ def fetch_job():
     db.session.execute('LOCK TABLE source_ingest_job IN ACCESS EXCLUSIVE MODE;')
     job = db.session.query(SourceIngestJob).\
         filter(SourceIngestJob.started==False, SourceIngestJob.finished==False).\
-        order_by(SourceIngestJob.id).\
+        order_by(func.random()).\
         with_for_update().\
         first()
     if job is None:
