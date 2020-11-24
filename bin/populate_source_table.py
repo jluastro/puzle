@@ -87,7 +87,7 @@ def finish_job(job_id):
     db.session.commit()
 
 
-def upload_sources(lightcurve_filename, source_set):
+def upload_sources(lightcurve_filename, source_list):
     db.session.execute('LOCK TABLE source IN ACCESS EXCLUSIVE MODE;')
     sources_db = db.session.query(Source).\
         with_for_update().\
@@ -96,10 +96,12 @@ def upload_sources(lightcurve_filename, source_set):
     keys_db = set([(s.object_id_g, s.object_id_r, s.object_id_i)
                    for s in sources_db])
 
-    for source in source_set:
+    keys_uploading = set()
+    for source in source_list:
         key = (source.object_id_g, source.object_id_r, source.object_id_i)
-        if key not in keys_db:
+        if key not in keys_db and key not in keys_uploading:
             db.session.add(source)
+            keys_uploading.add(key)
     db.session.commit()
 
 
@@ -118,7 +120,7 @@ def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
         print(f'Job {job_id}: Rank: {rank}')
         print(f'Job {job_id}: Size: {size}')
 
-        source_set = set()
+        source_list = []
         lightcurveFile = LightcurveFile(lightcurve_filename, proc_rank=rank,
                                         proc_size=size, apply_catmask=True)
         for obj in lightcurveFile:
@@ -128,7 +130,7 @@ def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
             obj.locate_siblings()
 
             source = convert_obj_to_source(obj, lightcurve_filename)
-            source_set.add(source)
+            source_list.add(source)
 
             if job_enddate and datetime.now() >= script_enddate:
                 print(f'Within {shutdown_time} minutes of job end, '
@@ -137,9 +139,9 @@ def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
                 time.sleep(2 * 60 * shutdown_time)
                 return
 
-        num_sources = len(source_set)
+        num_sources = len(source_list)
         print(f'Job {job_id}: Uploading {num_sources} sources to database')
-        upload_sources(lightcurve_filename, source_set)
+        upload_sources(lightcurve_filename, source_list)
         print(f'Job {job_id}: Upload complete')
 
         finish_job(job_id)
