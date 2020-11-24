@@ -105,7 +105,7 @@ def upload_sources(lightcurve_filename, source_list):
     db.session.commit()
 
 
-def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
+def ingest_sources(nepochs_min=20, shutdown_time=2, single_job=False):
     while True:
         job_enddate = fetch_job_enddate()
         if job_enddate:
