@@ -87,21 +87,12 @@ def finish_job(job_id):
     db.session.commit()
 
 
-def write_to_record(msg, mpi_rank):
-    now = datetime.now()
-    with open('record.txt', 'a') as f:
-        f.write(f'{mpi_rank}: {msg} ({now})\n')
-
-
-def upload_sources(lightcurve_filename, source_set, mpi_rank):
-
-    write_to_record('Reading from database', mpi_rank)
+def upload_sources(lightcurve_filename, source_set):
     db.session.execute('LOCK TABLE source IN ACCESS EXCLUSIVE MODE;')
     sources_db = db.session.query(Source).\
         with_for_update().\
         filter(Source.lightcurve_filename == lightcurve_filename).\
         all()
-    write_to_record('-- In database session', mpi_rank)
     keys_db = set([(s.object_id_g, s.object_id_r, s.object_id_i)
                    for s in sources_db])
 
@@ -109,12 +100,10 @@ def upload_sources(lightcurve_filename, source_set, mpi_rank):
         key = (source.object_id_g, source.object_id_r, source.object_id_i)
         if key not in keys_db:
             db.session.add(source)
-    write_to_record('-- Committing to database', mpi_rank)
     db.session.commit()
-    write_to_record('Session Ended', mpi_rank)
 
 
-def ingest_sources(mpi_rank, nepochs_min=20, shutdown_time=5, single_job=False):
+def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
     while True:
         job_enddate = fetch_job_enddate()
         if job_enddate:
@@ -150,7 +139,7 @@ def ingest_sources(mpi_rank, nepochs_min=20, shutdown_time=5, single_job=False):
 
         num_sources = len(source_set)
         print(f'Job {job_id}: Uploading {num_sources} sources to database')
-        upload_sources(lightcurve_filename, source_set, mpi_rank)
+        upload_sources(lightcurve_filename, source_set)
         print(f'Job {job_id}: Upload complete')
 
         finish_job(job_id)
@@ -161,8 +150,4 @@ def ingest_sources(mpi_rank, nepochs_min=20, shutdown_time=5, single_job=False):
 
 
 if __name__ == '__main__':
-    from mpi4py import MPI
-
-    comm = MPI.COMM_WORLD
-    mpi_rank = comm.rank
-    ingest_sources(mpi_rank)
+    ingest_sources()
