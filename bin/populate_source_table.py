@@ -52,6 +52,7 @@ def convert_obj_to_source(obj, lightcurve_filename):
 
 
 def fetch_job():
+    db.session.execute('LOCK TABLE source_ingest_job IN ACCESS EXCLUSIVE MODE;')
     job = db.session.query(SourceIngestJob).\
         filter(SourceIngestJob.started==False, SourceIngestJob.finished==False).\
         order_by(SourceIngestJob.id).\
