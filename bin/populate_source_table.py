@@ -130,7 +130,7 @@ def ingest_sources(nepochs_min=20, shutdown_time=2, single_job=False):
             obj.locate_siblings()
 
             source = convert_obj_to_source(obj, lightcurve_filename)
-            source_list.add(source)
+            source_list.append(source)
 
             if job_enddate and datetime.now() >= script_enddate:
                 print(f'Within {shutdown_time} minutes of job end, '
