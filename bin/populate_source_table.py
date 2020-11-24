@@ -90,12 +90,13 @@ def finish_job(job_id):
 def write_to_record(msg, mpi_rank):
     now = datetime.now()
     with open('record.txt', 'a') as f:
-        f.write(f'{mpi_rank}: {msg} ({now})')
+        f.write(f'{mpi_rank}: {msg} ({now})\n')
 
 
 def upload_sources(lightcurve_filename, source_set, mpi_rank):
 
     write_to_record('Reading from database', mpi_rank)
+    db.session.execute('LOCK TABLE source IN ACCESS EXCLUSIVE MODE;')
     sources_db = db.session.query(Source).\
         with_for_update().\
         filter(Source.lightcurve_filename == lightcurve_filename).\
