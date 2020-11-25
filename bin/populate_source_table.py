@@ -94,7 +94,8 @@ def finish_job(job_id):
 def upload_sources(source_list, lightcurve_filename):
     db.session.execute('LOCK TABLE source_ingest_job IN ROW EXCLUSIVE MODE;')
     _ = db.session.query(SourceIngestJob).with_for_update().\
-        filter(SourceIngestJob.lightcurve_filename == lightcurve_filename)
+        filter(SourceIngestJob.lightcurve_filename == lightcurve_filename).\
+        all()
     sources_db = db.session.query(Source).\
         filter(Source.lightcurve_filename == lightcurve_filename).\
         all()
