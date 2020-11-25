@@ -91,13 +91,22 @@ def finish_job(job_id):
     db.session.commit()
 
 
-def upload_sources(source_list):
+def upload_sources(source_list, lightcurve_filename):
+    db.session.execute('LOCK TABLE source_ingest_table IN ROW EXCLUSIVE MODE;')
+    _ = db.session.query(SourceIngestJob).with_for_update().\
+        filter(SourceIngestJob.lightcurve_filename == lightcurve_filename)
+    sources_db = db.session.query(Source).\
+        filter(Source.lightcurve_filename == lightcurve_filename).\
+        all()
+    keys_db = set([(s.object_id_g, s.object_id_r, s.object_id_i)
+                   for s in sources_db])
+
     keys_uploading = set()
     for source in source_list:
         key = (source.object_id_g, source.object_id_r, source.object_id_i)
-        if key not in keys_uploading:
-            keys_uploading.add(key)
+        if key not in keys_db and key not in keys_uploading:
             db.session.add(source)
+            keys_uploading.add(key)
     db.session.commit()
 
     for key in keys_uploading:
