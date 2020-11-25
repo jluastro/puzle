@@ -97,6 +97,7 @@ def upload_sources(source_list):
         key = (source.object_id_g, source.object_id_r, source.object_id_i)
         if key not in keys_uploading:
             keys_uploading.add(key)
+            db.session.add(source)
     db.session.commit()
 
     for key in keys_uploading:
