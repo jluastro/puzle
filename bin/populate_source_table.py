@@ -157,7 +157,7 @@ def ingest_sources(nepochs_min=20, shutdown_time=2, single_job=False):
 
         num_sources = len(source_list)
         print(f'Job {job_id}: Uploading {num_sources} sources to database')
-        upload_sources(source_list)
+        upload_sources(source_list, lightcurve_filename)
         print(f'Job {job_id}: Upload complete')
 
         finish_job(job_id)
