@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from zort.lightcurveFile import LightcurveFile
 from sqlalchemy.sql.expression import func
 
-from puzle.models import Source, SourceIngestJob
+from puzle.models import Source, SourceIngestJob, Object
 from puzle.utils import fetch_job_enddate
 from puzle import db
 
@@ -91,21 +91,22 @@ def finish_job(job_id):
     db.session.commit()
 
 
-def upload_sources(lightcurve_filename, source_list):
-    db.session.execute('LOCK TABLE source IN ACCESS EXCLUSIVE MODE;')
-    sources_db = db.session.query(Source).\
-        with_for_update().\
-        filter(Source.lightcurve_filename == lightcurve_filename).\
-        all()
-    keys_db = set([(s.object_id_g, s.object_id_r, s.object_id_i)
-                   for s in sources_db])
-
+def upload_sources(source_list):
     keys_uploading = set()
     for source in source_list:
         key = (source.object_id_g, source.object_id_r, source.object_id_i)
-        if key not in keys_db and key not in keys_uploading:
-            db.session.add(source)
+        if key not in keys_uploading:
             keys_uploading.add(key)
+    db.session.commit()
+
+    for key in keys_uploading:
+        for object_id in key:
+            if object_id is None:
+                continue
+            obj = db.session.query(Object).\
+                filter(Object.id == object_id).\
+                first()
+            obj.in_source = True
     db.session.commit()
 
 
@@ -145,7 +146,7 @@ def ingest_sources(nepochs_min=20, shutdown_time=2, single_job=False):
 
         num_sources = len(source_list)
         print(f'Job {job_id}: Uploading {num_sources} sources to database')
-        upload_sources(lightcurve_filename, source_list)
+        upload_sources(source_list)
         print(f'Job {job_id}: Upload complete')
 
         finish_job(job_id)

@@ -97,6 +97,7 @@ class Object(db.Model):
     dec = db.Column(db.Float, nullable=False)
     lightcurve_position = db.Column(db.BigInteger, nullable=False)
     lightcurve_filename = db.Column(db.String(128), index=True, nullable=False)
+    in_source = db.Column(db.Boolean, nullable=False, server_default='f')
 
     def __repr__(self):
         return f"Object(id: '{self.id}', nepochs: '{self.nepochs} \n " \
