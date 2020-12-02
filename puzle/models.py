@@ -23,6 +23,14 @@ def load_user(id):
     return User.query.get(int(id))
 
 
+user_source_association = db.Table(
+    'user_source_association',
+    db.Column('user_id', db.Integer, db.ForeignKey('puzle.user.id')),
+    db.Column('source_id', db.BigInteger, db.ForeignKey('puzle.source.id')),
+    schema='puzle'
+)
+
+
 class User(UserMixin, db.Model):
     __table_args__ = {'schema': 'puzle'}
 
@@ -32,6 +40,9 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     about_me = db.Column(db.String(140))
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+    sources = db.relationship('Source', secondary=user_source_association,
+                              lazy='dynamic',
+                              backref=db.backref('users', lazy='dynamic'))
 
     def __repr__(self):
         return f"User('{self.username}', '{self.email}')"
@@ -56,6 +67,23 @@ class User(UserMixin, db.Model):
             return
         return User.query.get(id)
 
+    def follow_source(self, source):
+        if not self.is_following(source):
+            self.sources.append(source)
+
+    def unfollow_source(self, source):
+        if self.is_following(source):
+            self.sources.remove(source)
+
+    def is_following(self, source):
+        return source in self.sources.all()
+
+    def followed_sources(self):
+        return Source.query.join(user_source_association,
+            (user_source_association.c.source_id == Source.id)).\
+            filter(user_source_association.c.user_id == self.id).\
+            order_by(Source.id.asc())
+
 
 class Object(db.Model):
     __table_args__ = {'schema': 'puzle'}
@@ -69,6 +97,7 @@ class Object(db.Model):
     dec = db.Column(db.Float, nullable=False)
     lightcurve_position = db.Column(db.BigInteger, nullable=False)
     lightcurve_filename = db.Column(db.String(128), index=True, nullable=False)
+    in_source = db.Column(db.Boolean, nullable=True)
 
     def __repr__(self):
         return f"Object(id: '{self.id}', nepochs: '{self.nepochs} \n " \

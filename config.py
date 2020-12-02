@@ -14,3 +14,4 @@ class Config(object):
     ADMINS = ['puzleweb@gmail.com']
 
     STATIC_FOLDER = '/static'
+    SOURCES_PER_PAGE = 10

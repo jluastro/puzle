@@ -86,3 +86,7 @@ class SearchForm(FlaskForm):
     radius = FloatField('radius (arcseconds)',
                         validators=[DataRequired()])
     submit = SubmitField('Search')
+
+
+class EmptyForm(FlaskForm):
+    submit = SubmitField('Submit')

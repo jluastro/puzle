@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+    <table class="table table-hover">
+        <tr>
+            <td>
+                <h3>Sources:</h3>
+                <table width="100%">
+                    <tr>
+                        <th>Source</th>
+                        <th>Filter</th>
+                        <th>Nepochs</th>
+                        <th>t<sub>0</sub></th>
+                        <th>t<sub>E</sub></th>
+                        <th>mag<sub>src</sub></th>
+                        <th>b<sub>sff</sub></th>
+                        <th>pi<sub>E</sub></th>
+                        <th>Followers</th>
+                    </tr>
+                {% for source in sources.items %}
+                    <td>
+                    <a href="{{ url_for('source', sourceid=source.id) }}">Source {{ source.id }}</a>
+                    </td>
+                    <td></td>
+                    <td></td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>
+                    {% for user in source.users.all() %}
+                        | <a href="{{ url_for('user', username=user.username) }}">{{ user.username }}</a>
+                    {% endfor %}
+                    </td>
+                    {% if source.object_id_g %}
+                        <tr>
+                            <td></td>
+                            <td>g-band</td>
+                            <td>{{ source.object_g.nepochs }}</td>
+                        </tr>
+                    {% endif %}
+                    {% if source.object_id_r %}
+                        <tr>
+                            <td></td>
+                            <td>r-band</td>
+                            <td>{{ source.object_r.nepochs }}</td>
+                        </tr>
+                    {% endif %}
+                    {% if source.object_id_i %}
+                        <tr>
+                            <td></td>
+                            <td>i-band</td>
+                            <td>{{ source.object_i.nepochs }}</td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+                </table>
+                <!-- Pagination Links-->
+                <div class="text-right">
+                    <a href="{{ url_for('sources', page=sources.prev_num) }}"
+                       class="btn btn-outline-dark
+                       {% if sources.page == 1 %}disabled{% endif %}">
+                        &laquo;
+                    </a><!-- Loop through the number of pages to display a link for each-->
+                    {% for page_num in sources.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}{% if page_num %}
+                <!-- Check for the active page and set the link to "Active"-->
+                            {% if sources.page == page_num %}
+                            <a href="{{ url_for('sources', page=page_num) }}"
+                               class="btn btn-dark">
+                                {{ page_num }}
+                            </a>
+                            {% else %}
+                            <a href="{{ url_for('sources', page=page_num) }}"
+                               class="btn btn-outline-dark">
+                                {{ page_num }}
+                            </a>
+                            {% endif %}
+                        {% else %}
+                            ...
+                        {% endif %}
+                    {% endfor %}    <a href="{{ url_for('sources', page=sources.next_num) }}"
+                       class="btn btn-outline-dark
+                       {% if sources.page == sources.pages %}disabled{% endif %}">
+                        &raquo;
+                    </a>
+                </div>
+                <p class="text-right mt-3">
+                   Showing page {{ sources.page }} of {{ sources.pages }}
+                </p>
+            </td>
+        </tr>
+    </table>
+{% endblock %}
