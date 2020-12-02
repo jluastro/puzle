@@ -7,10 +7,10 @@ import os
 import numpy as np
 from datetime import datetime, timedelta
 from zort.lightcurveFile import LightcurveFile
-from sqlalchemy.sql.expression import func
 
-from puzle.models import Source, SourceIngestJob, Object
+from puzle.models import Source, SourceIngestJob
 from puzle.utils import fetch_job_enddate
+from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle import db
 
 
@@ -53,12 +53,11 @@ def convert_obj_to_source(obj, lightcurve_filename):
 
 
 def fetch_job():
-    db.session.execute('LOCK TABLE source_ingest_job '
-                       'IN ROW EXCLUSIVE MODE;')
+    insert_db_id()  # get permission to make a db connection
+
     job = db.session.query(SourceIngestJob).\
-        filter(SourceIngestJob.started == False,
-               SourceIngestJob.finished == False).\
-        order_by(func.random()).\
+        filter(SourceIngestJob.started==False, SourceIngestJob.finished==False).\
+        order_by(SourceIngestJob.id).\
         with_for_update().\
         first()
     if job is None:
@@ -73,55 +72,47 @@ def fetch_job():
     job.datetime = datetime.now()
     db.session.commit()
 
+    remove_db_id()  # release permission for this db connection
     return job_id, lightcurve_filename, rank, size
 
 
 def reset_job(job_id):
+    insert_db_id()  # get permission to make a db connection
     job = db.session.query(SourceIngestJob).filter(
         SourceIngestJob.id == job_id).one()
     job.started = False
     db.session.commit()
+    remove_db_id()  # release permission for this db connection
 
 
 def finish_job(job_id):
+    insert_db_id()  # get permission to make a db connection
     job = db.session.query(SourceIngestJob).filter(
         SourceIngestJob.id == job_id).one()
     job.finished = True
     job.datetime = datetime.now()
     db.session.commit()
+    remove_db_id()  # release permission for this db connection
 
 
-def upload_sources(source_list, lightcurve_filename):
-    db.session.execute('LOCK TABLE source_ingest_job IN ROW EXCLUSIVE MODE;')
-    _ = db.session.query(SourceIngestJob).with_for_update().\
-        filter(SourceIngestJob.lightcurve_filename == lightcurve_filename).\
-        all()
+def upload_sources(lightcurve_filename, source_list):
+    insert_db_id()  # get permission to make a db connection
     sources_db = db.session.query(Source).\
+        with_for_update().\
         filter(Source.lightcurve_filename == lightcurve_filename).\
         all()
     keys_db = set([(s.object_id_g, s.object_id_r, s.object_id_i)
                    for s in sources_db])
 
-    keys_uploading = set()
     for source in source_list:
         key = (source.object_id_g, source.object_id_r, source.object_id_i)
-        if key not in keys_db and key not in keys_uploading:
+        if key not in keys_db:
             db.session.add(source)
-            keys_uploading.add(key)
     db.session.commit()
-
-    for key in keys_uploading:
-        for object_id in key:
-            if object_id is None:
-                continue
-            obj = db.session.query(Object).\
-                filter(Object.id == object_id).\
-                first()
-            obj.in_source = True
-    db.session.commit()
+    remove_db_id()  # release permission for this db connection
 
 
-def ingest_sources(nepochs_min=20, shutdown_time=2, single_job=False):
+def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
     while True:
         job_enddate = fetch_job_enddate()
         if job_enddate:
@@ -157,7 +148,7 @@ def ingest_sources(nepochs_min=20, shutdown_time=2, single_job=False):
 
         num_sources = len(source_list)
         print(f'Job {job_id}: Uploading {num_sources} sources to database')
-        upload_sources(source_list, lightcurve_filename)
+        upload_sources(lightcurve_filename, source_list)
         print(f'Job {job_id}: Upload complete')
 
         finish_job(job_id)

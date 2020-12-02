@@ -20,4 +20,4 @@ login.login_view = 'login'
 mail = Mail(app)
 bootstrap = Bootstrap(app)
 
-from puzle import routes, models, errors
+from puzle import routes, models, errors, ulensdb
