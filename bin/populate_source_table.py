@@ -7,11 +7,14 @@ import os
 import numpy as np
 from datetime import datetime, timedelta
 from zort.lightcurveFile import LightcurveFile
+import logging
 
 from puzle.models import Source, SourceIngestJob
 from puzle.utils import fetch_job_enddate
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle import db
+
+logger = logging.getLogger(__name__)
 
 
 def convert_obj_to_source(obj, lightcurve_filename):
@@ -117,15 +120,16 @@ def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
         job_enddate = fetch_job_enddate()
         if job_enddate:
             script_enddate = job_enddate - timedelta(minutes=shutdown_time)
+            logger.info('Script End Date: %s' % script_enddate)
 
         job_data = fetch_job()
         if job_data is None:
             return
 
         job_id, lightcurve_filename, rank, size = job_data
-        print(f'Job {job_id}: Lightcurve file: {lightcurve_filename}')
-        print(f'Job {job_id}: Rank: {rank}')
-        print(f'Job {job_id}: Size: {size}')
+        logger.info(f'Job {job_id}: Lightcurve file: {lightcurve_filename}')
+        logger.info(f'Job {job_id}: Rank: {rank}')
+        logger.info(f'Job {job_id}: Size: {size}')
 
         source_list = []
         lightcurveFile = LightcurveFile(lightcurve_filename, proc_rank=rank,
@@ -140,19 +144,19 @@ def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
             source_list.append(source)
 
             if job_enddate and datetime.now() >= script_enddate:
-                print(f'Within {shutdown_time} minutes of job end, '
-                      f'shutting down...')
+                logger.info(f'Within {shutdown_time} minutes of job end, '
+                            f'shutting down...')
                 reset_job(job_id)
                 time.sleep(2 * 60 * shutdown_time)
                 return
 
         num_sources = len(source_list)
-        print(f'Job {job_id}: Uploading {num_sources} sources to database')
+        logger.info(f'Job {job_id}: Uploading {num_sources} sources to database')
         upload_sources(lightcurve_filename, source_list)
-        print(f'Job {job_id}: Upload complete')
+        logger.info(f'Job {job_id}: Upload complete')
 
         finish_job(job_id)
-        print(f'Job {job_id}: Job complete')
+        logger.info(f'Job {job_id}: Job complete')
 
         if single_job:
             return
