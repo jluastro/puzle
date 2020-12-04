@@ -163,4 +163,5 @@ def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     ingest_sources()
