@@ -7,6 +7,7 @@ import os
 import numpy as np
 from datetime import datetime, timedelta
 from zort.lightcurveFile import LightcurveFile
+from sqlalchemy.sql.expression import func
 import logging
 
 from puzle.models import Source, SourceIngestJob
@@ -58,9 +59,11 @@ def convert_obj_to_source(obj, lightcurve_filename):
 def fetch_job():
     insert_db_id()  # get permission to make a db connection
 
+    db.session.execute('LOCK TABLE source_ingest_job '
+                       'IN ROW EXCLUSIVE MODE;')
     job = db.session.query(SourceIngestJob).\
         filter(SourceIngestJob.started==False, SourceIngestJob.finished==False).\
-        order_by(SourceIngestJob.id).\
+        order_by(func.random()).\
         with_for_update().\
         first()
     if job is None:
@@ -100,6 +103,10 @@ def finish_job(job_id):
 
 def upload_sources(lightcurve_filename, source_list):
     insert_db_id()  # get permission to make a db connection
+    db.session.execute('LOCK TABLE source_ingest_job IN ROW EXCLUSIVE MODE;')
+    _ = db.session.query(SourceIngestJob).with_for_update(). \
+        filter(SourceIngestJob.lightcurve_filename == lightcurve_filename). \
+        all()
     sources_db = db.session.query(Source).\
         with_for_update().\
         filter(Source.lightcurve_filename == lightcurve_filename).\
