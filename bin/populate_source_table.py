@@ -116,12 +116,12 @@ def upload_sources(lightcurve_filename, source_list):
 
 
 def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
-    while True:
-        job_enddate = fetch_job_enddate()
-        if job_enddate:
-            script_enddate = job_enddate - timedelta(minutes=shutdown_time)
-            logger.info('Script End Date: %s' % script_enddate)
+    job_enddate = fetch_job_enddate()
+    if job_enddate:
+        script_enddate = job_enddate - timedelta(minutes=shutdown_time)
+        logger.info('Script End Date: %s' % script_enddate)
 
+    while True:
         job_data = fetch_job()
         if job_data is None:
             return
