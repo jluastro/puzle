@@ -120,6 +120,7 @@ def upload_sources(source_list, lightcurve_filename):
         if key not in keys_db and key not in keys_uploading:
             db.session.add(source)
             keys_uploading.add(key)
+    db.session.commit()
 
     for key in keys_uploading:
         for object_id in key:
