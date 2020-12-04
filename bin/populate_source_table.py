@@ -62,7 +62,8 @@ def fetch_job():
     db.session.execute('LOCK TABLE source_ingest_job '
                        'IN ROW EXCLUSIVE MODE;')
     job = db.session.query(SourceIngestJob).\
-        filter(SourceIngestJob.started==False, SourceIngestJob.finished==False).\
+        filter(SourceIngestJob.started==False,
+               SourceIngestJob.finished==False).\
         order_by(func.random()).\
         with_for_update().\
         first()
@@ -101,11 +102,11 @@ def finish_job(job_id):
     remove_db_id()  # release permission for this db connection
 
 
-def upload_sources(lightcurve_filename, source_list):
+def upload_sources(source_list, lightcurve_filename):
     insert_db_id()  # get permission to make a db connection
     db.session.execute('LOCK TABLE source_ingest_job IN ROW EXCLUSIVE MODE;')
     _ = db.session.query(SourceIngestJob).with_for_update(). \
-        filter(SourceIngestJob.lightcurve_filename == lightcurve_filename). \
+        filter(SourceIngestJob.lightcurve_filename == lightcurve_filename).\
         all()
     sources_db = db.session.query(Source).\
         with_for_update().\
@@ -159,7 +160,7 @@ def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
 
         num_sources = len(source_list)
         logger.info(f'Job {job_id}: Uploading {num_sources} sources to database')
-        upload_sources(lightcurve_filename, source_list)
+        upload_sources(source_list, lightcurve_filename)
         logger.info(f'Job {job_id}: Upload complete')
 
         finish_job(job_id)
