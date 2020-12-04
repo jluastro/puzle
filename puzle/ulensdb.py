@@ -45,31 +45,22 @@ def remove_db_id():
 
     logger.info(f'{my_db_id}: Delete success')
 
-def insert_db_id(num_ids=50, retry_time=30):
+def insert_db_id(num_ids=50):
     file_path = '/global/cscratch1/sd/mmedford/puzle/ulensdb.txt'
     lock_path = file_path.replace('.txt', '.lock')
     lock = FileLock(lock_path)
 
     my_db_id = fetch_db_id()
 
-    successFlag = False
-    while True:
-        logger.info(f'{my_db_id}: Attempting insert to {file_path}')
-        with lock:
-            db_ids = load_db_ids()
-            logger.info(f'{my_db_id}: db_ids loaded {db_ids}')
-            if len(db_ids) < num_ids:
-                db_ids.add(my_db_id)
+    logger.info(f'{my_db_id}: Attempting insert to {file_path}')
+    with lock:
+        db_ids = load_db_ids()
+        logger.info(f'{my_db_id}: db_ids loaded {db_ids}')
+        if len(db_ids) < num_ids:
+            db_ids.add(my_db_id)
 
-                with open(file_path, 'w') as f:
-                    for db_id in list(db_ids):
-                        f.write('%s\n' % db_id)
+            with open(file_path, 'w') as f:
+                for db_id in list(db_ids):
+                    f.write('%s\n' % db_id)
 
-                successFlag = True
-
-        if successFlag:
-            logger.info(f'{my_db_id}: Insert success')
-            return
-        else:
-            logger.info(f'{my_db_id}: Insert fail, retry in {retry_time} seconds')
-            time.sleep(retry_time)
+    logger.info(f'{my_db_id}: Insert success')
