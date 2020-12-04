@@ -72,7 +72,7 @@ def fetch_job():
 
     job.started = True
     job.slurm_job_id = os.getenv('SLURM_JOB_ID')
-    job.datetime = datetime.now()
+    job.datetime_started = datetime.now()
     db.session.commit()
 
     remove_db_id()  # release permission for this db connection
@@ -93,7 +93,7 @@ def finish_job(job_id):
     job = db.session.query(SourceIngestJob).filter(
         SourceIngestJob.id == job_id).one()
     job.finished = True
-    job.datetime = datetime.now()
+    job.datetime_finished = datetime.now()
     db.session.commit()
     remove_db_id()  # release permission for this db connection
 

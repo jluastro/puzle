@@ -245,7 +245,8 @@ class SourceIngestJob(db.Model):
     process_size = db.Column(db.Integer, nullable=False)
     started = db.Column(db.Boolean, nullable=False, server_default='f')
     finished = db.Column(db.Boolean, nullable=False, server_default='f')
-    datetime = db.Column(db.DateTime, nullable=True)
+    datetime_started = db.Column(db.DateTime, nullable=True)
+    datetime_finished = db.Column(db.DateTime, nullable=True)
     slurm_job_id = db.Column(db.Integer, nullable=True)
 
     def __init__(self, lightcurve_filename, process_rank, process_size):
