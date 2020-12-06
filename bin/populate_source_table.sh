@@ -3,7 +3,7 @@
 #SBATCH --qos=regular
 #SBATCH --constraint=haswell
 #SBATCH --nodes=1
-#SBATCH --time=06:00:00
+#SBATCH --time=42:00:00
 #SBATCH --job-name=source_table
 #SBATCH --output=source_table_%j.out
 echo "---------------------------"
