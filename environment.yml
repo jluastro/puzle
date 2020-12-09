@@ -24,4 +24,5 @@ dependencies:
   - pip
   - pip:
       - zort
+      - filelock
 prefix: /Users/michael/miniconda3/envs/puzle
