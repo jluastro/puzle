@@ -4,7 +4,10 @@ from filelock import FileLock
 from pathlib import Path
 import logging
 
+from puzle.utils import execute
+
 logger = logging.getLogger(__name__)
+ulensdb_file_path = '/global/cscratch1/sd/mmedford/puzle/ulensdb.txt'
 
 
 def fetch_db_id():
@@ -17,50 +20,54 @@ def fetch_db_id():
 
 
 def load_db_ids():
-    file_path = '/global/cscratch1/sd/mmedford/puzle/ulensdb.txt'
-    if not os.path.exists(file_path):
-        Path(file_path).touch()
+    # create file if does not exist
+    if not os.path.exists(ulensdb_file_path):
+        Path(ulensdb_file_path).touch()
 
-    lines = open(file_path, 'r').readlines()
+    # load db_ids from disk
+    lines = open(ulensdb_file_path, 'r').readlines()
     db_ids = set([l.replace('\n', '') for l in lines])
+
+    # remove rows that are not currently running
+    stdout, _ = execute('squeue --format="%i')
+    job_ids = set([s.replace('"','') for s in stdout.decode().split('\n')])
+    db_ids = set([d for d in db_ids if d.split('.')[0] in job_ids])
     return db_ids
 
 
 def remove_db_id():
-    file_path = '/global/cscratch1/sd/mmedford/puzle/ulensdb.txt'
-    lock_path = file_path.replace('.txt', '.lock')
+    lock_path = ulensdb_file_path.replace('.txt', '.lock')
     lock = FileLock(lock_path)
 
     my_db_id = fetch_db_id()
 
-    logger.info(f'{my_db_id}: Attempting delete from {file_path}')
+    logger.info(f'{my_db_id}: Attempting delete from {ulensdb_file_path}')
     with lock:
         db_ids = load_db_ids()
         logger.info(f'{my_db_id}: db_ids loaded {db_ids}')
         db_ids.remove(my_db_id)
 
-        with open(file_path, 'w') as f:
+        with open(ulensdb_file_path, 'w') as f:
             for db_id in list(db_ids):
                 f.write('%s\n' % db_id)
 
     logger.info(f'{my_db_id}: Delete success')
 
-def insert_db_id(num_ids=50, retry_time=30):
-    file_path = '/global/cscratch1/sd/mmedford/puzle/ulensdb.txt'
-    lock_path = file_path.replace('.txt', '.lock')
+def insert_db_id(num_ids=50, retry_time=60):
+    lock_path = ulensdb_file_path.replace('.txt', '.lock')
     lock = FileLock(lock_path)
 
     my_db_id = fetch_db_id()
 
     successFlag = False
     while True:
-        logger.info(f'{my_db_id}: Attempting insert to {file_path}')
+        logger.info(f'{my_db_id}: Attempting insert to {ulensdb_file_path}')
         with lock:
             db_ids = load_db_ids()
             if len(db_ids) < num_ids:
                 db_ids.add(my_db_id)
 
-                with open(file_path, 'w') as f:
+                with open(ulensdb_file_path, 'w') as f:
                     for db_id in list(db_ids):
                         f.write('%s\n' % db_id)
 
