@@ -48,7 +48,7 @@ def return_low_field_ids():
     return field_ids, glons, glats
 
 
-def generate_obj_snr_cuts(field_ids, glons, glats):
+def generate_obj_snr_cuts(field_ids, glons, glats, N_samples=10000):
     for field_id, glon, glat in zip(field_ids, glons, glats):
         filenames = glob.glob('field%06d_*txt' % field_id)
         if len(filenames) != 1:
@@ -57,7 +57,6 @@ def generate_obj_snr_cuts(field_ids, glons, glats):
         print('Processing %s' % filename)
 
         object_filename = filename.replace('.txt', '.objects')
-        N_samples = 10000
 
         n_objects = file_len(object_filename)
         process_size = (n_objects // N_samples) + 1
