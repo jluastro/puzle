@@ -22,7 +22,7 @@ def return_CDF(arr):
     return x, y
 
 
-def return_field_ids():
+def return_high_field_ids():
     ZTF_fields = load_ZTF_fields()
     cond = (ZTF_fields['galLong'] >= 4.5) * (ZTF_fields['galLong'] <= 20)
     cond *= (ZTF_fields['galLat'] >= -10) * (ZTF_fields['galLat'] <= -2)
@@ -35,11 +35,25 @@ def return_field_ids():
     return field_ids, glons, glats
 
 
-if __name__ == '__main__':
+def return_low_field_ids():
+    ZTF_fields = load_ZTF_fields()
+    cond = (ZTF_fields['galLong'] >= 40) * (ZTF_fields['galLong'] <= 60)
+    cond *= (ZTF_fields['galLat'] >= 2) * (ZTF_fields['galLat'] <= 7)
+    field_ids = ZTF_fields[cond]['id']
+    idx = np.argsort(field_ids)
 
-    field_ids, glons, glats = return_field_ids()
+    field_ids = ZTF_fields[cond]['id'][idx]
+    glons = ZTF_fields[cond]['galLong'][idx]
+    glats = ZTF_fields[cond]['galLat'][idx]
+    return field_ids, glons, glats
+
+
+def generate_obj_snr_cuts(field_ids, glons, glats):
     for field_id, glon, glat in zip(field_ids, glons, glats):
-        filename = glob.glob('field%06d_*txt' % field_id)[0]
+        filenames = glob.glob('field%06d_*txt' % field_id)
+        if len(filenames) != 1:
+            continue
+        filename = filenames[0]
         print('Processing %s' % filename)
 
         object_filename = filename.replace('.txt', '.objects')
@@ -60,6 +74,8 @@ if __name__ == '__main__':
             snr_arr.append(snr)
 
         print('-- %i samples collected' % len(snr_arr))
+        if len(snr_arr) == 0:
+            continue
 
         bins = np.arange(5, 50)
         fig, ax = plt.subplots(2, 1)
@@ -86,3 +102,8 @@ if __name__ == '__main__':
         fname = 'field%06d_obj_snr_cuts.png' % field_id
         fig.savefig(fname)
         print('-- %s saved' % fname)
+
+
+if __name__ == '__main__':
+    generate_obj_snr_cuts(*return_high_field_ids())
+    generate_obj_snr_cuts(*return_low_field_ids())
