@@ -85,33 +85,13 @@ class User(UserMixin, db.Model):
             order_by(Source.id.asc())
 
 
-class Object(db.Model):
-    __table_args__ = {'schema': 'puzle'}
-
-    id = db.Column(db.BigInteger, primary_key=True, autoincrement=False)
-    nepochs = db.Column(db.Integer, nullable=False)
-    filterid = db.Column(db.Integer, index=True, nullable=False)
-    fieldid = db.Column(db.Integer, nullable=False)
-    rcid = db.Column(db.Integer, nullable=False)
-    ra = db.Column(db.Float, nullable=False)
-    dec = db.Column(db.Float, nullable=False)
-    lightcurve_position = db.Column(db.BigInteger, nullable=False)
-    lightcurve_filename = db.Column(db.String(128), index=True, nullable=False)
-    in_source = db.Column(db.Boolean, nullable=True)
-
-    def __repr__(self):
-        return f"Object(id: '{self.id}', nepochs: '{self.nepochs} \n " \
-               f"lightcurve_filename: {self.lightcurve_filename} \n " \
-               f"lightcurve_position: {self.lightcurve_position}')"
-
-
 class Source(db.Model):
     __table_args__ = {'schema': 'puzle'}
 
     id = db.Column(db.BigInteger, primary_key=True, nullable=False)
-    object_id_g = db.Column(db.BigInteger, db.ForeignKey('puzle.object.id'))
-    object_id_r = db.Column(db.BigInteger, db.ForeignKey('puzle.object.id'))
-    object_id_i = db.Column(db.BigInteger, db.ForeignKey('puzle.object.id'))
+    object_id_g = db.Column(db.BigInteger)
+    object_id_r = db.Column(db.BigInteger)
+    object_id_i = db.Column(db.BigInteger)
     lightcurve_position_g = db.Column(db.BigInteger)
     lightcurve_position_r = db.Column(db.BigInteger)
     lightcurve_position_i = db.Column(db.BigInteger)
@@ -120,13 +100,6 @@ class Source(db.Model):
     lightcurve_filename = db.Column(db.String(128), index=True, nullable=False)
     comments = db.Column(db.String(1024))
     _ztf_ids = db.Column(db.String(256))
-
-    object_g = db.relationship('Object', foreign_keys=[object_id_g],
-                               backref=db.backref('object_g', lazy='dynamic'))
-    object_r = db.relationship('Object', foreign_keys=[object_id_r],
-                               backref=db.backref('object_r', lazy='dynamic'))
-    object_i = db.relationship('Object', foreign_keys=[object_id_i],
-                               backref=db.backref('object_i', lazy='dynamic'))
 
     def __init__(self, object_id_g, object_id_r, object_id_i,
                  lightcurve_position_g, lightcurve_position_r,
