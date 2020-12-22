@@ -203,16 +203,18 @@ class SourceIngestJob(db.Model):
     __table_args__ = {'schema': 'puzle'}
 
     id = db.Column(db.BigInteger, primary_key=True, nullable=False)
-    lightcurve_filename = db.Column(db.String(128), index=True, nullable=False)
-    process_rank = db.Column(db.Integer, nullable=False)
-    process_size = db.Column(db.Integer, nullable=False)
+    ra_start = db.Column(db.Float, nullable=False)
+    ra_end = db.Column(db.Float, nullable=False)
+    dec_start = db.Column(db.Float, nullable=False)
+    dec_end = db.Column(db.Float, nullable=False)
     started = db.Column(db.Boolean, nullable=False, server_default='f')
     finished = db.Column(db.Boolean, nullable=False, server_default='f')
     datetime_started = db.Column(db.DateTime, nullable=True)
     datetime_finished = db.Column(db.DateTime, nullable=True)
     slurm_job_id = db.Column(db.Integer, nullable=True)
 
-    def __init__(self, lightcurve_filename, process_rank, process_size):
-        self.lightcurve_filename = lightcurve_filename
-        self.process_rank = process_rank
-        self.process_size = process_size
+    def __init__(self, ra_start, ra_end, dec_start, dec_end):
+        self.ra_start = ra_start
+        self.ra_end = ra_end
+        self.dec_start = dec_start
+        self.dec_end = dec_end
