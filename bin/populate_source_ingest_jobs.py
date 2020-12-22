@@ -89,16 +89,13 @@ def return_density(ra, dec, density_polygons):
     return None
 
 
-if __name__ == '__main__':
-
+def populate_source_ingest_jobs():
     ra_min, ra_max, delta_ra_max = 0., 360., 2.0
     dec_min, dec_max, delta_dec = -30., 90., 1.0
     n_objects_max = 50000
 
     density_polygons = load_density_polygons()
 
-    ra_arr = []
-    dec_arr = []
     for dec in np.arange(dec_min, dec_max, delta_dec):
         dec_start = dec
         dec_end = dec + delta_dec
@@ -122,8 +119,9 @@ if __name__ == '__main__':
                                   dec_end=dec_end)
             db.session.add(job)
 
-            ra_arr.append((ra_start + ra_end) / 2.)
-            dec_arr.append((dec_start + dec_end) / 2.)
-
             ra += delta_ra
         db.session.commit()
+
+
+if __name__ == '__main__':
+    populate_source_ingest_jobs()
