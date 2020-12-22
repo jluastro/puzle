@@ -117,6 +117,14 @@ class Source(db.Model):
         self.comments = comments
         self.zort_source = self.load_zort_source()
         self._ztf_ids = _ztf_ids
+        
+    def __repr__(self):
+        return f'Source \n' \
+               f'Filename: {self.lightcurve_filename} \n' \
+               f'Object-g ID: {self.object_id_g} \n' \
+               f'Object-r ID: {self.object_id_r} \n' \
+               f'Object-i ID: {self.object_id_i} \n' \
+               f'Ra/Dec: ({self.ra:.5f}, {self.dec:.5f})\n'
 
     @orm.reconstructor
     def init_on_load(self):
@@ -125,12 +133,17 @@ class Source(db.Model):
     @hybrid_property
     def glon(self):
         coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
-        return coord.galactic.l.value
+        glon = coord.galactic.l.value
+        if glon > 180:
+            return glon - 360
+        else:
+            return glon
 
     @hybrid_property
     def glat(self):
         coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
-        return coord.galactic.b.value
+        glat = coord.galactic.b.value
+        return glat
 
     @property
     def ztf_ids(self):
