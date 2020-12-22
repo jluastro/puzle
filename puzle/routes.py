@@ -239,6 +239,5 @@ def sources():
         if sources.has_next else None
     prev_url = url_for('sources', page=sources.prev_num) \
         if sources.has_prev else None
-    return render_template('sources.html',
-                           sources=sources,
+    return render_template('sources.html', sources=sources,
                            next_url=next_url, prev_url=prev_url)

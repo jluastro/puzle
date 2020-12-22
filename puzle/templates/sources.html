@@ -18,6 +18,7 @@
                         <th>Followers</th>
                     </tr>
                 {% for source in sources.items %}
+                    <tr>
                     <td>
                     <a href="{{ url_for('source', sourceid=source.id) }}">Source {{ source.id }}</a>
                     </td>
@@ -33,27 +34,28 @@
                         | <a href="{{ url_for('user', username=user.username) }}">{{ user.username }}</a>
                     {% endfor %}
                     </td>
-                    {% if source.zort_source.object_id_g %}
+                    {% if source.zort_source.object_g %}
                         <tr>
                             <td></td>
                             <td>g-band</td>
                             <td>{{ source.zort_source.object_g.nepochs }}</td>
                         </tr>
                     {% endif %}
-                    {% if source.zort_source.object_id_r %}
+                    {% if source.zort_source.object_r %}
                         <tr>
                             <td></td>
                             <td>r-band</td>
                             <td>{{ source.zort_source.object_r.nepochs }}</td>
                         </tr>
                     {% endif %}
-                    {% if source.zort_source.object_id_i %}
+                    {% if source.zort_source.object_i %}
                         <tr>
                             <td></td>
                             <td>i-band</td>
                             <td>{{ source.zort_source.object_i.nepochs }}</td>
                         </tr>
                     {% endif %}
+                    </tr>
                 {% endfor %}
                 </table>
                 <!-- Pagination Links-->

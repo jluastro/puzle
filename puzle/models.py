@@ -166,8 +166,7 @@ class Source(db.Model):
 
         lightcurve_plot_filename = f'{folder}/lightcurve.png'
         if not os.path.exists(lightcurve_plot_filename):
-            source = self.load_zort_source()
-            source.plot_lightcurves(filename=lightcurve_plot_filename)
+            self.zort_source.plot_lightcurves(filename=lightcurve_plot_filename)
 
     def fetch_ztf_ids(self):
         radius_deg = 2. / 3600.
