@@ -6,6 +6,8 @@ import glob
 import numpy as np
 from zort.lightcurveFile import LightcurveFile
 from zort.radec import load_ZTF_fields
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
