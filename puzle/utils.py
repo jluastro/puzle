@@ -48,3 +48,11 @@ def fetch_job_enddate():
     enddate = datetime.strptime(enddate_str, '%Y-%m-%dT%H:%M:%S')
     return enddate
 
+
+def lightcurve_file_to_ra_dec(lightcurve_file):
+    _, ra_str, dec_str = lightcurve_file.split('_')
+    ra0, ra1 = ra_str.replace('ra', '').split('to')
+    ra0, ra1 = float(ra0), float(ra1)
+    dec0, dec1 = dec_str.replace('.objects', '').replace('dec', '').split('to')
+    dec0, dec1 = float(dec0), float(dec1)
+    return ra0, ra1, dec0, dec1

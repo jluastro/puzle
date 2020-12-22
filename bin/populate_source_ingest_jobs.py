@@ -26,6 +26,7 @@ from shapely.geometry.polygon import Polygon
 
 from zort.radec import lightcurve_file_is_pole
 from puzle.models import SourceIngestJob
+from puzle.utils import lightcurve_file_to_ra_dec
 from puzle import db
 
 
@@ -36,22 +37,14 @@ def file_len(fname):
     return i + 1
 
 
-def objects_file_to_ra_dec(objects_file):
-    _, ra_str, dec_str = objects_file.split('_')
-    ra0, ra1 = ra_str.replace('ra', '').split('to')
-    ra0, ra1 = float(ra0), float(ra1)
-    dec0, dec1 = dec_str.replace('.objects', '').replace('dec','').split('to')
-    dec0, dec1 = float(dec0), float(dec1)
-    return ra0, ra1, dec0, dec1
-
-
 def save_density_polygons():
     density_polygons = []
 
     objects_files = glob.glob('field*objects')
     for objects_file in objects_files:
         is_pole = lightcurve_file_is_pole(objects_file)
-        ra0, ra1, dec0, dec1 = objects_file_to_ra_dec(objects_file)
+        lightcurve_file = objects_file.replace('.objects', '.txt')
+        ra0, ra1, dec0, dec1 = lightcurve_file_to_ra_dec(lightcurve_file)
         if is_pole:
             if ra0 > 180:
                 ra0 -= 360
