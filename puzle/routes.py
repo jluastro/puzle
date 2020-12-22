@@ -136,7 +136,8 @@ def source(sourceid):
     form = EmptyForm()
     source = Source.query.filter_by(id=int(sourceid)).first_or_404()
     source.load_lightcurve_plot()
-    return render_template('source.html', source=source, form=form)
+    return render_template('source.html', source=source,
+                           form=form)
 
 
 @app.route('/edit_source_comments/<sourceid>', methods=['GET', 'POST'])
@@ -238,5 +239,6 @@ def sources():
         if sources.has_next else None
     prev_url = url_for('sources', page=sources.prev_num) \
         if sources.has_prev else None
-    return render_template('sources.html', sources=sources,
+    return render_template('sources.html',
+                           sources=sources,
                            next_url=next_url, prev_url=prev_url)

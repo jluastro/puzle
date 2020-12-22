@@ -3,7 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.sql.expression import func
 from sqlalchemy.ext.hybrid import hybrid_method
-from sqlalchemy import text
+from sqlalchemy import text, orm
 from flask_login import UserMixin
 from time import time
 import jwt
@@ -11,7 +11,7 @@ import os
 import requests
 from astropy.coordinates import SkyCoord
 import astropy.units as u
-from zort.object import Object as zort_object
+from zort.source import Source as zort_source
 
 from puzle import app
 from puzle import db
@@ -102,8 +102,8 @@ class Source(db.Model):
     _ztf_ids = db.Column(db.String(256))
 
     def __init__(self, object_id_g, object_id_r, object_id_i,
-                 lightcurve_position_g, lightcurve_position_r,
-                 lightcurve_position_i, ra, dec, lightcurve_filename,
+                 lightcurve_position_g, lightcurve_position_r, lightcurve_position_i,
+                 ra, dec, lightcurve_filename,
                  comments=None, _ztf_ids=None):
         self.object_id_g = object_id_g
         self.object_id_r = object_id_r
@@ -115,8 +115,12 @@ class Source(db.Model):
         self.dec = dec
         self.lightcurve_filename = lightcurve_filename
         self.comments = comments
+        self.zort_source = self.load_zort_source()
         self._ztf_ids = _ztf_ids
 
+    @orm.reconstructor
+    def init_on_load(self):
+        self.zort_source = self.load_zort_source()
 
     @hybrid_property
     def glon(self):
@@ -144,41 +148,16 @@ class Source(db.Model):
         radius_deg = radius / 3600.
         return func.q3c_radial_query(text('ra'), text('dec'), ra, dec, radius_deg)
 
-    def set_parent_and_children(self):
-        object_ids = [self.object_id_g, self.object_id_r, self.object_id_i]
-        lightcurve_positions = [self.lightcurve_position_g,
-                                self.lightcurve_position_r,
-                                self.lightcurve_position_i]
-        self.parent_id = None
-        self.parent_lightcurve_position = None
-        self.child_ids = []
-        self.child_lightcurve_positions = []
-        for i in range(3):
-            if object_ids[i] is None:
-                continue
-
-            self.parent_id = object_ids[i]
-            self.parent_lightcurve_position = lightcurve_positions[i]
-
-            for j in range(i+1, 3):
-                if object_ids[j] is None:
-                    continue
-
-                self.child_ids.append(object_ids[j])
-                self.child_lightcurve_positions.append(lightcurve_positions[j])
-
-            break
-
-    def load_zort_object(self):
+    def load_zort_source(self):
         dir_path_puzle = os.path.dirname(os.path.dirname(
             os.path.realpath(__file__)))
         dir_path_DR3 = f'{dir_path_puzle}/data/DR3'
         fname = '%s/%s' % (dir_path_DR3, self.lightcurve_filename)
-        obj = zort_object(fname, self.parent_lightcurve_position)
-        for lc_pos in self.child_lightcurve_positions:
-            sib = zort_object(fname, lc_pos)
-            obj.siblings.append(sib)
-        self.zort_object = obj
+        source = zort_source(filename=fname,
+                             lightcurve_position_g=self.lightcurve_position_g,
+                             lightcurve_position_r=self.lightcurve_position_r,
+                             lightcurve_position_i=self.lightcurve_position_i)
+        return source
 
     def load_lightcurve_plot(self):
         folder = f'puzle/static/source/{self.id}'
@@ -187,9 +166,8 @@ class Source(db.Model):
 
         lightcurve_plot_filename = f'{folder}/lightcurve.png'
         if not os.path.exists(lightcurve_plot_filename):
-            self.set_parent_and_children()
-            self.load_zort_object()
-            self.zort_object.plot_lightcurves(filename=lightcurve_plot_filename)
+            source = self.load_zort_source()
+            source.plot_lightcurves(filename=lightcurve_plot_filename)
 
     def fetch_ztf_ids(self):
         radius_deg = 2. / 3600.
