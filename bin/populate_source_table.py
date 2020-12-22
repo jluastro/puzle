@@ -38,6 +38,24 @@ def fetch_lightcurve_files(ra_start, ra_end, dec_start, dec_end):
                                 (ra1, dec0)])
         if file_polygon.intersects(job_polygon):
             lightcurve_file_arr.append(lightcurve_file)
+            continue
+
+        if ra0 > ra1:
+            file_polygon = Polygon([(ra0 - 360, dec0),
+                                    (ra0 - 360, dec1),
+                                    (ra1, dec1),
+                                    (ra1, dec0)])
+            if file_polygon.intersects(job_polygon):
+                lightcurve_file_arr.append(lightcurve_file)
+                continue
+
+            file_polygon = Polygon([(ra0, dec0),
+                                    (ra0, dec1),
+                                    (ra1 + 360, dec1),
+                                    (ra1 + 360, dec0)])
+            if file_polygon.intersects(job_polygon):
+                lightcurve_file_arr.append(lightcurve_file)
+                continue
 
     return lightcurve_file_arr
 
