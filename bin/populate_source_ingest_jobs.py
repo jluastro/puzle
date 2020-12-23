@@ -95,7 +95,7 @@ def populate_source_ingest_jobs():
         dec_avg = (dec_start + dec_end) / 2.
 
         ra = ra_min
-        while ra <= ra_max:
+        while ra < ra_max:
             density = return_density(ra, dec_avg, density_polygons)
             if density:
                 delta_ra = (n_objects_max / density) / delta_dec
@@ -104,7 +104,7 @@ def populate_source_ingest_jobs():
                 delta_ra = delta_ra_max
 
             ra_start = ra
-            ra_end = ra + delta_ra
+            ra_end = min(ra + delta_ra, ra_max)
 
             job = SourceIngestJob(ra_start=ra_start,
                                   ra_end=ra_end,
