@@ -30,6 +30,13 @@ user_source_association = db.Table(
     schema='puzle'
 )
 
+user_star_association = db.Table(
+    'user_star_association',
+    db.Column('user_id', db.Integer, db.ForeignKey('puzle.user.id')),
+    db.Column('star_id', db.BigInteger, db.ForeignKey('puzle.star.id')),
+    schema='puzle'
+)
+
 
 class User(UserMixin, db.Model):
     __table_args__ = {'schema': 'puzle'}
@@ -43,6 +50,9 @@ class User(UserMixin, db.Model):
     sources = db.relationship('Source', secondary=user_source_association,
                               lazy='dynamic',
                               backref=db.backref('users', lazy='dynamic'))
+    stars = db.relationship('Star', secondary=user_star_association,
+                            lazy='dynamic',
+                            backref=db.backref('users', lazy='dynamic'))
 
     def __repr__(self):
         return f"User('{self.username}', '{self.email}')"
@@ -68,14 +78,14 @@ class User(UserMixin, db.Model):
         return User.query.get(id)
 
     def follow_source(self, source):
-        if not self.is_following(source):
+        if not self.is_following_source(source):
             self.sources.append(source)
 
     def unfollow_source(self, source):
-        if self.is_following(source):
+        if self.is_following_source(source):
             self.sources.remove(source)
 
-    def is_following(self, source):
+    def is_following_source(self, source):
         return source in self.sources.all()
 
     def followed_sources(self):
@@ -83,6 +93,23 @@ class User(UserMixin, db.Model):
             (user_source_association.c.source_id == Source.id)).\
             filter(user_source_association.c.user_id == self.id).\
             order_by(Source.id.asc())
+    
+    def follow_star(self, star):
+        if not self.is_following_star(star):
+            self.stars.append(star)
+
+    def unfollow_star(self, star):
+        if self.is_following_star(star):
+            self.stars.remove(star)
+
+    def is_following_star(self, star):
+        return star in self.stars.all()
+
+    def followed_stars(self):
+        return Star.query.join(user_star_association,
+            (user_star_association.c.star_id == Star.id)).\
+            filter(user_star_association.c.user_id == self.id).\
+            order_by(Star.id.asc())
 
 
 class Source(db.Model):
@@ -120,11 +147,11 @@ class Source(db.Model):
         
     def __repr__(self):
         return f'Source \n' \
+               f'Ra/Dec: ({self.ra:.5f}, {self.dec:.5f})\n' \
                f'Filename: {self.lightcurve_filename} \n' \
                f'Object-g ID: {self.object_id_g} \n' \
                f'Object-r ID: {self.object_id_r} \n' \
                f'Object-i ID: {self.object_id_i} \n' \
-               f'Ra/Dec: ({self.ra:.5f}, {self.dec:.5f})\n'
 
     @orm.reconstructor
     def init_on_load(self):
@@ -218,3 +245,60 @@ class SourceIngestJob(db.Model):
         self.ra_end = ra_end
         self.dec_start = dec_start
         self.dec_end = dec_end
+
+
+class Star(db.Model):
+    __table_args__ = {'schema': 'puzle'}
+
+    id = db.Column(db.BigInteger, primary_key=True, nullable=False)
+    source_ids = db.Column(db.ARRAY(db.BigInteger))
+    ra = db.Column(db.Float, nullable=False)
+    dec = db.Column(db.Float, nullable=False)
+    comments = db.Column(db.String(1024))
+    _ztf_ids = db.Column(db.String(256))
+
+    def __init__(self, source_ids, ra, dec,
+                 comments=None, _ztf_ids=None):
+        self.source_ids = source_ids
+        self.ra = ra
+        self.dec = dec
+        self.comments = comments
+        self._ztf_ids = _ztf_ids
+
+    def __repr__(self):
+        str = 'Star \n'
+        str += f'Ra/Dec: ({self.ra:.5f}, {self.dec:.5f}) \n'
+        for i, source_id in enumerate(self.source_ids, 1):
+            str += f'Source {i} ID: {source_id} \n'
+        return str
+
+    @hybrid_property
+    def glon(self):
+        coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
+        glon = coord.galactic.l.value
+        if glon > 180:
+            return glon - 360
+        else:
+            return glon
+
+    @hybrid_property
+    def glat(self):
+        coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
+        glat = coord.galactic.b.value
+        return glat
+
+    @property
+    def ztf_ids(self):
+        return [x for x in self._ztf_ids.split(';') if len(x) != 0]
+
+    @ztf_ids.setter
+    def ztf_ids(self, ztf_id):
+        if ztf_id:
+            self._ztf_ids += ';%s' % ztf_id
+        else:
+            self._ztf_ids = ''
+
+    @hybrid_method
+    def cone_search(self, ra, dec, radius=2):
+        radius_deg = radius / 3600.
+        return func.q3c_radial_query(text('ra'), text('dec'), ra, dec, radius_deg)
