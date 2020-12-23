@@ -8,11 +8,13 @@ import glob
 import numpy as np
 from datetime import datetime, timedelta
 from zort.lightcurveFile import LightcurveFile
+from zort.radec import lightcurve_file_is_pole
 from sqlalchemy.sql.expression import func
 from shapely.geometry.polygon import Polygon
 import logging
+from scipy.spatial import cKDTree
 
-from puzle.models import Source, SourceIngestJob
+from puzle.models import Source, SourceIngestJob, Star
 from puzle.utils import fetch_job_enddate, lightcurve_file_to_ra_dec
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle import db
@@ -32,30 +34,15 @@ def fetch_lightcurve_files(ra_start, ra_end, dec_start, dec_end):
     lightcurve_file_arr = []
     for i, lightcurve_file in enumerate(lightcurve_files):
         ra0, ra1, dec0, dec1 = lightcurve_file_to_ra_dec(lightcurve_file)
+        if ra0 > ra1:
+            ra1 += 360
+
         file_polygon = Polygon([(ra0, dec0),
                                 (ra0, dec1),
                                 (ra1, dec1),
                                 (ra1, dec0)])
         if file_polygon.intersects(job_polygon):
             lightcurve_file_arr.append(lightcurve_file)
-            continue
-
-        if ra0 > ra1:
-            file_polygon = Polygon([(ra0 - 360, dec0),
-                                    (ra0 - 360, dec1),
-                                    (ra1, dec1),
-                                    (ra1, dec0)])
-            if file_polygon.intersects(job_polygon):
-                lightcurve_file_arr.append(lightcurve_file)
-                continue
-
-            file_polygon = Polygon([(ra0, dec0),
-                                    (ra0, dec1),
-                                    (ra1 + 360, dec1),
-                                    (ra1 + 360, dec0)])
-            if file_polygon.intersects(job_polygon):
-                lightcurve_file_arr.append(lightcurve_file)
-                continue
 
     return lightcurve_file_arr
 
@@ -157,12 +144,42 @@ def finish_job(job_id):
 def upload_sources(source_list):
     insert_db_id()  # get permission to make a db connection
 
-    keys_uploading = set()
+    source_keys = set()
     for source in source_list:
         key = (source.object_id_g, source.object_id_r, source.object_id_i)
-        if key not in keys_uploading:
+        if key not in source_keys:
             db.session.add(source)
-            keys_uploading.add(key)
+            source_keys.add(key)
+    db.session.commit()
+
+    radec = []
+    source_ids = []
+    for source in source_list:
+        if not source.id:
+            continue
+
+        is_pole = lightcurve_file_is_pole(source.lightcurve_filename)
+        ra, dec = source.ra, source.dec
+        if is_pole and ra > 180:
+            ra -= 360
+
+        radec.append((ra, dec))
+        source_ids.append(source.id)
+
+    kdtree = cKDTree(np.array(radec))
+
+    radius_deg = 2 / 3600.
+    star_keys = set()
+    for ((ra, dec), source_id) in zip(radec, source_ids):
+        idx_arr = kdtree.query_ball_point((ra, dec), radius_deg)
+        ids = [source_ids[idx] for idx in idx_arr]
+        ids.sort()
+        key = tuple(ids)
+        if key not in star_keys:
+            star = Star(source_ids=ids,
+                        ra=ra, dec=dec)
+            db.session.add(star)
+            star_keys.add(key)
     db.session.commit()
 
     remove_db_id()  # release permission for this db connection
@@ -189,6 +206,7 @@ def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
         for lightcurve_file in lightcurve_files:
             lightcurveFile = LightcurveFile(lightcurve_file, apply_catmask=True)
 
+            counter = 0
             for obj in lightcurveFile:
                 if obj.lightcurve.nepochs < nepochs_min:
                     continue
@@ -200,6 +218,10 @@ def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
 
                 source = convert_obj_to_source(obj, lightcurve_file)
                 source_list.append(source)
+                # print(lightcurve_file, len(source_list))
+                # counter += 1
+                # if counter > 10000:
+                #     break
 
                 if job_enddate and datetime.now() >= script_enddate:
                     logger.info(f'Within {shutdown_time} minutes of job end, '
