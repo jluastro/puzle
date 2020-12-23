@@ -28,23 +28,23 @@
                 {% else %}
                     <h4>Field {{ source.zort_source.object_i.fieldid }} &nbsp; | &nbsp; RCID {{ source.zort_source.object_i.rcid }}</h4>
                 {% endif %}
-                <h4>RA Dec &nbsp; &nbsp; &nbsp; {{ "%.5f" % source.ra }} , {{ "%.5f" % source.dec }}</h4>
                 <h4>Glon Glat &nbsp; &nbsp;{{ "%.5f" % source.glon }} , {{ "%.5f" % source.glat }}</h4>
+                <h4>RA Dec &nbsp; &nbsp; &nbsp; {{ "%.5f" % source.ra }} , {{ "%.5f" % source.dec }}</h4>
                 <table width="100%">
                     <tr>
                         <th>Filter</th>
                         <th>Nepochs</th>
                         <th>Object ID</th>
-                        <th>RA</th>
-                        <th>Dec</th>
+                        <th>Glon</th>
+                        <th>Glat</th>
                     </tr>
                 {% if source.zort_source.object_g %}
                     <tr>
                         <td>g-band</td>
                         <td>{{ source.zort_source.object_g.nepochs }}</td>
                         <td>{{ source.zort_source.object_g.object_id }}</td>
-                        <td>{{ source.zort_source.object_g.ra }}</td>
-                        <td>{{ source.zort_source.object_g.dec }}</td>
+                        <td>{{ "%.5f" % source.zort_source.object_g.glon }}</td>
+                        <td>{{ "%.5f" % source.zort_source.object_g.glat }}</td>
                     </tr>
                 {% endif %}
                 {% if source.zort_source.object_r %}
@@ -52,8 +52,8 @@
                         <td>r-band</td>
                         <td>{{ source.zort_source.object_r.nepochs }}</td>
                         <td>{{ source.zort_source.object_r.object_id }}</td>
-                        <td>{{ source.zort_source.object_r.ra }}</td>
-                        <td>{{ source.zort_source.object_r.dec }}</td>
+                        <td>{{ "%.5f" % source.zort_source.object_r.glon }}</td>
+                        <td>{{ "%.5f" % source.zort_source.object_r.glat }}</td>
                     </tr>
                 {% endif %}
                 {% if source.zort_source.object_i %}
@@ -61,8 +61,8 @@
                         <td>i-band</td>
                         <td>{{ source.zort_source.object_i.nepochs }}</td>
                         <td>{{ source.zort_source.object_i.object_id }}</td>
-                        <td>{{ source.zort_source.object_i.ra }}</td>
-                        <td>{{ source.zort_source.object_i.dec }}</td>
+                        <td>{{ "%.5f" % source.zort_source.object_i.glon }}</td>
+                        <td>{{ "%.5f" % source.zort_source.object_i.glat }}</td>
                     </tr>
                 {% endif %}
                 <tr class="blank_row"></tr>

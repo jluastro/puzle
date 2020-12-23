@@ -264,6 +264,7 @@ class Star(db.Model):
         self.dec = dec
         self.comments = comments
         self._ztf_ids = _ztf_ids
+        self._glonlat = None
 
     def __repr__(self):
         str = 'Star \n'
@@ -273,19 +274,22 @@ class Star(db.Model):
         return str
 
     @hybrid_property
-    def glon(self):
-        coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
-        glon = coord.galactic.l.value
-        if glon > 180:
-            return glon - 360
-        else:
-            return glon
+    def glonlat(self):
+        if self._glonlat is None:
+            coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
+            glon, glat = coord.galactic.l.value, coord.galactic.b.value
+            if glon > 180:
+                glon -= 360
+            self._glonlat = (glon, glat)
+        return self._glonlat
 
-    @hybrid_property
+    @property
+    def glon(self):
+        return self.glonlat[0]
+
+    @property
     def glat(self):
-        coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
-        glat = coord.galactic.b.value
-        return glat
+        return self.glonlat[1]
 
     @property
     def ztf_ids(self):
