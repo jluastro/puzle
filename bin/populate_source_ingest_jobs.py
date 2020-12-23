@@ -36,6 +36,13 @@ def file_len(fname):
     return i + 1
 
 
+def return_density_polygons_filename():
+    dir_path_puzle = os.path.dirname(os.path.dirname(
+        os.path.realpath(__file__)))
+    filename = f'{dir_path_puzle}/data/density_polygons.dat'
+    return filename
+
+
 def save_density_polygons():
     density_polygons = []
 
@@ -53,18 +60,13 @@ def save_density_polygons():
         density = num_objects / polygon.area  # objects per square degree
         density_polygons.append((polygon, density))
 
-    dir_path_puzle = os.path.dirname(os.path.dirname(
-        os.path.realpath(__file__)))
-    filename = f'{dir_path_puzle}/data/density_polygons.dat'
-
+    filename = return_density_polygons_filename()
     with open(filename, 'wb') as f:
         pickle.dump(density_polygons, f)
 
 
 def load_density_polygons():
-    dir_path_puzle = os.path.dirname(os.path.dirname(
-        os.path.realpath(__file__)))
-    filename = f'{dir_path_puzle}/data/density_polygons.dat'
+    filename = return_density_polygons_filename()
     density_polygons = pickle.load(open(filename, 'rb'))
     return density_polygons
 
@@ -112,4 +114,6 @@ def populate_source_ingest_jobs():
 
 
 if __name__ == '__main__':
+    if not os.path.exists(return_density_polygons_filename()):
+        save_density_polygons()
     populate_source_ingest_jobs()
