@@ -8,6 +8,8 @@
                 <table width="100%">
                     <tr>
                         <th>Source</th>
+                        <th>Glon</th>
+                        <th>Glat</th>
                         <th>Filter</th>
                         <th>Nepochs</th>
                         <th>t<sub>0</sub></th>
@@ -22,6 +24,8 @@
                     <td>
                     <a href="{{ url_for('source', sourceid=source.id) }}">Source {{ source.id }}</a>
                     </td>
+                    <td>{{ "%.5f" % source.glon }}</td>
+                    <td>{{ "%.5f" % source.glat }}</td>
                     <td></td>
                     <td></td>
                     <td>0</td>
@@ -37,6 +41,8 @@
                     {% if source.zort_source.object_g %}
                         <tr>
                             <td></td>
+                            <td></td>
+                            <td></td>
                             <td>g-band</td>
                             <td>{{ source.zort_source.object_g.nepochs }}</td>
                         </tr>
@@ -44,12 +50,16 @@
                     {% if source.zort_source.object_r %}
                         <tr>
                             <td></td>
+                            <td></td>
+                            <td></td>
                             <td>r-band</td>
                             <td>{{ source.zort_source.object_r.nepochs }}</td>
                         </tr>
                     {% endif %}
                     {% if source.zort_source.object_i %}
                         <tr>
+                            <td></td>
+                            <td></td>
                             <td></td>
                             <td>i-band</td>
                             <td>{{ source.zort_source.object_i.nepochs }}</td>
