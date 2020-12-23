@@ -206,7 +206,6 @@ def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
         for lightcurve_file in lightcurve_files:
             lightcurveFile = LightcurveFile(lightcurve_file, apply_catmask=True)
 
-            counter = 0
             for obj in lightcurveFile:
                 if obj.lightcurve.nepochs < nepochs_min:
                     continue
@@ -218,10 +217,6 @@ def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
 
                 source = convert_obj_to_source(obj, lightcurve_file)
                 source_list.append(source)
-                # print(lightcurve_file, len(source_list))
-                # counter += 1
-                # if counter > 10000:
-                #     break
 
                 if job_enddate and datetime.now() >= script_enddate:
                     logger.info(f'Within {shutdown_time} minutes of job end, '
