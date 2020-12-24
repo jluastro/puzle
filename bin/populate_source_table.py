@@ -8,7 +8,7 @@ import glob
 import numpy as np
 from datetime import datetime, timedelta
 from zort.lightcurveFile import LightcurveFile
-from zort.radec import lightcurve_file_is_pole
+from zort.radec import lightcurve_file_is_pole, return_ZTF_RCID_corners
 from sqlalchemy.sql.expression import func
 from shapely.geometry.polygon import Polygon
 import logging
@@ -22,7 +22,7 @@ from puzle import db
 logger = logging.getLogger(__name__)
 
 
-def fetch_lightcurve_files(ra_start, ra_end, dec_start, dec_end):
+def fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end):
     job_polygon = Polygon([(ra_start, dec_start),
                            (ra_start, dec_end),
                            (ra_end, dec_end),
@@ -33,6 +33,15 @@ def fetch_lightcurve_files(ra_start, ra_end, dec_start, dec_end):
 
     lightcurve_file_arr = []
     for i, lightcurve_file in enumerate(lightcurve_files):
+        field_id = int(lightcurve_file.split('_')[0].replace('field', ''))
+        rcid_corners = return_ZTF_RCID_corners(field_id)
+
+        # rcids_to_read = []
+        # for rcid, corners in rcid_corners.items():
+
+
+
+
         ra0, ra1, dec0, dec1 = lightcurve_file_to_ra_dec(lightcurve_file)
         if ra0 > ra1:
             ra1 += 360
@@ -200,11 +209,12 @@ def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
         logger.info(f'Job {job_id}: ra: {ra_start:.5f} to {ra_end:.5f} ')
         logger.info(f'Job {job_id}: dec: {dec_start:.5f} to {dec_end:.5f} ')
 
-        lightcurve_files = fetch_lightcurve_files(ra_start, ra_end, dec_start, dec_end)
+        lightcurve_rcids = fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end)
 
         source_list = []
-        for lightcurve_file in lightcurve_files:
-            lightcurveFile = LightcurveFile(lightcurve_file, apply_catmask=True)
+        for lightcurve_file, rcids_to_read in lightcurve_rcids:
+            lightcurveFile = LightcurveFile(lightcurve_file, apply_catmask=True,
+                                            rcids_to_read=rcids_to_read)
 
             for obj in lightcurveFile:
                 if obj.lightcurve.nepochs < nepochs_min:

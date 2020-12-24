@@ -80,7 +80,8 @@ def return_density(ra, dec, density_polygons):
 
 
 def populate_source_ingest_jobs():
-    ra_min, ra_max, delta_ra_max = 0., 360., 2.0
+    ra_min, ra_max = 0., 360.
+    delta_ra_min, delta_ra_max = 0.125, 2.0
     dec_min, dec_max, delta_dec = -30., 90., 1.0
     n_objects_max = 50000
 
@@ -97,6 +98,7 @@ def populate_source_ingest_jobs():
             if density:
                 delta_ra = (n_objects_max / density) / delta_dec
                 delta_ra = min(delta_ra, delta_ra_max)
+                delta_ra = max(delta_ra, delta_ra_min)
             else:
                 delta_ra = delta_ra_max
 
