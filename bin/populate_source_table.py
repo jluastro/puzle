@@ -210,7 +210,7 @@ def upload_sources(source_list):
     remove_db_id()  # release permission for this db connection
 
 
-def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
+def ingest_sources(nepochs_min=20, shutdown_time=10, single_job=False):
     job_enddate = fetch_job_enddate()
     if job_enddate:
         script_enddate = job_enddate - timedelta(minutes=shutdown_time)
