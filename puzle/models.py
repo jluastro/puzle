@@ -131,7 +131,7 @@ class Source(db.Model):
 
     def __init__(self, object_id_g, object_id_r, object_id_i,
                  lightcurve_position_g, lightcurve_position_r, lightcurve_position_i,
-                 ra, dec, lightcurve_filename,
+                 ra, dec, lightcurve_filename, ingest_job_id,
                  comments=None, _ztf_ids=None):
         self.object_id_g = object_id_g
         self.object_id_r = object_id_r
@@ -142,6 +142,7 @@ class Source(db.Model):
         self.ra = ra
         self.dec = dec
         self.lightcurve_filename = lightcurve_filename
+        self.ingest_job_id = ingest_job_id
         self.comments = comments
         self.zort_source = self.load_zort_source()
         self._ztf_ids = _ztf_ids
