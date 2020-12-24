@@ -124,6 +124,7 @@ class Source(db.Model):
     lightcurve_position_i = db.Column(db.BigInteger)
     ra = db.Column(db.Float, nullable=False)
     dec = db.Column(db.Float, nullable=False)
+    ingest_job_id = db.Column(db.BigInteger, nullable=False)
     lightcurve_filename = db.Column(db.String(128), index=True, nullable=False)
     comments = db.Column(db.String(1024))
     _ztf_ids = db.Column(db.String(256))

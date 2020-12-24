@@ -79,7 +79,7 @@ def object_in_bounds(obj, ra_start, ra_end, dec_start, dec_end):
         return False
 
 
-def convert_obj_to_source(obj, lightcurve_filename):
+def convert_obj_to_source(obj, lightcurve_filename, job_id):
 
     filter_dict = {
         1: 'g',
@@ -94,7 +94,8 @@ def convert_obj_to_source(obj, lightcurve_filename):
         'lightcurve_position_g': None,
         'lightcurve_position_r': None,
         'lightcurve_position_i': None,
-        'lightcurve_filename': lightcurve_filename
+        'lightcurve_filename': lightcurve_filename,
+        'ingest_job_id': job_id
     }
 
     obj_filt = filter_dict[obj.filterid]
@@ -240,7 +241,7 @@ def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
 
                 obj.locate_siblings()
 
-                source = convert_obj_to_source(obj, lightcurve_file)
+                source = convert_obj_to_source(obj, lightcurve_file, job_id)
                 source_list.append(source)
 
                 if job_enddate and datetime.now() >= script_enddate:
