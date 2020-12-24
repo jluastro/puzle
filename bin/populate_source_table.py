@@ -23,25 +23,16 @@ logger = logging.getLogger(__name__)
 
 
 def fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end):
-    job_polygon = Polygon([(ra_start, dec_start),
-                           (ra_start, dec_end),
-                           (ra_end, dec_end),
-                           (ra_end, dec_start)])
+    job_file_polygon = Polygon([(ra_start, dec_start),
+                                (ra_start, dec_end),
+                                (ra_end, dec_end),
+                                (ra_end, dec_start)])
 
     lightcurve_files = glob.glob('field*txt')
     lightcurve_files.sort()
 
-    lightcurve_file_arr = []
+    lightcurve_rcids_arr = []
     for i, lightcurve_file in enumerate(lightcurve_files):
-        field_id = int(lightcurve_file.split('_')[0].replace('field', ''))
-        rcid_corners = return_ZTF_RCID_corners(field_id)
-
-        # rcids_to_read = []
-        # for rcid, corners in rcid_corners.items():
-
-
-
-
         ra0, ra1, dec0, dec1 = lightcurve_file_to_ra_dec(lightcurve_file)
         if ra0 > ra1:
             ra1 += 360
@@ -50,10 +41,34 @@ def fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end):
                                 (ra0, dec1),
                                 (ra1, dec1),
                                 (ra1, dec0)])
-        if file_polygon.intersects(job_polygon):
-            lightcurve_file_arr.append(lightcurve_file)
+        if not file_polygon.intersects(job_file_polygon):
+            continue
 
-    return lightcurve_file_arr
+        is_pole = lightcurve_file_is_pole(lightcurve_file)
+        field_id = int(lightcurve_file.split('_')[0].replace('field', ''))
+        rcid_corners = return_ZTF_RCID_corners(field_id)
+
+        if is_pole and ra_start > 180:
+            job_rcid_polygon = Polygon([(ra_start - 360, dec_start),
+                                        (ra_start - 360, dec_end),
+                                        (ra_end - 360, dec_end),
+                                        (ra_end - 360, dec_start)])
+        else:
+            job_rcid_polygon = Polygon([(ra_start, dec_start),
+                                        (ra_start, dec_end),
+                                        (ra_end, dec_end),
+                                        (ra_end, dec_start)])
+
+        rcids_to_read = []
+        for rcid, corners in rcid_corners.items():
+            rcid_polygon = Polygon(corners)
+            if rcid_polygon.intersects(job_rcid_polygon):
+                rcids_to_read.append(rcid)
+
+        if len(rcids_to_read) > 0:
+            lightcurve_rcids_arr.append((lightcurve_file, rcids_to_read))
+
+    return lightcurve_rcids_arr
 
 
 def object_in_bounds(obj, ra_start, ra_end, dec_start, dec_end):
@@ -169,7 +184,7 @@ def upload_sources(source_list):
 
         is_pole = lightcurve_file_is_pole(source.lightcurve_filename)
         ra, dec = source.ra, source.dec
-        if is_pole and ra > 180:
+        if is_pole:
             ra -= 360
 
         radec.append((ra, dec))
