@@ -185,7 +185,7 @@ def upload_sources(source_list):
 
         is_pole = lightcurve_file_is_pole(source.lightcurve_filename)
         ra, dec = source.ra, source.dec
-        if is_pole:
+        if is_pole and ra > 180:
             ra -= 360
 
         radec.append((ra, dec))
