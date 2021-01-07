@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """
-populate_source_table.py
+identify_sources.py
 """
 import time
 import os
@@ -12,9 +12,8 @@ from zort.radec import lightcurve_file_is_pole, return_ZTF_RCID_corners
 from sqlalchemy.sql.expression import func
 from shapely.geometry.polygon import Polygon
 import logging
-from scipy.spatial import cKDTree
 
-from puzle.models import Source, SourceIngestJob, Star
+from puzle.models import Source, SourceIngestJob
 from puzle.utils import fetch_job_enddate, lightcurve_file_to_ra_dec
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle import db
@@ -166,51 +165,48 @@ def finish_job(job_id):
     remove_db_id()  # release permission for this db connection
 
 
-def upload_sources(source_list):
-    insert_db_id()  # get permission to make a db connection
-
-    source_keys = set()
-    for source in source_list:
-        key = (source.object_id_g, source.object_id_r, source.object_id_i)
-        if key not in source_keys:
-            db.session.add(source)
-            source_keys.add(key)
-    db.session.commit()
-
-    radec = []
-    source_ids = []
-    for source in source_list:
-        if not source.id:
-            continue
-
-        is_pole = lightcurve_file_is_pole(source.lightcurve_filename)
-        ra, dec = source.ra, source.dec
-        if is_pole and ra > 180:
-            ra -= 360
-
-        radec.append((ra, dec))
-        source_ids.append(source.id)
-
-    kdtree = cKDTree(np.array(radec))
-
-    radius_deg = 2 / 3600.
-    star_keys = set()
-    for ((ra, dec), source_id) in zip(radec, source_ids):
-        idx_arr = kdtree.query_ball_point((ra, dec), radius_deg)
-        ids = [source_ids[idx] for idx in idx_arr]
-        ids.sort()
-        key = tuple(ids)
-        if key not in star_keys:
-            star = Star(source_ids=ids,
-                        ra=ra, dec=dec)
-            db.session.add(star)
-            star_keys.add(key)
-    db.session.commit()
-
-    remove_db_id()  # release permission for this db connection
+def source_to_csv_line(source):
+    line = '%s,' % str(source.object_id_g)
+    line += '%s,' % str(source.object_id_r)
+    line += '%s,' % str(source.object_id_i)
+    line += '%s,' % str(source.lightcurve_position_g)
+    line += '%s,' % str(source.lightcurve_position_r)
+    line += '%s,' % str(source.lightcurve_position_i)
+    line += '%s,' % source.lightcurve_filename
+    line += '%s,' % source.ra
+    line += '%s,' % source.dec
+    line += '%s' % source.ingest_job_id
+    return line
 
 
-def ingest_sources(nepochs_min=20, shutdown_time=10, single_job=False):
+def export_sources(job_id, source_list):
+
+    source_exported = []
+    fname = f'sources.{job_id:06}.txt'
+    with open(fname, 'w') as f:
+        header = 'object_id_g,'
+        header += 'object_id_r,'
+        header += 'object_id_i,'
+        header += 'lightcurve_position_g,'
+        header += 'lightcurve_position_r,'
+        header += 'lightcurve_position_i,'
+        header += 'lightcurve_filename,'
+        header += 'ra,'
+        header += 'dec,'
+        header += 'ingest_job_id'
+        f.write(f'{header}\n')
+
+        source_keys = set()
+        for source in source_list:
+            key = (source.object_id_g, source.object_id_r, source.object_id_i)
+            if key not in source_keys:
+                source_keys.add(key)
+                source_line = source_to_csv_line(source)
+                source_exported.append(source)
+                f.write(f'{source_line}\n')
+
+
+def identify_sources(nepochs_min=20, shutdown_time=10, single_job=False):
     job_enddate = fetch_job_enddate()
     if job_enddate:
         script_enddate = job_enddate - timedelta(minutes=shutdown_time)
@@ -253,8 +249,8 @@ def ingest_sources(nepochs_min=20, shutdown_time=10, single_job=False):
 
         num_sources = len(source_list)
         logger.info(f'Job {job_id}: Uploading {num_sources} sources to database')
-        upload_sources(source_list)
-        logger.info(f'Job {job_id}: Upload complete')
+        export_sources(job_id, source_list)
+        logger.info(f'Job {job_id}: Export complete')
 
         finish_job(job_id)
         logger.info(f'Job {job_id}: Job complete')
@@ -265,4 +261,4 @@ def ingest_sources(nepochs_min=20, shutdown_time=10, single_job=False):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    ingest_sources()
+    identify_sources()
