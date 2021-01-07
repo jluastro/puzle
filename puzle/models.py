@@ -276,10 +276,12 @@ class Star(db.Model):
     _ztf_ids = db.Column(db.String(256))
 
     def __init__(self, source_ids, ra, dec,
+                 ingest_job_id=None,
                  comments=None, _ztf_ids=None):
         self.source_ids = source_ids
         self.ra = ra
         self.dec = dec
+        self.ingest_job_id = ingest_job_id
         self.comments = comments
         self._ztf_ids = _ztf_ids
         self._glonlat = None
