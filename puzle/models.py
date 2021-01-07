@@ -256,6 +256,7 @@ class Star(db.Model):
     source_ids = db.Column(db.ARRAY(db.BigInteger))
     ra = db.Column(db.Float, nullable=False)
     dec = db.Column(db.Float, nullable=False)
+    ingest_job_id = db.Column(db.BigInteger, nullable=False)
     comments = db.Column(db.String(1024))
     _ztf_ids = db.Column(db.String(256))
 
