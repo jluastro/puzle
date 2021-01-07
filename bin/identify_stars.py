@@ -27,8 +27,7 @@ def fetch_job():
     job = db.session.query(StarIngestJob).\
         outerjoin(SourceIngestJob, StarIngestJob.source_ingest_job_id == SourceIngestJob.id).\
         filter(SourceIngestJob.finished == True,
-               StarIngestJob.started == False,
-               StarIngestJob.finished == False).\
+               StarIngestJob.started == False).\
         order_by(func.random()).\
         with_for_update().\
         first()
@@ -119,6 +118,19 @@ def export_stars(source_job_id, sources):
     kdtree = cKDTree(np.array(radec))
     radius_deg = 2 / 3600.
     star_keys = set()
+    stars = []
+
+    for ((ra, dec), source_id) in zip(radec, source_ids):
+        idx_arr = kdtree.query_ball_point((ra, dec), radius_deg)
+        ids = [source_ids[idx] for idx in idx_arr]
+        ids.sort()
+        key = tuple(ids)
+        if key not in star_keys:
+            star_keys.add(key)
+            star = Star(source_ids=ids,
+                        ra=ra, dec=dec,
+                        ingest_job_id=source_job_id)
+            stars.append(star)
 
     fname = f'stars.{source_job_id:06}.txt'
     with open(fname, 'w') as f:
@@ -128,18 +140,9 @@ def export_stars(source_job_id, sources):
         header += 'source_ids'
         f.write(f'{header}\n')
 
-        for ((ra, dec), source_id) in zip(radec, source_ids):
-            idx_arr = kdtree.query_ball_point((ra, dec), radius_deg)
-            ids = [source_ids[idx] for idx in idx_arr]
-            ids.sort()
-            key = tuple(ids)
-            if key not in star_keys:
-                star_keys.add(key)
-                star = Star(source_ids=ids,
-                            ra=ra, dec=dec,
-                            ingest_job_id=source_job_id)
-                star_line = star_to_csv_line(star)
-                f.write(f'{star_line}\n')
+        for star in stars:
+            star_line = star_to_csv_line(star)
+            f.write(f'{star_line}\n')
 
 
 def star_to_csv_line(star):

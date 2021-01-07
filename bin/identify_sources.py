@@ -124,8 +124,7 @@ def fetch_job():
     db.session.execute('LOCK TABLE source_ingest_job '
                        'IN ROW EXCLUSIVE MODE;')
     job = db.session.query(SourceIngestJob).\
-        filter(SourceIngestJob.started == False,
-               SourceIngestJob.finished == False).\
+        filter(SourceIngestJob.started == False).\
         order_by(func.random()).\
         with_for_update().\
         first()
