@@ -116,6 +116,7 @@ class Source(db.Model):
     __table_args__ = {'schema': 'puzle'}
 
     id = db.Column(db.BigInteger, primary_key=True, nullable=False)
+    id_str = db.Column(db.String(128), index=True, nullable=True)
     object_id_g = db.Column(db.BigInteger)
     object_id_r = db.Column(db.BigInteger)
     object_id_i = db.Column(db.BigInteger)
@@ -132,6 +133,7 @@ class Source(db.Model):
     def __init__(self, object_id_g, object_id_r, object_id_i,
                  lightcurve_position_g, lightcurve_position_r, lightcurve_position_i,
                  ra, dec, lightcurve_filename, ingest_job_id,
+                 id_str=None,
                  comments=None, _ztf_ids=None):
         self.object_id_g = object_id_g
         self.object_id_r = object_id_r
@@ -143,6 +145,7 @@ class Source(db.Model):
         self.dec = dec
         self.lightcurve_filename = lightcurve_filename
         self.ingest_job_id = ingest_job_id
+        self.id_str = id_str,
         self.comments = comments
         self.zort_source = self.load_zort_source()
         self._ztf_ids = _ztf_ids
