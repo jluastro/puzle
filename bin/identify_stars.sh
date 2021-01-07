@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --account=ulens
+#SBATCH --account=m2218
 #SBATCH --qos=regular
 #SBATCH --constraint=haswell
 #SBATCH --nodes=1
