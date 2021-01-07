@@ -164,8 +164,9 @@ def finish_job(job_id):
     remove_db_id()  # release permission for this db connection
 
 
-def source_to_csv_line(source):
-    line = '%s,' % str(source.object_id_g)
+def source_to_csv_line(source, source_id):
+    line = '%s,' % source_id
+    line += '%s,' % str(source.object_id_g)
     line += '%s,' % str(source.object_id_r)
     line += '%s,' % str(source.object_id_i)
     line += '%s,' % str(source.lightcurve_position_g)
@@ -188,7 +189,8 @@ def export_sources(job_id, source_list):
     source_exported = []
     fname = f'{dir}/sources.{job_id:06}.txt'
     with open(fname, 'w') as f:
-        header = 'object_id_g,'
+        header = 'id_str,'
+        header += 'object_id_g,'
         header += 'object_id_r,'
         header += 'object_id_i,'
         header += 'lightcurve_position_g,'
@@ -201,12 +203,14 @@ def export_sources(job_id, source_list):
         f.write(f'{header}\n')
 
         source_keys = set()
+        source_id = 0
         for source in source_list:
             key = (source.object_id_g, source.object_id_r, source.object_id_i)
             if key not in source_keys:
                 source_keys.add(key)
-                source_line = source_to_csv_line(source)
+                source_line = source_to_csv_line(source, source_id)
                 source_exported.append(source)
+                source_id += 1
                 f.write(f'{source_line}\n')
 
 

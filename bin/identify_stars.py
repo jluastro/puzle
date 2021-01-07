@@ -72,16 +72,17 @@ def _parse_object_int(attr):
 
 def csv_line_to_source(line):
     attrs = line.replace('\n', '').split(',')
-    source = Source(object_id_g=_parse_object_int(attrs[0]),
-                    object_id_r=_parse_object_int(attrs[1]),
-                    object_id_i=_parse_object_int(attrs[2]),
-                    lightcurve_position_g=_parse_object_int(attrs[3]),
-                    lightcurve_position_r=_parse_object_int(attrs[4]),
-                    lightcurve_position_i=_parse_object_int(attrs[5]),
-                    lightcurve_filename=attrs[6],
-                    ra=float(attrs[7]),
-                    dec=float(attrs[8]),
-                    ingest_job_id=int(attrs[9]))
+    source = Source(id_str=attrs[0],
+                    object_id_g=_parse_object_int(attrs[1]),
+                    object_id_r=_parse_object_int(attrs[2]),
+                    object_id_i=_parse_object_int(attrs[3]),
+                    lightcurve_position_g=_parse_object_int(attrs[4]),
+                    lightcurve_position_r=_parse_object_int(attrs[5]),
+                    lightcurve_position_i=_parse_object_int(attrs[6]),
+                    lightcurve_filename=attrs[7],
+                    ra=float(attrs[8]),
+                    dec=float(attrs[9]),
+                    ingest_job_id=int(attrs[10]))
     return source
 
 
