@@ -64,11 +64,43 @@ def finish_job(source_job_id):
     remove_db_id()  # release permission for this db connection
 
 
+def _parse_object_int(attr):
+    if attr == 'None':
+        return None
+    else:
+        return int(attr)
+
+
+def csv_line_to_source(line):
+    attrs = line.replace('\n', '').split(',')
+    source = Source(object_id_g=_parse_object_int(attrs[0]),
+                    object_id_r=_parse_object_int(attrs[1]),
+                    object_id_i=_parse_object_int(attrs[2]),
+                    lightcurve_position_g=_parse_object_int(attrs[3]),
+                    lightcurve_position_r=_parse_object_int(attrs[4]),
+                    lightcurve_position_i=_parse_object_int(attrs[5]),
+                    lightcurve_filename=attrs[6],
+                    ra=float(attrs[7]),
+                    dec=float(attrs[8]),
+                    ingest_job_id=int(attrs[9]))
+    return source
+
+
 def fetch_sources(source_job_id):
-    insert_db_id()  # get permission to make a db connection
-    sources = db.session.query(Source).filter(
-        Source.ingest_job_id == source_job_id).all()
-    remove_db_id()  # release permission for this db connection
+    dir = 'sources_%s' % str(source_job_id)[0]
+
+    if not os.path.exists(dir):
+        logging.error('Source directory missing!')
+        return
+
+    fname = f'{dir}/sources.{source_job_id:06}.txt'
+    lines = open(fname, 'r').readlines()[1:]
+
+    sources = []
+    for line in lines:
+        source = csv_line_to_source(line)
+        sources.append(source)
+
     return sources
 
 
