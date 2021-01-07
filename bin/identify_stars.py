@@ -93,7 +93,7 @@ def export_stars(source_job_id, sources):
         header = 'ra,'
         header += 'dec,'
         header += 'ingest_job_id,'
-        header += 'ids'
+        header += 'source_ids'
         f.write(f'{header}\n')
 
         for ((ra, dec), source_id) in zip(radec, source_ids):
@@ -115,7 +115,7 @@ def star_to_csv_line(star):
     line += '%s,' % star.dec
     line += '%s,' % star.ingest_job_id
     ids = [str(source_id) for source_id in star.source_ids]
-    line += '{%s}' % ','.join(ids)
+    line += '"{%s}"' % ','.join(ids)
     return line
 
 
