@@ -145,7 +145,7 @@ class Source(db.Model):
         self.dec = dec
         self.lightcurve_filename = lightcurve_filename
         self.ingest_job_id = ingest_job_id
-        self.id_str = id_str,
+        self.id_str = id_str
         self.comments = comments
         self.zort_source = self.load_zort_source()
         self._ztf_ids = _ztf_ids

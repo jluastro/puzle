@@ -165,7 +165,7 @@ def finish_job(job_id):
 
 
 def source_to_csv_line(source, source_id):
-    line = '%s,' % source_id
+    line = '%s_%s,' % (source.ingest_job_id, source_id)
     line += '%s,' % str(source.object_id_g)
     line += '%s,' % str(source.object_id_r)
     line += '%s,' % str(source.object_id_i)
@@ -181,7 +181,7 @@ def source_to_csv_line(source, source_id):
 
 def export_sources(job_id, source_list):
 
-    dir = 'sources_%s' % str(job_id)[0]
+    dir = 'sources_%s' % str(job_id)[:3]
 
     if not os.path.exists(dir):
         os.makedirs(dir)
@@ -247,6 +247,7 @@ def identify_sources(nepochs_min=20, shutdown_time=10, single_job=False):
 
                 source = convert_obj_to_source(obj, lightcurve_file, job_id)
                 source_list.append(source)
+                print(len(source_list))
 
                 if job_enddate and datetime.now() >= script_enddate:
                     logger.info(f'Within {shutdown_time} minutes of job end, '

@@ -87,7 +87,7 @@ def csv_line_to_source(line):
 
 
 def fetch_sources(source_job_id):
-    dir = 'sources_%s' % str(source_job_id)[0]
+    dir = 'sources_%s' % str(source_job_id)[:3]
 
     if not os.path.exists(dir):
         logging.error('Source directory missing!')
