@@ -30,7 +30,7 @@ def load_db_ids():
 
     # remove rows that are not currently running
     stdout, _ = execute('squeue --format="%i')
-    job_ids = set([s.replace('"','') for s in stdout.decode().split('\n')])
+    job_ids = set([s.replace('"', '') for s in stdout.decode().split('\n')])
     db_ids = set([d for d in db_ids if d.split('.')[0] in job_ids])
     return db_ids
 
@@ -52,6 +52,7 @@ def remove_db_id():
                 f.write('%s\n' % db_id)
 
     logger.info(f'{my_db_id}: Delete success')
+
 
 def insert_db_id(num_ids=50, retry_time=60):
     lock_path = ulensdb_file_path.replace('.txt', '.lock')
