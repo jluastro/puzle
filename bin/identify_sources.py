@@ -181,8 +181,13 @@ def source_to_csv_line(source):
 
 def export_sources(job_id, source_list):
 
+    dir = 'sources_%s' % str(job_id)[0]
+
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
     source_exported = []
-    fname = f'sources.{job_id:06}.txt'
+    fname = f'{dir}/sources.{job_id:06}.txt'
     with open(fname, 'w') as f:
         header = 'object_id_g,'
         header += 'object_id_r,'
