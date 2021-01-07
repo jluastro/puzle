@@ -136,7 +136,8 @@ def source(sourceid):
     form = EmptyForm()
     source = Source.query.filter_by(id=int(sourceid)).first_or_404()
     source.load_lightcurve_plot()
-    return render_template('source.html', source=source, form=form)
+    return render_template('source.html', source=source,
+                           form=form)
 
 
 @app.route('/edit_source_comments/<sourceid>', methods=['GET', 'POST'])

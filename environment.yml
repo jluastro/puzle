@@ -25,4 +25,5 @@ dependencies:
   - pip:
       - zort
       - filelock
+      - python-dotenv
 prefix: /Users/michael/miniconda3/envs/puzle

@@ -8,6 +8,8 @@
                 <table width="100%">
                     <tr>
                         <th>Source</th>
+                        <th>Glon</th>
+                        <th>Glat</th>
                         <th>Filter</th>
                         <th>Nepochs</th>
                         <th>t<sub>0</sub></th>
@@ -18,9 +20,12 @@
                         <th>Followers</th>
                     </tr>
                 {% for source in sources.items %}
+                    <tr>
                     <td>
                     <a href="{{ url_for('source', sourceid=source.id) }}">Source {{ source.id }}</a>
                     </td>
+                    <td>{{ "%.5f" % source.glon }}</td>
+                    <td>{{ "%.5f" % source.glat }}</td>
                     <td></td>
                     <td></td>
                     <td>0</td>
@@ -33,27 +38,34 @@
                         | <a href="{{ url_for('user', username=user.username) }}">{{ user.username }}</a>
                     {% endfor %}
                     </td>
-                    {% if source.object_id_g %}
+                    {% if source.zort_source.object_g %}
                         <tr>
+                            <td></td>
+                            <td></td>
                             <td></td>
                             <td>g-band</td>
-                            <td>{{ source.object_g.nepochs }}</td>
+                            <td>{{ source.zort_source.object_g.nepochs }}</td>
                         </tr>
                     {% endif %}
-                    {% if source.object_id_r %}
+                    {% if source.zort_source.object_r %}
                         <tr>
+                            <td></td>
+                            <td></td>
                             <td></td>
                             <td>r-band</td>
-                            <td>{{ source.object_r.nepochs }}</td>
+                            <td>{{ source.zort_source.object_r.nepochs }}</td>
                         </tr>
                     {% endif %}
-                    {% if source.object_id_i %}
+                    {% if source.zort_source.object_i %}
                         <tr>
                             <td></td>
+                            <td></td>
+                            <td></td>
                             <td>i-band</td>
-                            <td>{{ source.object_i.nepochs }}</td>
+                            <td>{{ source.zort_source.object_i.nepochs }}</td>
                         </tr>
                     {% endif %}
+                    </tr>
                 {% endfor %}
                 </table>
                 <!-- Pagination Links-->

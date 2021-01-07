@@ -4,21 +4,82 @@ populate_source_table.py
 """
 import time
 import os
+import glob
 import numpy as np
 from datetime import datetime, timedelta
 from zort.lightcurveFile import LightcurveFile
+from zort.radec import lightcurve_file_is_pole, return_ZTF_RCID_corners
 from sqlalchemy.sql.expression import func
+from shapely.geometry.polygon import Polygon
 import logging
+from scipy.spatial import cKDTree
 
-from puzle.models import Source, SourceIngestJob, Object
-from puzle.utils import fetch_job_enddate
+from puzle.models import Source, SourceIngestJob, Star
+from puzle.utils import fetch_job_enddate, lightcurve_file_to_ra_dec
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle import db
 
 logger = logging.getLogger(__name__)
 
 
-def convert_obj_to_source(obj, lightcurve_filename):
+def fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end):
+    job_file_polygon = Polygon([(ra_start, dec_start),
+                                (ra_start, dec_end),
+                                (ra_end, dec_end),
+                                (ra_end, dec_start)])
+
+    lightcurve_files = glob.glob('field*txt')
+    lightcurve_files.sort()
+
+    lightcurve_rcids_arr = []
+    for i, lightcurve_file in enumerate(lightcurve_files):
+        ra0, ra1, dec0, dec1 = lightcurve_file_to_ra_dec(lightcurve_file)
+        if ra0 > ra1:
+            ra1 += 360
+
+        file_polygon = Polygon([(ra0, dec0),
+                                (ra0, dec1),
+                                (ra1, dec1),
+                                (ra1, dec0)])
+        if not file_polygon.intersects(job_file_polygon):
+            continue
+
+        is_pole = lightcurve_file_is_pole(lightcurve_file)
+        field_id = int(lightcurve_file.split('_')[0].replace('field', ''))
+        rcid_corners = return_ZTF_RCID_corners(field_id)
+
+        if is_pole and ra_start > 180:
+            job_rcid_polygon = Polygon([(ra_start - 360, dec_start),
+                                        (ra_start - 360, dec_end),
+                                        (ra_end - 360, dec_end),
+                                        (ra_end - 360, dec_start)])
+        else:
+            job_rcid_polygon = Polygon([(ra_start, dec_start),
+                                        (ra_start, dec_end),
+                                        (ra_end, dec_end),
+                                        (ra_end, dec_start)])
+
+        rcids_to_read = []
+        for rcid, corners in rcid_corners.items():
+            rcid_polygon = Polygon(corners)
+            if rcid_polygon.intersects(job_rcid_polygon):
+                rcids_to_read.append(rcid)
+
+        if len(rcids_to_read) > 0:
+            lightcurve_rcids_arr.append((lightcurve_file, rcids_to_read))
+
+    return lightcurve_rcids_arr
+
+
+def object_in_bounds(obj, ra_start, ra_end, dec_start, dec_end):
+    if (obj.ra >= ra_start) and (obj.ra < ra_end) \
+            and (obj.dec >= dec_start) and (obj.dec < dec_end):
+        return True
+    else:
+        return False
+
+
+def convert_obj_to_source(obj, lightcurve_filename, job_id):
 
     filter_dict = {
         1: 'g',
@@ -33,22 +94,24 @@ def convert_obj_to_source(obj, lightcurve_filename):
         'lightcurve_position_g': None,
         'lightcurve_position_r': None,
         'lightcurve_position_i': None,
-        'lightcurve_filename': lightcurve_filename
+        'lightcurve_filename': lightcurve_filename,
+        'ingest_job_id': job_id
     }
 
     obj_filt = filter_dict[obj.filterid]
-    source_dict[f'object_id_{obj_filt}'] = obj.objectid
+    source_dict[f'object_id_{obj_filt}'] = obj.object_id
     source_dict[f'lightcurve_position_{obj_filt}'] = obj.lightcurve_position
 
     ra_arr = [obj.ra]
     dec_arr = [obj.dec]
 
-    for sib in obj.siblings:
-        sib_filt = filter_dict[sib.filterid]
-        source_dict[f'object_id_{sib_filt}'] = sib.objectid
-        source_dict[f'lightcurve_position_{sib_filt}'] = sib.lightcurve_position
-        ra_arr.append(sib.ra)
-        dec_arr.append(sib.dec)
+    if obj.siblings:
+        for sib in obj.siblings:
+            sib_filt = filter_dict[sib.filterid]
+            source_dict[f'object_id_{sib_filt}'] = sib.object_id
+            source_dict[f'lightcurve_position_{sib_filt}'] = sib.lightcurve_position
+            ra_arr.append(sib.ra)
+            dec_arr.append(sib.dec)
 
     source_dict['ra'] = np.mean(ra_arr)
     source_dict['dec'] = np.mean(dec_arr)
@@ -70,9 +133,10 @@ def fetch_job():
     if job is None:
         return None
     job_id = job.id
-    lightcurve_filename = job.lightcurve_filename
-    rank = job.process_rank
-    size = job.process_size
+    ra_start = job.ra_start
+    ra_end = job.ra_end
+    dec_start = job.dec_start
+    dec_end = job.dec_end
 
     job.started = True
     job.slurm_job_id = os.getenv('SLURM_JOB_ID')
@@ -80,7 +144,7 @@ def fetch_job():
     db.session.commit()
 
     remove_db_id()  # release permission for this db connection
-    return job_id, lightcurve_filename, rank, size
+    return job_id, ra_start, ra_end, dec_start, dec_end
 
 
 def reset_job(job_id):
@@ -102,40 +166,51 @@ def finish_job(job_id):
     remove_db_id()  # release permission for this db connection
 
 
-def upload_sources(source_list, lightcurve_filename):
+def upload_sources(source_list):
     insert_db_id()  # get permission to make a db connection
-    db.session.execute('LOCK TABLE source_ingest_job IN ROW EXCLUSIVE MODE;')
-    _ = db.session.query(SourceIngestJob).with_for_update().\
-        filter(SourceIngestJob.lightcurve_filename == lightcurve_filename).\
-        all()
-    sources_db = db.session.query(Source).\
-        filter(Source.lightcurve_filename == lightcurve_filename).\
-        all()
-    keys_db = set([(s.object_id_g, s.object_id_r, s.object_id_i)
-                   for s in sources_db])
 
-    keys_uploading = set()
+    source_keys = set()
     for source in source_list:
         key = (source.object_id_g, source.object_id_r, source.object_id_i)
-        if key not in keys_db and key not in keys_uploading:
+        if key not in source_keys:
             db.session.add(source)
-            keys_uploading.add(key)
+            source_keys.add(key)
     db.session.commit()
 
-    for key in keys_uploading:
-        for object_id in key:
-            if object_id is None:
-                continue
-            obj = db.session.query(Object).\
-                filter(Object.id == object_id).\
-                first()
-            obj.in_source = True
+    radec = []
+    source_ids = []
+    for source in source_list:
+        if not source.id:
+            continue
+
+        is_pole = lightcurve_file_is_pole(source.lightcurve_filename)
+        ra, dec = source.ra, source.dec
+        if is_pole and ra > 180:
+            ra -= 360
+
+        radec.append((ra, dec))
+        source_ids.append(source.id)
+
+    kdtree = cKDTree(np.array(radec))
+
+    radius_deg = 2 / 3600.
+    star_keys = set()
+    for ((ra, dec), source_id) in zip(radec, source_ids):
+        idx_arr = kdtree.query_ball_point((ra, dec), radius_deg)
+        ids = [source_ids[idx] for idx in idx_arr]
+        ids.sort()
+        key = tuple(ids)
+        if key not in star_keys:
+            star = Star(source_ids=ids,
+                        ra=ra, dec=dec)
+            db.session.add(star)
+            star_keys.add(key)
     db.session.commit()
 
     remove_db_id()  # release permission for this db connection
 
 
-def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
+def ingest_sources(nepochs_min=20, shutdown_time=10, single_job=False):
     job_enddate = fetch_job_enddate()
     if job_enddate:
         script_enddate = job_enddate - timedelta(minutes=shutdown_time)
@@ -146,33 +221,39 @@ def ingest_sources(nepochs_min=20, shutdown_time=5, single_job=False):
         if job_data is None:
             return
 
-        job_id, lightcurve_filename, rank, size = job_data
-        logger.info(f'Job {job_id}: Lightcurve file: {lightcurve_filename}')
-        logger.info(f'Job {job_id}: Rank: {rank}')
-        logger.info(f'Job {job_id}: Size: {size}')
+        job_id, ra_start, ra_end, dec_start, dec_end = job_data
+        logger.info(f'Job {job_id}: ra: {ra_start:.5f} to {ra_end:.5f} ')
+        logger.info(f'Job {job_id}: dec: {dec_start:.5f} to {dec_end:.5f} ')
+
+        lightcurve_rcids = fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end)
 
         source_list = []
-        lightcurveFile = LightcurveFile(lightcurve_filename, proc_rank=rank,
-                                        proc_size=size, apply_catmask=True)
-        for obj in lightcurveFile:
-            if obj.lightcurve.nepochs < nepochs_min:
-                continue
+        for lightcurve_file, rcids_to_read in lightcurve_rcids:
+            lightcurveFile = LightcurveFile(lightcurve_file, apply_catmask=True,
+                                            rcids_to_read=rcids_to_read)
 
-            obj.locate_siblings()
+            for obj in lightcurveFile:
+                if obj.lightcurve.nepochs < nepochs_min:
+                    continue
 
-            source = convert_obj_to_source(obj, lightcurve_filename)
-            source_list.append(source)
+                if not object_in_bounds(obj, ra_start, ra_end, dec_start, dec_end):
+                    continue
 
-            if job_enddate and datetime.now() >= script_enddate:
-                logger.info(f'Within {shutdown_time} minutes of job end, '
-                            f'shutting down...')
-                reset_job(job_id)
-                time.sleep(2 * 60 * shutdown_time)
-                return
+                obj.locate_siblings()
+
+                source = convert_obj_to_source(obj, lightcurve_file, job_id)
+                source_list.append(source)
+
+                if job_enddate and datetime.now() >= script_enddate:
+                    logger.info(f'Within {shutdown_time} minutes of job end, '
+                                f'shutting down...')
+                    reset_job(job_id)
+                    time.sleep(2 * 60 * shutdown_time)
+                    return
 
         num_sources = len(source_list)
         logger.info(f'Job {job_id}: Uploading {num_sources} sources to database')
-        upload_sources(source_list, lightcurve_filename)
+        upload_sources(source_list)
         logger.info(f'Job {job_id}: Upload complete')
 
         finish_job(job_id)
