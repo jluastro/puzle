@@ -27,7 +27,6 @@ def fetch_job():
     job = db.session.query(StarIngestJob).\
         outerjoin(SourceIngestJob, StarIngestJob.source_ingest_job_id == SourceIngestJob.id).\
         filter(SourceIngestJob.finished == True,
-               SourceIngestJob.uploaded == False,
                StarIngestJob.started == False).\
         order_by(func.random()).\
         with_for_update().\
