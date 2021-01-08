@@ -27,6 +27,7 @@ def fetch_job():
     job = db.session.query(StarIngestJob).\
         outerjoin(SourceIngestJob, StarIngestJob.source_ingest_job_id == SourceIngestJob.id).\
         filter(SourceIngestJob.finished == True,
+               SourceIngestJob.uploaded == False,
                StarIngestJob.started == False).\
         order_by(func.random()).\
         with_for_update().\
@@ -72,7 +73,7 @@ def _parse_object_int(attr):
 
 def csv_line_to_source(line):
     attrs = line.replace('\n', '').split(',')
-    source = Source(id_str=attrs[0],
+    source = Source(id=attrs[0],
                     object_id_g=_parse_object_int(attrs[1]),
                     object_id_r=_parse_object_int(attrs[2]),
                     object_id_i=_parse_object_int(attrs[3]),
@@ -114,7 +115,7 @@ def export_stars(source_job_id, sources):
             ra -= 360
 
         radec.append((ra, dec))
-        source_ids.append(source.id_str)
+        source_ids.append(source.id)
 
     kdtree = cKDTree(np.array(radec))
     radius_deg = 2 / 3600.
