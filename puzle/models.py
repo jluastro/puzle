@@ -273,7 +273,7 @@ class Star(db.Model):
     __table_args__ = {'schema': 'puzle'}
 
     id = db.Column(db.BigInteger, primary_key=True, nullable=False)
-    source_ids = db.Column(db.ARRAY(db.BigInteger))
+    source_ids = db.Column(db.ARRAY(db.String(128)))
     ra = db.Column(db.Float, nullable=False)
     dec = db.Column(db.Float, nullable=False)
     ingest_job_id = db.Column(db.BigInteger, nullable=False)

@@ -114,7 +114,7 @@ def export_stars(source_job_id, sources):
             ra -= 360
 
         radec.append((ra, dec))
-        source_ids.append(source.id)
+        source_ids.append(source.id_str)
 
     kdtree = cKDTree(np.array(radec))
     radius_deg = 2 / 3600.
@@ -133,7 +133,12 @@ def export_stars(source_job_id, sources):
                         ingest_job_id=source_job_id)
             stars.append(star)
 
-    fname = f'stars.{source_job_id:06}.txt'
+    dir = 'stars_%s' % str(source_job_id)[:3]
+
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
+    fname = f'{dir}/stars.{source_job_id:06}.txt'
     with open(fname, 'w') as f:
         header = 'ra,'
         header += 'dec,'
