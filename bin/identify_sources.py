@@ -247,7 +247,6 @@ def identify_sources(nepochs_min=20, shutdown_time=10, single_job=False):
 
                 source = convert_obj_to_source(obj, lightcurve_file, job_id)
                 source_list.append(source)
-                print(len(source_list))
 
                 if job_enddate and datetime.now() >= script_enddate:
                     logger.info(f'Within {shutdown_time} minutes of job end, '
