@@ -65,7 +65,8 @@ def print_source_processing_status():
     print('\nProcessing sources...')
     print('%04d jobs - total on db' % len(all_jobs))
     print('%04d jobs - started on db' % len(job_ids))
-    print('%04d jobs - finished on db' % len(job_ids_finished))
+    print('%04d jobs - finished on db (%.2f %%)' % (len(job_ids_finished),
+                                                    100 * float(len(job_ids_finished)) / len(all_jobs)))
     print('%04d jobs - processing' % len(job_ids_processing))
     print('%04d jobs --- on disk total' % len(job_ids_disk))
     print('%04d jobs --- on disk processing' % len(job_ids_disk_processing))
@@ -113,7 +114,8 @@ def print_star_processing_status():
     print('\nProcessing stars...')
     print('%04d jobs - total on db' % len(all_jobs))
     print('%04d jobs - started on db' % len(job_ids))
-    print('%04d jobs - finished on db' % len(job_ids_finished))
+    print('%04d jobs - finished on db (%.2f %%)' % (len(job_ids_finished),
+                                                    100 * float(len(job_ids_finished)) / len(all_jobs)))
     print('%04d jobs - processing' % len(job_ids_processing))
     print('%04d jobs --- on disk total' % len(job_ids_disk))
     print('%04d jobs --- on disk processing' % len(job_ids_disk_processing))
