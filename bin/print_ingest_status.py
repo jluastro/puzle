@@ -120,4 +120,5 @@ def print_all_status():
     print_star_uploading_status()
 
 
-print_all_status()
+if __name__ == '__main__':
+    print_all_status()
