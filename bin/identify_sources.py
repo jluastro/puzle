@@ -260,7 +260,7 @@ def identify_sources(nepochs_min=20, shutdown_time=10, single_job=False):
                     return
 
         num_sources = len(source_list)
-        logger.info(f'Job {job_id}: Uploading {num_sources} sources to database')
+        logger.info(f'Job {job_id}: Exporting {num_sources} sources to disk')
         export_sources(job_id, source_list)
         logger.info(f'Job {job_id}: Export complete')
 
