@@ -243,6 +243,7 @@ class SourceIngestJob(db.Model):
     datetime_started = db.Column(db.DateTime, nullable=True)
     datetime_finished = db.Column(db.DateTime, nullable=True)
     slurm_job_id = db.Column(db.Integer, nullable=True)
+    slurm_job_rank = db.Column(db.Integer, nullable=True)
 
     def __init__(self, ra_start, ra_end, dec_start, dec_end):
         self.ra_start = ra_start
@@ -261,6 +262,7 @@ class StarIngestJob(db.Model):
     datetime_started = db.Column(db.DateTime, nullable=True)
     datetime_finished = db.Column(db.DateTime, nullable=True)
     slurm_job_id = db.Column(db.Integer, nullable=True)
+    slurm_job_rank = db.Column(db.Integer, nullable=True)
     source_ingest_job_id = db.Column(db.BigInteger, nullable=False)
 
     def __init__(self, source_ingest_job_id):

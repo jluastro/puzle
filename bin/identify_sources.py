@@ -136,6 +136,10 @@ def fetch_job():
     dec_start = job.dec_start
     dec_end = job.dec_end
 
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    job.slurm_job_rank = rank
     job.started = True
     job.slurm_job_id = os.getenv('SLURM_JOB_ID')
     job.datetime_started = datetime.now()
