@@ -56,6 +56,7 @@ def print_source_processing_status():
     for folder in folders:
         fis += glob.glob(folder + '/sources.*.txt')
     job_ids_disk = [int(f.split('.')[-2]) for f in fis]
+    job_ids_disk = list(set(job_ids_disk).intersection(set(job_ids)))
 
     job_ids_disk_processing = list(set(job_ids_disk) - set(job_ids_finished))
 
@@ -101,6 +102,7 @@ def print_star_processing_status():
     for folder in folders:
         fis += glob.glob(folder + '/stars.*.txt')
     job_ids_disk = [int(f.split('.')[-2]) for f in fis]
+    job_ids_disk = list(set(job_ids_disk).intersection(set(job_ids)))
 
     job_ids_disk_processing = list(set(job_ids_disk) - set(job_ids_finished))
 
