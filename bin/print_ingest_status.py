@@ -24,6 +24,7 @@ def print_source_exporting_status():
 
 def print_source_uploading_status():
     jobs = db.session.query(SourceIngestJob).filter(SourceIngestJob.finished == True).all()
+    jobs = db.session.query(SourceIngestJob).filter(SourceIngestJob.finished == True).all()
     job_ids = [job.id for job in jobs]
     job_ids_uploaded = [job.id for job in jobs if job.uploaded == True]
 
@@ -45,6 +46,7 @@ def print_source_uploading_status():
 
 
 def print_source_processing_status():
+    all_jobs = db.session.query(SourceIngestJob).all()
     jobs = db.session.query(SourceIngestJob).filter(SourceIngestJob.started == True).all()
     job_ids = [job.id for job in jobs]
     job_ids_finished = [job.id for job in jobs if job.finished == True]
@@ -61,6 +63,7 @@ def print_source_processing_status():
     job_ids_disk_processing = list(set(job_ids_disk) - set(job_ids_finished))
 
     print('\nProcessing sources...')
+    print('%04d jobs - total on db' % len(all_jobs))
     print('%04d jobs - started on db' % len(job_ids))
     print('%04d jobs - finished on db' % len(job_ids_finished))
     print('%04d jobs - processing' % len(job_ids_processing))
@@ -91,6 +94,7 @@ def print_star_uploading_status():
 
 
 def print_star_processing_status():
+    all_jobs = db.session.query(StarIngestJob).all()
     jobs = db.session.query(StarIngestJob).filter(StarIngestJob.started == True).all()
     job_ids = [job.source_ingest_job_id for job in jobs]
     job_ids_finished = [job.source_ingest_job_id for job in jobs if job.finished == True]
@@ -107,6 +111,7 @@ def print_star_processing_status():
     job_ids_disk_processing = list(set(job_ids_disk) - set(job_ids_finished))
 
     print('\nProcessing stars...')
+    print('%04d jobs - total on db' % len(all_jobs))
     print('%04d jobs - started on db' % len(job_ids))
     print('%04d jobs - finished on db' % len(job_ids_finished))
     print('%04d jobs - processing' % len(job_ids_processing))
