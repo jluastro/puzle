@@ -108,7 +108,30 @@ def fetch_sources(source_job_id):
     return sources
 
 
+def _export_stars(source_job_id, stars):
+    dir = 'stars_%s' % str(source_job_id)[:3]
+
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
+    fname = f'{dir}/stars.{source_job_id:06}.txt'
+    with open(fname, 'w') as f:
+        header = 'ra,'
+        header += 'dec,'
+        header += 'ingest_job_id,'
+        header += 'source_ids'
+        f.write(f'{header}\n')
+
+        for star in stars:
+            star_line = star_to_csv_line(star)
+            f.write(f'{star_line}\n')
+
+
 def export_stars(source_job_id, sources):
+    if len(sources) == 0:
+        _export_stars(source_job_id, [])
+        return
+
     radec = []
     source_ids = []
     for source in sources:
@@ -137,22 +160,7 @@ def export_stars(source_job_id, sources):
                         ingest_job_id=source_job_id)
             stars.append(star)
 
-    dir = 'stars_%s' % str(source_job_id)[:3]
-
-    if not os.path.exists(dir):
-        os.makedirs(dir)
-
-    fname = f'{dir}/stars.{source_job_id:06}.txt'
-    with open(fname, 'w') as f:
-        header = 'ra,'
-        header += 'dec,'
-        header += 'ingest_job_id,'
-        header += 'source_ids'
-        f.write(f'{header}\n')
-
-        for star in stars:
-            star_line = star_to_csv_line(star)
-            f.write(f'{star_line}\n')
+    _export_stars(source_job_id, stars)
 
 
 def star_to_csv_line(star):
@@ -186,12 +194,9 @@ def identify_stars(shutdown_time=10, single_job=False):
         sources = fetch_sources(source_job_id)
 
         num_sources = len(sources)
-        if num_sources == 0:
-            logger.info(f'Job {source_job_id}: No sources found')
-        else:
-            logger.info(f'Job {source_job_id}: Exporting {num_sources} stars to disk')
-            export_stars(source_job_id, sources)
-            logger.info(f'Job {source_job_id}: Export complete')
+        logger.info(f'Job {source_job_id}: Exporting {num_sources} stars to disk')
+        export_stars(source_job_id, sources)
+        logger.info(f'Job {source_job_id}: Export complete')
 
         finish_job(source_job_id)
         logger.info(f'Job {source_job_id}: Job complete')
