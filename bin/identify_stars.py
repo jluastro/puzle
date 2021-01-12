@@ -186,9 +186,12 @@ def identify_stars(shutdown_time=10, single_job=False):
         sources = fetch_sources(source_job_id)
 
         num_sources = len(sources)
-        logger.info(f'Job {source_job_id}: Exporting {num_sources} stars to disk')
-        export_stars(source_job_id, sources)
-        logger.info(f'Job {source_job_id}: Export complete')
+        if num_sources == 0:
+            logger.info(f'Job {source_job_id}: No sources found')
+        else:
+            logger.info(f'Job {source_job_id}: Exporting {num_sources} stars to disk')
+            export_stars(source_job_id, sources)
+            logger.info(f'Job {source_job_id}: Export complete')
 
         finish_job(source_job_id)
         logger.info(f'Job {source_job_id}: Job complete')
