@@ -10,6 +10,13 @@ logger = logging.getLogger(__name__)
 ulensdb_file_path = os.getenv('ULENS_DB_FILEPATH')
 
 
+def identify_is_nersc():
+    for key in os.environ.keys():
+        if 'NERSC' in key:
+            return True
+    return False
+
+
 def fetch_db_id():
     from mpi4py import MPI
     comm = MPI.COMM_WORLD
@@ -28,10 +35,12 @@ def load_db_ids():
     lines = open(ulensdb_file_path, 'r').readlines()
     db_ids = set([l.replace('\n', '') for l in lines])
 
-    # remove rows that are not currently running
-    stdout, _ = execute('squeue --format="%i')
-    job_ids = set([s.replace('"', '') for s in stdout.decode().split('\n')])
-    db_ids = set([d for d in db_ids if d.split('.')[0] in job_ids])
+    if identify_is_nersc():
+        # remove rows that are not currently running
+        stdout, _ = execute('squeue --format="%i')
+        job_ids = set([s.replace('"', '') for s in stdout.decode().split('\n')])
+        db_ids = set([d for d in db_ids if d.split('.')[0] in job_ids])
+
     return db_ids
 
 
