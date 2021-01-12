@@ -7,8 +7,7 @@ import logging
 from puzle.utils import execute
 
 logger = logging.getLogger(__name__)
-ulensdb_file_path = '/global/cscratch1/sd/mmedford/puzle/ulensdb.txt'
-# ulensdb_file_path = os.getenv('ULENS_DB_FILEPATH')
+ulensdb_file_path = os.getenv('ULENS_DB_FILEPATH')
 
 
 def fetch_db_id():
