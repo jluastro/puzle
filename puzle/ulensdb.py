@@ -1,5 +1,6 @@
 import os
 import time
+import numpy as np
 from filelock import FileLock
 from pathlib import Path
 import logging
@@ -88,4 +89,4 @@ def insert_db_id(num_ids=50, retry_time=5):
             return
         else:
             logger.info(f'{my_db_id}: Insert fail, retry in {retry_time} seconds')
-            time.sleep(retry_time)
+            time.sleep(retry_time + np.random.normal(scale=.01 * retry_time))
