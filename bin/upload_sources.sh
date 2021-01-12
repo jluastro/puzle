@@ -1,6 +1,11 @@
 #!/bin/bash
 
-db_con="psql -U ulens_admin -d ulens -h nerscdb03.nersc.gov"
+if [ -z "$NERSC_HOST" ]
+then
+  db_con="psql ulens -U ulens_admin"
+else
+  db_con="psql -U ulens_admin -d ulens -h nerscdb03.nersc.gov"
+fi
 for job_id in $($db_con -c "COPY (SELECT id FROM source_ingest_job WHERE finished='t' AND uploaded='f') TO STDOUT");
     do echo "Uploading sources ${job_id}";
     folder=sources_${job_id:0:3};
