@@ -24,7 +24,6 @@ def print_source_exporting_status():
 
 def print_source_uploading_status():
     jobs = db.session.query(SourceIngestJob).filter(SourceIngestJob.finished == True).all()
-    jobs = db.session.query(SourceIngestJob).filter(SourceIngestJob.finished == True).all()
     job_ids = [job.id for job in jobs]
     job_ids_uploaded = [job.id for job in jobs if job.uploaded == True]
 
