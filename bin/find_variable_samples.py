@@ -7,8 +7,21 @@ import os
 import glob
 import numpy as np
 from zort.lightcurveFile import LightcurveFile, locate_sources_by_radec
+from zort.source import create_source_from_object
 from puzle.models import Source, SourceIngestJob
 from puzle import db
+
+
+def _return_obj_lightcurve_data(obj):
+    if obj is None:
+        hmjd = []
+        mag = []
+        magerr = []
+    else:
+        hmjd = obj.lightcurve.hmjd
+        mag = obj.lightcurve.mag
+        magerr = obj.lightcurve.magerr
+    return hmjd, mag, magerr
 
 
 def file_len(fname):
@@ -18,7 +31,11 @@ def file_len(fname):
     return i + 1
 
 
-def find_variable_samples(N_candidates=200000, N_samples=5):
+def find_variable_samples(N_candidates=20000, N_samples=20):
+    folder = 'variable_sample/variable'
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+
     field_id_arr = [282, 283, 333, 334, 539, 590]
     for field_id in field_id_arr:
         filename = glob.glob('field%06d_*txt' % field_id)[0]
@@ -50,7 +67,7 @@ def find_variable_samples(N_candidates=200000, N_samples=5):
                 t_arr.append(t)
             flux = np.array(flux)
 
-            eta = np.sum((flux[:-1] - flux[1:]) ** 2.) / ((len(flux) - 1) * np.var(flux))
+            eta = np.sum((flux[1:] - flux[:-1]) ** 2.) / ((len(flux) - 1) * np.var(flux))
             eta_arr.append(eta)
             obj_arr.append(obj)
 
@@ -58,26 +75,21 @@ def find_variable_samples(N_candidates=200000, N_samples=5):
 
         for i in range(N_samples):
             obj = obj_arr[idx_arr[i]]
-            obj.locate_siblings()
-            obj.plot_lightcurves()
+            filename = '%s/field%06d_%i_lc.png' % (folder,
+                                                   obj.fieldid,
+                                                   obj.object_id)
+            obj.plot_lightcurves(filename)
 
-            fname = filename.replace('.txt', '_') + 'sample%02d.npz' % i
-            np.savez(fname,
-                     mag=obj.lightcurve.mag,
-                     magerr=obj.lightcurve.magerr,
-                     hmjd=obj.lightcurve.hmjd)
+            source = create_source_from_object(obj)
+            hmjd_g, mag_g, magerr_g = _return_obj_lightcurve_data(source.object_g)
+            hmjd_r, mag_r, magerr_r = _return_obj_lightcurve_data(source.object_r)
+            hmjd_i, mag_i, magerr_i = _return_obj_lightcurve_data(source.object_i)
 
-
-def _return_obj_lightcurve_data(obj):
-    if obj is None:
-        hmjd = []
-        mag = []
-        magerr = []
-    else:
-        hmjd = obj.lightcurve.hmjd
-        mag = obj.lightcurve.mag
-        magerr = obj.lightcurve.magerr
-    return hmjd, mag, magerr
+            filename = filename.replace('.png', '.npz')
+            np.savez(filename,
+                     hmjd_g=hmjd_g, mag_g=mag_g, magerr_g=magerr_g,
+                     hmjd_r=hmjd_r, mag_r=mag_r, magerr_r=magerr_r,
+                     hmjd_i=hmjd_i, mag_i=mag_i, magerr_i=magerr_i)
 
 
 def find_nonvariable_sample():
