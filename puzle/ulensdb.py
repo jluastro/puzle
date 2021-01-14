@@ -1,5 +1,6 @@
 import os
 import time
+import numpy as np
 from filelock import FileLock
 from pathlib import Path
 import logging
@@ -7,7 +8,14 @@ import logging
 from puzle.utils import execute
 
 logger = logging.getLogger(__name__)
-ulensdb_file_path = '/global/cscratch1/sd/mmedford/puzle/ulensdb.txt'
+ulensdb_file_path = os.getenv('ULENS_DB_FILEPATH')
+
+
+def identify_is_nersc():
+    for key in os.environ.keys():
+        if 'NERSC' in key:
+            return True
+    return False
 
 
 def fetch_db_id():
@@ -28,10 +36,12 @@ def load_db_ids():
     lines = open(ulensdb_file_path, 'r').readlines()
     db_ids = set([l.replace('\n', '') for l in lines])
 
-    # remove rows that are not currently running
-    stdout, _ = execute('squeue --format="%i')
-    job_ids = set([s.replace('"','') for s in stdout.decode().split('\n')])
-    db_ids = set([d for d in db_ids if d.split('.')[0] in job_ids])
+    if identify_is_nersc():
+        # remove rows that are not currently running
+        stdout, _ = execute('squeue --noheader -u mmedford --format="%i')
+        job_ids = set([s.replace('"', '') for s in stdout.decode().split('\n')])
+        db_ids = set([d for d in db_ids if d.split('.')[0] in job_ids])
+
     return db_ids
 
 
@@ -53,7 +63,8 @@ def remove_db_id():
 
     logger.info(f'{my_db_id}: Delete success')
 
-def insert_db_id(num_ids=50, retry_time=60):
+
+def insert_db_id(num_ids=50, retry_time=5):
     lock_path = ulensdb_file_path.replace('.txt', '.lock')
     lock = FileLock(lock_path)
 
@@ -61,6 +72,7 @@ def insert_db_id(num_ids=50, retry_time=60):
 
     successFlag = False
     while True:
+        time.sleep(abs(np.random.normal(scale=.01 * retry_time)))
         logger.info(f'{my_db_id}: Attempting insert to {ulensdb_file_path}')
         with lock:
             db_ids = load_db_ids()

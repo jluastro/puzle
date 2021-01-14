@@ -75,7 +75,6 @@ def user(username):
         if sources.has_next else None
     prev_url = url_for('user', username=username, page=sources.prev_num) \
         if sources.has_prev else None
-    print(sources.items, app.config['SOURCES_PER_PAGE'])
     return render_template('user.html', user=user, sources=sources,
                            next_url=next_url, prev_url=prev_url)
 
@@ -134,7 +133,7 @@ def reset_password(token):
 @login_required
 def source(sourceid):
     form = EmptyForm()
-    source = Source.query.filter_by(id=int(sourceid)).first_or_404()
+    source = Source.query.filter_by(id=sourceid).first_or_404()
     source.load_lightcurve_plot()
     return render_template('source.html', source=source,
                            form=form)
@@ -159,7 +158,7 @@ def edit_source_comments(sourceid):
 @app.route('/fetch_ztf_ids/<sourceid>', methods=['POST'])
 @login_required
 def fetch_ztf_ids(sourceid):
-    source = Source.query.filter_by(id=int(sourceid)).first_or_404()
+    source = Source.query.filter_by(id=sourceid).first_or_404()
     n_ids = source.fetch_ztf_ids()
     flash('%i ZTF IDs Found' % n_ids, 'success')
     db.session.commit()

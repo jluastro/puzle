@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """
-populate_source_ingest_jobs.py
+populate_ingest_jobs.py
 
 Source ingest jobs are a set of unique ra and dec boundaries within
 which a job will look for sources and associations. This script determines
@@ -15,6 +15,9 @@ scanner is a point at the average dec of the scanner's dec bounds and
 increases in small increments of ra. At each increment, the scanner
 estimates the stellar density and attempts to make a box
 with `n_objects_max` within it.
+
+Star ingest jobs are simply duplicates of source ingest jobs, but for
+ingesting stars within the same ra and dec boundaries.
 """
 
 import numpy as np
@@ -24,7 +27,7 @@ import pickle
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 
-from puzle.models import SourceIngestJob
+from puzle.models import SourceIngestJob, StarIngestJob
 from puzle.utils import lightcurve_file_to_ra_dec
 from puzle import db
 
@@ -79,7 +82,7 @@ def return_density(ra, dec, density_polygons):
     return None
 
 
-def populate_source_ingest_jobs():
+def populate_ingest_jobs():
     ra_min, ra_max = 0., 360.
     delta_ra_min, delta_ra_max = 0.125, 2.0
     dec_min, dec_max, delta_dec = -30., 90., 1.0
@@ -114,8 +117,14 @@ def populate_source_ingest_jobs():
             ra += delta_ra
         db.session.commit()
 
+    source_jobs = db.session.query(SourceIngestJob).all()
+    for source_job in source_jobs:
+        star_job = StarIngestJob(source_job.id)
+        db.session.add(star_job)
+    db.session.commit()
+
 
 if __name__ == '__main__':
     if not os.path.exists(return_density_polygons_filename()):
         save_density_polygons()
-    populate_source_ingest_jobs()
+    populate_ingest_jobs()

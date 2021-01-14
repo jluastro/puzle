@@ -26,7 +26,7 @@ def load_user(id):
 user_source_association = db.Table(
     'user_source_association',
     db.Column('user_id', db.Integer, db.ForeignKey('puzle.user.id')),
-    db.Column('source_id', db.BigInteger, db.ForeignKey('puzle.source.id')),
+    db.Column('source_id', db.String(128), db.ForeignKey('puzle.source.id')),
     schema='puzle'
 )
 
@@ -115,7 +115,7 @@ class User(UserMixin, db.Model):
 class Source(db.Model):
     __table_args__ = {'schema': 'puzle'}
 
-    id = db.Column(db.BigInteger, primary_key=True, nullable=False)
+    id = db.Column(db.String(128), primary_key=True, nullable=False)
     object_id_g = db.Column(db.BigInteger)
     object_id_r = db.Column(db.BigInteger)
     object_id_i = db.Column(db.BigInteger)
@@ -132,7 +132,7 @@ class Source(db.Model):
     def __init__(self, object_id_g, object_id_r, object_id_i,
                  lightcurve_position_g, lightcurve_position_r, lightcurve_position_i,
                  ra, dec, lightcurve_filename, ingest_job_id,
-                 comments=None, _ztf_ids=None):
+                 id=None, comments=None, _ztf_ids=None):
         self.object_id_g = object_id_g
         self.object_id_r = object_id_r
         self.object_id_i = object_id_i
@@ -143,6 +143,7 @@ class Source(db.Model):
         self.dec = dec
         self.lightcurve_filename = lightcurve_filename
         self.ingest_job_id = ingest_job_id
+        self.id = id
         self.comments = comments
         self.zort_source = self.load_zort_source()
         self._ztf_ids = _ztf_ids
@@ -238,9 +239,11 @@ class SourceIngestJob(db.Model):
     dec_end = db.Column(db.Float, nullable=False)
     started = db.Column(db.Boolean, nullable=False, server_default='f')
     finished = db.Column(db.Boolean, nullable=False, server_default='f')
+    uploaded = db.Column(db.Boolean, nullable=False, server_default='f')
     datetime_started = db.Column(db.DateTime, nullable=True)
     datetime_finished = db.Column(db.DateTime, nullable=True)
     slurm_job_id = db.Column(db.Integer, nullable=True)
+    slurm_job_rank = db.Column(db.Integer, nullable=True)
 
     def __init__(self, ra_start, ra_end, dec_start, dec_end):
         self.ra_start = ra_start
@@ -249,21 +252,41 @@ class SourceIngestJob(db.Model):
         self.dec_end = dec_end
 
 
+class StarIngestJob(db.Model):
+    __table_args__ = {'schema': 'puzle'}
+
+    id = db.Column(db.BigInteger, primary_key=True, nullable=False)
+    started = db.Column(db.Boolean, nullable=False, server_default='f')
+    finished = db.Column(db.Boolean, nullable=False, server_default='f')
+    uploaded = db.Column(db.Boolean, nullable=False, server_default='f')
+    datetime_started = db.Column(db.DateTime, nullable=True)
+    datetime_finished = db.Column(db.DateTime, nullable=True)
+    slurm_job_id = db.Column(db.Integer, nullable=True)
+    slurm_job_rank = db.Column(db.Integer, nullable=True)
+    source_ingest_job_id = db.Column(db.BigInteger, nullable=False)
+
+    def __init__(self, source_ingest_job_id):
+        self.source_ingest_job_id = source_ingest_job_id
+
+
 class Star(db.Model):
     __table_args__ = {'schema': 'puzle'}
 
     id = db.Column(db.BigInteger, primary_key=True, nullable=False)
-    source_ids = db.Column(db.ARRAY(db.BigInteger))
+    source_ids = db.Column(db.ARRAY(db.String(128)))
     ra = db.Column(db.Float, nullable=False)
     dec = db.Column(db.Float, nullable=False)
+    ingest_job_id = db.Column(db.BigInteger, nullable=False)
     comments = db.Column(db.String(1024))
     _ztf_ids = db.Column(db.String(256))
 
     def __init__(self, source_ids, ra, dec,
+                 ingest_job_id=None,
                  comments=None, _ztf_ids=None):
         self.source_ids = source_ids
         self.ra = ra
         self.dec = dec
+        self.ingest_job_id = ingest_job_id
         self.comments = comments
         self._ztf_ids = _ztf_ids
         self._glonlat = None
