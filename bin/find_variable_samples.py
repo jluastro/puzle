@@ -164,10 +164,14 @@ def find_microlensing_sample():
     for ra, dec in radec:
         sources = locate_sources_by_radec(ra, dec)
         for source in sources:
+            if source.object_g:
+                obj = source.object_g
+            else:
+                obj = source.object_r
             filename = '%s/field%06d_%i_lc.png' % (folder,
-                                                   source.object_g.fieldid,
-                                                   source.object_g.object_id)
-            source.object_g.plot_lightcurves(filename)
+                                                   obj.fieldid,
+                                                   obj.object_id)
+            obj.plot_lightcurves(filename)
 
             hmjd_g, mag_g, magerr_g = _return_obj_lightcurve_data(source.object_g)
             hmjd_r, mag_r, magerr_r = _return_obj_lightcurve_data(source.object_r)
