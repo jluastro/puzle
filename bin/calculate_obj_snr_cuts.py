@@ -2,6 +2,7 @@
 """
 calculate_obj_snr_cuts.py
 """
+import os
 import glob
 import numpy as np
 from zort.lightcurveFile import LightcurveFile
@@ -100,8 +101,10 @@ def generate_obj_snr_cuts(field_ids, glons, glats, N_samples=10000):
         fig.tight_layout()
         fig.subplots_adjust(top=.9)
 
-        fname = 'field%06d_obj_snr_cuts.png' % field_id
-        fig.savefig(fname)
+        dir_path_puzle = os.path.dirname(os.path.dirname(
+            os.path.realpath(__file__)))
+        fname = f'{dir_path_puzle}/figures/field{field_id:06d}_obj_snr_cuts.png'
+        fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
         print('-- %s saved' % fname)
 
 
