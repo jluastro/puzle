@@ -6,6 +6,8 @@ generate_ulens_templates.py
 import matplotlib.pyplot as plt
 import os
 from astropy.io import fits
+from astropy.coordinates import SkyCoord
+import astropy.units as u
 import numpy as np
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
@@ -21,13 +23,24 @@ def return_refined_events(snr_cut=15, mag_lim=21.5):
     filename = return_refined_events_filename()
     refined_events = fits.open(filename)[1].data
 
+    # perform cut on minimum delta_m
+    delta_m = refined_events['delta_m_r']
+    cond = delta_m >= .1
+    refined_events = refined_events[cond]
+
     # perform cut on minimum SNR
-    mag_src = refined_events['ztf_r_app_S']
-    snr = 5 * 10 ** ((mag_lim - mag_src) / 5)
+    mag_app = refined_events['ztf_r_app_LSN']
+    snr = 5 * 10 ** ((mag_lim - mag_app) / 5)
     cond = snr >= snr_cut
     refined_events = refined_events[cond]
 
     return refined_events
+
+
+def add_magnitudes(mag1, mag2):
+    flux1 = 10 ** (mag1 / -2.5)
+    flux2 = 10 ** (mag2 / -2.5)
+    return -2.5 * np.log10(flux1 + flux2)
 
 
 def return_ulens_templates(N_samples=500, snr_cut=15, mag_lim=21.5):
@@ -41,6 +54,8 @@ def return_ulens_templates(N_samples=500, snr_cut=15, mag_lim=21.5):
     t_obs = np.linspace(-500, 500, 1001)
 
     ulens_templates = np.zeros((N_samples, len(t_obs)))
+    ulens_templates_with_err = np.zeros((N_samples, len(t_obs)))
+    snr_arr = []
     for i, idx in enumerate(idx_arr):
         t0 = refined_events[idx]['t0']
         u0_amp = refined_events[idx]['u0']
@@ -51,8 +66,13 @@ def return_ulens_templates(N_samples=500, snr_cut=15, mag_lim=21.5):
         piE_N = piE * np.sin(theta)
         b_sff = refined_events[idx]['f_blend_r']
         mag_src = refined_events[idx]['ztf_r_app_S']
-        raL = np.random.uniform(0, 360)
-        decL = np.random.uniform(-30, 90)
+        mag_lens = refined_events[idx]['ztf_r_app_L']
+        mag_neighbor = refined_events[idx]['ztf_r_app_N']
+        glon = refined_events[idx]['glon_L']
+        glat = refined_events[idx]['glat_L']
+        coord = SkyCoord(glon, glat, frame='galactic', unit=u.degree)
+        raL = coord.icrs.ra.value
+        decL = coord.icrs.dec.value
 
         model = PSPL_Phot_Par_Param1(t0=t0,
                                      u0_amp=u0_amp,
@@ -65,27 +85,35 @@ def return_ulens_templates(N_samples=500, snr_cut=15, mag_lim=21.5):
                                      decL=decL)
 
         phot = model.get_photometry(t_obs)
+        phot = add_magnitudes(phot, mag_lens)
+        phot = add_magnitudes(phot, mag_neighbor)
+
         snr = 5 * 10 ** ((mag_lim - phot) / 5)
         phot_err = np.array([np.random.normal(scale=1/s) for s in snr])
-        # ulens_templates[i] = phot + phot_err
+        ulens_templates_with_err[i] = phot + phot_err
         ulens_templates[i] = phot
+        snr_arr.append(np.min(snr))
 
-    return ulens_templates
+    return ulens_templates, ulens_templates_with_err, snr_arr
 
 
 def plot_ulens_templates():
-    ulens_templates = return_ulens_templates()
+    ulens_templates, ulens_templates_with_err, snr_arr = return_ulens_templates()
     N_templates = len(ulens_templates)
     N_samples = min(N_templates, 24)
     idx_arr = np.random.choice(np.arange(N_templates), N_samples, replace=False)
+
+    idx_arr = np.arange(N_samples)
 
     fig, ax = plt.subplots(8, 3, figsize=(8, 10))
     ax = ax.flatten()
 
     for i, idx in enumerate(idx_arr):
-        ulens_template = ulens_templates[idx]
-        x = np.arange(len(ulens_template))
-        ax[i].scatter(x, ulens_template, s=1)
+        snr = snr_arr[idx]
+        x = np.arange(len(ulens_templates[idx]))
+        ax[i].set_title(f'Sample {idx} | SNR {snr:.1f}', fontsize=10)
+        ax[i].scatter(x, ulens_templates[idx], s=1)
+        ax[i].scatter(x, ulens_templates_with_err[idx], s=1, alpha=.2)
         ax[i].ticklabel_format(useOffset=False)
         ax[i].invert_yaxis()
 
