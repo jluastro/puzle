@@ -9,13 +9,14 @@ from astropy.io import fits
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 import numpy as np
-from microlens.jlu.model import PSPL_Phot_Par_Param1
+from microlens.jlu.model import PSPL_Phot_Par_Param1, PSPL_Phot_Par_GP_Param1
 
 
 def return_refined_events_filename():
     dir_path_puzle = os.path.dirname(os.path.dirname(
         os.path.realpath(__file__)))
-    filename = f'{dir_path_puzle}/data/combined_5yrs_refined_events_ztf_r_Damineli16.v3_largeAp.fits'
+    # /global/cfs/cdirs/uLens/PopSyCLE_runs/PopSyCLE_runs_v3/l45.2_b4.9
+    filename = f'{dir_path_puzle}/data/combined_5yrs_refined_events_ztf_r_Damineli16.fits'
     return filename
 
 
@@ -74,6 +75,7 @@ def return_ulens_templates(N_samples=500, snr_cut=15, mag_lim=20.5):
         raL = coord.icrs.ra.value
         decL = coord.icrs.dec.value
 
+        # # priors from Nate's paper
         # gp_log_sigma = [np.random.normal(0, 5)]
         # gp_log_rho = [np.random.normal(0, 5)]
         # gp_log_So = [np.random.normal(0, 5)]
@@ -85,13 +87,16 @@ def return_ulens_templates(N_samples=500, snr_cut=15, mag_lim=20.5):
         #     raL=raL, decL=decL,
         #     gp_log_sigma=gp_log_sigma, gp_log_rho=gp_log_rho,
         #     gp_log_So=gp_log_So, gp_log_omegao=gp_log_omegao)
+        # mag = model.get_photometry(t_obs)
+        # snr = 5 * 10 ** ((mag_lim - mag) / 5)
+        # mag_err = np.array([np.random.normal(scale=1/s) for s in snr])
+        # mag, mag_err = model.get_photometry_with_gp(t_obs, mag, mag_err)
 
         model = PSPL_Phot_Par_Param1(
             t0=t0, u0_amp=u0_amp, tE=tE,
             piE_E=piE_E, piE_N=piE_N,
             b_sff=b_sff, mag_src=mag_src,
             raL=raL, decL=decL)
-
         mag = model.get_photometry(t_obs)
         snr = 5 * 10 ** ((mag_lim - mag) / 5)
         mag_err = np.array([np.random.normal(scale=1/s) for s in snr])
@@ -111,11 +116,14 @@ def save_ulens_templates():
     fname = f'{dir_path_puzle}/data/ulens_templates.npy'
     np.save(fname, ulens_templates_with_err)
 
+    return ulens_templates_with_err
 
-def plot_ulens_templates():
-    ulens_templates, ulens_templates_with_err = return_ulens_templates()
-    N_templates = len(ulens_templates)
-    N_samples = min(N_templates, 24)
+
+def plot_ulens_templates(ulens_templates_with_err=None):
+    if ulens_templates_with_err is None:
+        _, ulens_templates_with_err = return_ulens_templates()
+    N_templates = len(ulens_templates_with_err)
+    N_samples = min(ulens_templates_with_err, 24)
     np.random.seed(42)
     idx_arr = np.random.choice(np.arange(N_templates), N_samples, replace=False)
 
@@ -123,9 +131,8 @@ def plot_ulens_templates():
     ax = ax.flatten()
 
     for i, idx in enumerate(idx_arr):
-        x = np.arange(len(ulens_templates[idx]))
-        ax[i].scatter(x, ulens_templates[idx], s=1)
-        ax[i].scatter(x, ulens_templates_with_err[idx], s=1, alpha=.2)
+        x = np.arange(len(ulens_templates_with_err[idx]))
+        ax[i].scatter(x, ulens_templates_with_err[idx], s=1, alpha=.5)
         ax[i].ticklabel_format(useOffset=False)
         ax[i].invert_yaxis()
 
@@ -135,3 +142,8 @@ def plot_ulens_templates():
     fname = f'{dir_path_puzle}/figures/ulens_templates.png'
     fig.savefig(fname, dpi=100, bbox_inches='tight',
                 pad_inches=0.01)
+
+
+if __name__ == '__main__':
+    ulens_templates_with_err = save_ulens_templates()
+    plot_ulens_templates(ulens_templates_with_err)
