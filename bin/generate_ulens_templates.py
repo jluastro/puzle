@@ -123,7 +123,7 @@ def plot_ulens_templates(ulens_templates_with_err=None):
     if ulens_templates_with_err is None:
         _, ulens_templates_with_err = return_ulens_templates()
     N_templates = len(ulens_templates_with_err)
-    N_samples = min(ulens_templates_with_err, 24)
+    N_samples = min(N_templates, 24)
     np.random.seed(42)
     idx_arr = np.random.choice(np.arange(N_templates), N_samples, replace=False)
 
