@@ -8,7 +8,7 @@ import glob
 import numpy as np
 from datetime import datetime, timedelta
 from zort.lightcurveFile import LightcurveFile
-from zort.radec import lightcurve_file_is_pole, return_ZTF_RCID_corners
+from zort.radec import return_shifted_ra, return_ZTF_RCID_corners
 from sqlalchemy.sql.expression import func
 from shapely.geometry.polygon import Polygon
 import logging
@@ -32,9 +32,12 @@ def fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end):
 
     lightcurve_rcids_arr = []
     for i, lightcurve_file in enumerate(lightcurve_files):
+        field_id = int(lightcurve_file.split('_')[0].replace('field', ''))
+        ZTF_RCID_corners, shift_low, shift_high = return_ZTF_RCID_corners(field_id)
+
         ra0, ra1, dec0, dec1 = lightcurve_file_to_ra_dec(lightcurve_file)
-        if ra0 > ra1:
-            ra1 += 360
+        ra0 = return_shifted_ra(ra0, shift_low, shift_high)
+        ra1 = return_shifted_ra(ra1, shift_low, shift_high)
 
         file_polygon = Polygon([(ra0, dec0),
                                 (ra0, dec1),
@@ -43,25 +46,10 @@ def fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end):
         if not file_polygon.intersects(job_file_polygon):
             continue
 
-        is_pole = lightcurve_file_is_pole(lightcurve_file)
-        field_id = int(lightcurve_file.split('_')[0].replace('field', ''))
-        rcid_corners = return_ZTF_RCID_corners(field_id)
-
-        if is_pole and ra_start > 180:
-            job_rcid_polygon = Polygon([(ra_start - 360, dec_start),
-                                        (ra_start - 360, dec_end),
-                                        (ra_end - 360, dec_end),
-                                        (ra_end - 360, dec_start)])
-        else:
-            job_rcid_polygon = Polygon([(ra_start, dec_start),
-                                        (ra_start, dec_end),
-                                        (ra_end, dec_end),
-                                        (ra_end, dec_start)])
-
         rcids_to_read = []
-        for rcid, corners in rcid_corners.items():
+        for rcid, corners in ZTF_RCID_corners.items():
             rcid_polygon = Polygon(corners)
-            if rcid_polygon.intersects(job_rcid_polygon):
+            if rcid_polygon.intersects(job_file_polygon):
                 rcids_to_read.append(rcid)
 
         if len(rcids_to_read) > 0:
