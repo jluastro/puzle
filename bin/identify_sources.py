@@ -28,18 +28,17 @@ def fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end):
     lightcurve_rcids_arr = []
     for i, lightcurve_file in enumerate(lightcurve_files):
         field_id = int(lightcurve_file.split('_')[0].replace('field', ''))
-        ZTF_RCID_corners, shift_low, shift_high = return_ZTF_RCID_corners(field_id)
 
-        ra_start_file = return_shifted_ra(ra_start, shift_low, shift_high)
-        ra_end_file = return_shifted_ra(ra_end, shift_low, shift_high)
+        ra_start_file = return_shifted_ra(ra_start, field_id)
+        ra_end_file = return_shifted_ra(ra_end, field_id)
         job_file_polygon = Polygon([(ra_start_file, dec_start),
                                     (ra_start_file, dec_end),
                                     (ra_end_file, dec_end),
                                     (ra_end_file, dec_start)])
 
         ra0, ra1, dec0, dec1 = lightcurve_file_to_ra_dec(lightcurve_file)
-        ra0 = return_shifted_ra(ra0, shift_low, shift_high)
-        ra1 = return_shifted_ra(ra1, shift_low, shift_high)
+        ra0 = return_shifted_ra(ra0, field_id)
+        ra1 = return_shifted_ra(ra1, field_id)
 
         file_polygon = Polygon([(ra0, dec0),
                                 (ra0, dec1),
@@ -47,6 +46,8 @@ def fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end):
                                 (ra1, dec0)])
         if not file_polygon.intersects(job_file_polygon):
             continue
+
+        ZTF_RCID_corners = return_ZTF_RCID_corners(field_id)
 
         rcids_to_read = []
         for rcid, corners in ZTF_RCID_corners.items():
