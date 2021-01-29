@@ -7,6 +7,24 @@ import subprocess
 from datetime import datetime
 
 
+def return_dir(folder):
+    curdir = os.path.abspath(__file__)
+    dir = '/'.join(curdir.split('/')[:-2]) + folder
+    return dir
+
+
+def return_DR3_dir():
+    return return_dir('/data/DR3')
+
+
+def return_data_dir():
+    return return_dir('/data')
+
+
+def return_figures_dir():
+    return return_dir('/figures')
+
+
 def execute(cmd,
             shell=False):
     """Executes a command line instruction, captures the stdout and stderr
