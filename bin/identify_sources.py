@@ -22,11 +22,6 @@ logger = logging.getLogger(__name__)
 
 
 def fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end):
-    job_file_polygon = Polygon([(ra_start, dec_start),
-                                (ra_start, dec_end),
-                                (ra_end, dec_end),
-                                (ra_end, dec_start)])
-
     lightcurve_files = glob.glob('field*txt')
     lightcurve_files.sort()
 
@@ -34,6 +29,13 @@ def fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end):
     for i, lightcurve_file in enumerate(lightcurve_files):
         field_id = int(lightcurve_file.split('_')[0].replace('field', ''))
         ZTF_RCID_corners, shift_low, shift_high = return_ZTF_RCID_corners(field_id)
+
+        ra_start_file = return_shifted_ra(ra_start, shift_low, shift_high)
+        ra_end_file = return_shifted_ra(ra_end, shift_low, shift_high)
+        job_file_polygon = Polygon([(ra_start_file, dec_start),
+                                    (ra_start_file, dec_end),
+                                    (ra_end_file, dec_end),
+                                    (ra_end_file, dec_start)])
 
         ra0, ra1, dec0, dec1 = lightcurve_file_to_ra_dec(lightcurve_file)
         ra0 = return_shifted_ra(ra0, shift_low, shift_high)
