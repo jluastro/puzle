@@ -190,8 +190,8 @@ def source_to_csv_line(source, source_id):
 
 
 def export_sources(job_id, source_list):
-
-    dir = 'sources_%s' % str(job_id)[:3]
+    DR3_dir = return_DR3_dir()
+    dir = '%s/sources_%s' % (DR3_dir, str(job_id)[:3])
 
     if not os.path.exists(dir):
         os.makedirs(dir)
