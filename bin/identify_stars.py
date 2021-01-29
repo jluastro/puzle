@@ -115,6 +115,9 @@ def _export_stars(source_job_id, stars):
         os.makedirs(dir)
 
     fname = f'{dir}/stars.{source_job_id:06}.txt'
+    if os.path.exists(fname):
+        os.remove(fname)
+
     with open(fname, 'w') as f:
         header = 'ra,'
         header += 'dec,'

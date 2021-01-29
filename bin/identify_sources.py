@@ -192,6 +192,9 @@ def export_sources(job_id, source_list):
 
     source_exported = []
     fname = f'{dir}/sources.{job_id:06}.txt'
+    if os.path.exists(fname):
+        os.remove(fname)
+
     with open(fname, 'w') as f:
         header = 'id,'
         header += 'object_id_g,'
