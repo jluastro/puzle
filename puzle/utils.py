@@ -68,7 +68,7 @@ def fetch_job_enddate():
 
 
 def lightcurve_file_to_ra_dec(lightcurve_file):
-    _, ra_str, dec_str = lightcurve_file.split('_')
+    _, ra_str, dec_str = os.path.basename(lightcurve_file).split('_')
     ra0, ra1 = ra_str.replace('ra', '').split('to')
     ra0, ra1 = float(ra0), float(ra1)
     dec0, dec1 = dec_str.replace('.txt', '').replace('dec', '').split('to')

@@ -11,12 +11,13 @@ import astropy.units as u
 import numpy as np
 from microlens.jlu.model import PSPL_Phot_Par_Param1, PSPL_Phot_Par_GP_Param1
 
+from puzle.utils import return_figures_dir, return_data_dir
+
 
 def return_refined_events_filename():
-    dir_path_puzle = os.path.dirname(os.path.dirname(
-        os.path.realpath(__file__)))
     # /global/cfs/cdirs/uLens/PopSyCLE_runs/PopSyCLE_runs_v3/l45.2_b4.9
-    filename = f'{dir_path_puzle}/data/combined_5yrs_refined_events_ztf_r_Damineli16.fits'
+    data_dir = return_data_dir()
+    filename = f'{data_dir}/combined_5yrs_refined_events_ztf_r_Damineli16.fits'
     return filename
 
 
@@ -111,9 +112,8 @@ def return_ulens_templates(N_samples=500, snr_cut=15, mag_lim=20.5):
 
 def save_ulens_templates():
     _, ulens_templates_with_err = return_ulens_templates()
-    dir_path_puzle = os.path.dirname(os.path.dirname(
-        os.path.realpath(__file__)))
-    fname = f'{dir_path_puzle}/data/ulens_templates.npy'
+    data_dir = return_data_dir()
+    fname = f'{data_dir}/ulens_templates.npy'
     np.save(fname, ulens_templates_with_err)
 
     return ulens_templates_with_err
@@ -137,9 +137,8 @@ def plot_ulens_templates(ulens_templates_with_err=None):
         ax[i].invert_yaxis()
 
     fig.tight_layout()
-    dir_path_puzle = os.path.dirname(os.path.dirname(
-        os.path.realpath(__file__)))
-    fname = f'{dir_path_puzle}/figures/ulens_templates.png'
+    figures_dir = return_figures_dir()
+    fname = f'{figures_dir}/ulens_templates.png'
     fig.savefig(fname, dpi=100, bbox_inches='tight',
                 pad_inches=0.01)
 
