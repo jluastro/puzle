@@ -14,7 +14,8 @@ from shapely.geometry.polygon import Polygon
 import logging
 
 from puzle.models import Source, SourceIngestJob
-from puzle.utils import fetch_job_enddate, lightcurve_file_to_ra_dec
+from puzle.utils import fetch_job_enddate, lightcurve_file_to_ra_dec, \
+    return_DR3_dir, lightcurve_file_to_field_id
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle import db
 
@@ -22,12 +23,13 @@ logger = logging.getLogger(__name__)
 
 
 def fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end):
-    lightcurve_files = glob.glob('field*txt')
+    DR3_dir = return_DR3_dir()
+    lightcurve_files = glob.glob(f'{DR3_dir}/field*txt')
     lightcurve_files.sort()
 
     lightcurve_rcids_arr = []
     for i, lightcurve_file in enumerate(lightcurve_files):
-        field_id = int(lightcurve_file.split('_')[0].replace('field', ''))
+        field_id = lightcurve_file_to_field_id(lightcurve_file)
 
         ra0, ra1, dec0, dec1 = lightcurve_file_to_ra_dec(lightcurve_file)
         if ra1 < ra0:

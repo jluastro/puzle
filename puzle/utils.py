@@ -74,3 +74,9 @@ def lightcurve_file_to_ra_dec(lightcurve_file):
     dec0, dec1 = dec_str.replace('.txt', '').replace('dec', '').split('to')
     dec0, dec1 = float(dec0), float(dec1)
     return ra0, ra1, dec0, dec1
+
+
+def lightcurve_file_to_field_id(lightcurve_file):
+    lightcurve_file = os.path.basename(lightcurve_file)
+    field_id = int(lightcurve_file.split('_')[0].replace('field', ''))
+    return field_id
