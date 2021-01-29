@@ -30,8 +30,12 @@ def fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end):
         field_id = int(lightcurve_file.split('_')[0].replace('field', ''))
 
         ra0, ra1, dec0, dec1 = lightcurve_file_to_ra_dec(lightcurve_file)
-        ra0_shifted = return_shifted_ra(ra0, field_id)
-        ra1_shifted = return_shifted_ra(ra1, field_id)
+        if ra1 < ra0:
+            ra0_shifted = return_shifted_ra(ra0, field_id)
+            ra1_shifted = return_shifted_ra(ra1, field_id)
+        else:
+            ra0_shifted = ra0
+            ra1_shifted = ra1
 
         file_polygon = Polygon([(ra0_shifted, dec0),
                                 (ra0_shifted, dec1),
@@ -41,7 +45,7 @@ def fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end):
         if ra0_shifted < ra0 and ra_start > 180:
             ra_start_shifted = ra_start - 360
             ra_end_shifted = ra_end - 360
-        elif ra0_shifted > ra0 and ra_end < 180:
+        elif ra1_shifted > ra1 and ra_end < 180:
             ra_start_shifted = ra_start + 360
             ra_end_shifted = ra_end + 360
         else:
