@@ -6,13 +6,13 @@ import time
 import os
 import numpy as np
 from datetime import datetime, timedelta
-from zort.radec import lightcurve_file_is_pole
 from sqlalchemy.sql.expression import func
+from zort.radec import return_shifted_ra
 import logging
 from scipy.spatial import cKDTree
 
 from puzle.models import Source, SourceIngestJob, Star, StarIngestJob
-from puzle.utils import fetch_job_enddate
+from puzle.utils import fetch_job_enddate, return_DR3_dir, lightcurve_file_to_field_id
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle import db
 
@@ -91,7 +91,8 @@ def csv_line_to_source(line):
 
 
 def fetch_sources(source_job_id):
-    dir = 'sources_%s' % str(source_job_id)[:3]
+    DR3_dir = return_DR3_dir()
+    dir = '%s/sources_%s' % (DR3_dir, str(source_job_id)[:3])
 
     if not os.path.exists(dir):
         logging.error('Source directory missing!')
@@ -109,12 +110,16 @@ def fetch_sources(source_job_id):
 
 
 def _export_stars(source_job_id, stars):
-    dir = 'stars_%s' % str(source_job_id)[:3]
+    DR3_dir = return_DR3_dir()
+    dir = '%s/stars_%s' % (DR3_dir, str(source_job_id)[:3])
 
     if not os.path.exists(dir):
         os.makedirs(dir)
 
     fname = f'{dir}/stars.{source_job_id:06}.txt'
+    if os.path.exists(fname):
+        os.remove(fname)
+
     with open(fname, 'w') as f:
         header = 'ra,'
         header += 'dec,'
@@ -135,12 +140,10 @@ def export_stars(source_job_id, sources):
     radec = []
     source_ids = []
     for source in sources:
-        is_pole = lightcurve_file_is_pole(source.lightcurve_filename)
+        field_id = lightcurve_file_to_field_id(source.lightcurve_filename)
         ra, dec = source.ra, source.dec
-        if is_pole and ra > 180:
-            ra -= 360
-
-        radec.append((ra, dec))
+        ra_shifted = return_shifted_ra(ra, field_id)
+        radec.append((ra_shifted, dec))
         source_ids.append(source.id)
 
     kdtree = cKDTree(np.array(radec))
@@ -155,6 +158,11 @@ def export_stars(source_job_id, sources):
         key = tuple(ids)
         if key not in star_keys:
             star_keys.add(key)
+
+            if ra < 0:
+                ra += 360
+            elif ra > 360:
+                ra -= 360
             star = Star(source_ids=ids,
                         ra=ra, dec=dec,
                         ingest_job_id=source_job_id)

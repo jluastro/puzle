@@ -28,7 +28,7 @@ from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 
 from puzle.models import SourceIngestJob, StarIngestJob
-from puzle.utils import lightcurve_file_to_ra_dec
+from puzle.utils import lightcurve_file_to_ra_dec, return_data_dir, return_DR3_dir
 from puzle import db
 
 
@@ -40,16 +40,16 @@ def file_len(fname):
 
 
 def return_density_polygons_filename():
-    dir_path_puzle = os.path.dirname(os.path.dirname(
-        os.path.realpath(__file__)))
-    filename = f'{dir_path_puzle}/data/density_polygons.dat'
+    data_dir = return_data_dir()
+    filename = f'{data_dir}/density_polygons.dat'
     return filename
 
 
 def save_density_polygons():
     density_polygons = []
 
-    objects_files = glob.glob('field*objects')
+    DR3_dir = return_DR3_dir()
+    objects_files = glob.glob(f'{DR3_dir}/field*objects')
     for objects_file in objects_files:
         lightcurve_file = objects_file.replace('.objects', '.txt')
         ra0, ra1, dec0, dec1 = lightcurve_file_to_ra_dec(lightcurve_file)

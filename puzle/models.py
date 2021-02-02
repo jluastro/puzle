@@ -195,7 +195,7 @@ class Source(db.Model):
         dir_path_puzle = os.path.dirname(os.path.dirname(
             os.path.realpath(__file__)))
         dir_path_DR3 = f'{dir_path_puzle}/data/DR3'
-        fname = '%s/%s' % (dir_path_DR3, self.lightcurve_filename)
+        fname = '%s/%s' % (dir_path_DR3, os.path.basename(self.lightcurve_filename))
         source = zort_source(filename=fname,
                              lightcurve_position_g=self.lightcurve_position_g,
                              lightcurve_position_r=self.lightcurve_position_r,
