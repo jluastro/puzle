@@ -64,7 +64,7 @@ def plot_source_ingest_progress():
     ra_arr = []
     dec_arr = []
     for i, job in enumerate(jobs):
-        if i % 100 == 0:
+        if i % 1000 == 0:
             print(i, len(jobs))
         job_id = job.id
 
@@ -119,7 +119,7 @@ def plot_star_ingest_progress():
     ra_arr = []
     dec_arr = []
     for i, job in enumerate(jobs):
-        if i % 100 == 0:
+        if i % 1000 == 0:
             print(i, len(jobs))
         job_id = job[0].id
 
