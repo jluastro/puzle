@@ -4,76 +4,18 @@ identify_sources.py
 """
 import time
 import os
-import glob
 import numpy as np
 from datetime import datetime, timedelta
 from zort.lightcurveFile import LightcurveFile
-from zort.radec import return_shifted_ra, return_ZTF_RCID_corners
 from sqlalchemy.sql.expression import func
-from shapely.geometry.polygon import Polygon
 import logging
 
 from puzle.models import Source, SourceIngestJob
-from puzle.utils import fetch_job_enddate, lightcurve_file_to_ra_dec, \
-    return_DR3_dir, lightcurve_file_to_field_id
+from puzle.utils import fetch_job_enddate, return_DR3_dir, fetch_lightcurve_rcids
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle import db
 
 logger = logging.getLogger(__name__)
-
-
-def fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end):
-    DR3_dir = return_DR3_dir()
-    lightcurve_files = glob.glob(f'{DR3_dir}/field*txt')
-    lightcurve_files.sort()
-
-    lightcurve_rcids_arr = []
-    for i, lightcurve_file in enumerate(lightcurve_files):
-        field_id = lightcurve_file_to_field_id(lightcurve_file)
-
-        ra0, ra1, dec0, dec1 = lightcurve_file_to_ra_dec(lightcurve_file)
-        if ra1 < ra0:
-            ra0_shifted = return_shifted_ra(ra0, field_id)
-            ra1_shifted = return_shifted_ra(ra1, field_id)
-        else:
-            ra0_shifted = ra0
-            ra1_shifted = ra1
-
-        file_polygon = Polygon([(ra0_shifted, dec0),
-                                (ra0_shifted, dec1),
-                                (ra1_shifted, dec1),
-                                (ra1_shifted, dec0)])
-
-        if ra0_shifted < ra0 and ra_start > 180:
-            ra_start_shifted = ra_start - 360
-            ra_end_shifted = ra_end - 360
-        elif ra1_shifted > ra1 and ra_end < 180:
-            ra_start_shifted = ra_start + 360
-            ra_end_shifted = ra_end + 360
-        else:
-            ra_start_shifted = ra_start
-            ra_end_shifted = ra_end
-
-        job_polygon = Polygon([(ra_start_shifted, dec_start),
-                               (ra_start_shifted, dec_end),
-                               (ra_end_shifted, dec_end),
-                               (ra_end_shifted, dec_start)])
-
-        if not file_polygon.intersects(job_polygon):
-            continue
-
-        ZTF_RCID_corners = return_ZTF_RCID_corners(field_id)
-
-        rcids_to_read = []
-        for rcid, corners in ZTF_RCID_corners.items():
-            rcid_polygon = Polygon(corners)
-            if rcid_polygon.intersects(job_polygon):
-                rcids_to_read.append(rcid)
-
-        if len(rcids_to_read) > 0:
-            lightcurve_rcids_arr.append((lightcurve_file, rcids_to_read))
-
-    return lightcurve_rcids_arr
 
 
 def object_in_bounds(obj, ra_start, ra_end, dec_start, dec_end):
