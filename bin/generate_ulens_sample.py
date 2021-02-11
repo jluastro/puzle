@@ -127,7 +127,7 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000, N_t0_samples=10, nepoch
 
 
 if __name__ == '__main__':
-    l, b, N_samples, N_t0_samples, nepochs_min = 6, 3, 1000, 10, 100
+    l, b, N_samples, N_t0_samples, nepochs_min = 6, 3, 1000, 10, 10
     generate_random_lightcurves_lb(l, b,
                                    N_samples=N_samples,
                                    N_t0_samples=N_t0_samples,
