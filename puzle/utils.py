@@ -5,6 +5,7 @@ utils.py
 import os
 import glob
 import subprocess
+import numpy as np
 from datetime import datetime
 from zort.radec import return_shifted_ra, return_ZTF_RCID_corners
 from shapely.geometry.polygon import Polygon
@@ -137,3 +138,22 @@ def fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end):
             lightcurve_rcids_arr.append((lightcurve_file, rcids_to_read))
 
     return lightcurve_rcids_arr
+
+
+def stack_ragged(array_list):
+    lengths = [np.shape(a)[1] for a in array_list]
+    idx = np.cumsum(lengths[:-1])
+    stacked = np.concatenate(array_list, axis=1)
+    return stacked, idx
+
+
+def save_stacked_array(fname, array_list):
+    stacked, idx = stack_ragged(array_list)
+    np.savez(fname, stacked_array=stacked, stacked_index=idx)
+
+
+def load_stacked_arrays(fname):
+    npzfile = np.load(fname)
+    idx = npzfile['stacked_index']
+    stacked = npzfile['stacked_array']
+    return np.split(stacked.T, idx, axis=0)

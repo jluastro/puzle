@@ -12,7 +12,7 @@ from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle import db
 from puzle.models import Source
-from puzle.utils import return_data_dir
+from puzle.utils import return_data_dir, return_figures_dir, save_stacked_array
 
 popsycle_base_folder = '/global/cfs/cdirs/uLens/PopSyCLE_runs/PopSyCLE_runs_v3_refined_events'
 
@@ -161,25 +161,6 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000,
                 break
 
     return lightcurves
-
-
-def stack_ragged(array_list):
-    lengths = [np.shape(a)[1] for a in array_list]
-    idx = np.cumsum(lengths[:-1])
-    stacked = np.concatenate(array_list, axis=1)
-    return stacked, idx
-
-
-def save_stacked_array(fname, array_list):
-    stacked, idx = stack_ragged(array_list)
-    np.savez(fname, stacked_array=stacked, stacked_index=idx)
-
-
-def load_stacked_arrays(fname):
-    npzfile = np.load(fname)
-    idx = npzfile['stacked_index']
-    stacked = npzfile['stacked_array']
-    return np.split(stacked.T, idx, axis=0)
 
 
 if __name__ == '__main__':
