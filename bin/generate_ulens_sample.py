@@ -80,7 +80,6 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000, N_t0_samples=10, nepoch
         lightcurveFile = lightcurveFile_arr[lightcurveFile_idx]
         for obj in lightcurveFile:
             n_days = len(np.unique(np.floor(obj.lightcurve.hmjd)))
-            print('-- %i' % n_days)
             if n_days >= nepochs_min:
                 if obj1 is None:
                     obj1 = obj
