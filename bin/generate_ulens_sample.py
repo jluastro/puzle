@@ -80,7 +80,6 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000, N_t0_samples=10, nepoch
         lightcurveFile = lightcurveFile_arr[lightcurveFile_idx]
         for obj in lightcurveFile:
             n_days = len(np.unique(np.floor(obj.lightcurve.hmjd)))
-            print(obj.nepochs, type(obj1))
             print('-- %i (%i/%i)' % (n_days, i, N_samples))
             if n_days >= nepochs_min:
                 obj1 = obj
@@ -122,6 +121,7 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000, N_t0_samples=10, nepoch
         fname = '%s/ulens_lightcurve_sample_%04d.png' % (return_figures_dir(), i)
         fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
         print(f'{fname} saved')
+        plt.close(fig)
 
 
 if __name__ == '__main__':
