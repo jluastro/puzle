@@ -6,10 +6,14 @@ from scipy.stats import expon
 from astropy.table import Table, vstack
 from astropy.coordinates import SkyCoord
 import astropy.units as u
+from sqlalchemy.sql.expression import func
+
 from zort.lightcurveFile import LightcurveFile
 from zort.photometry import fluxes_to_magnitudes
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
+from puzle import db
+from puzle.models import Source
 from puzle.utils import fetch_lightcurve_rcids, return_figures_dir, lightcurve_file_to_field_id
 
 popsycle_base_folder = '/global/cfs/cdirs/uLens/PopSyCLE_runs/PopSyCLE_runs_v3_refined_events'
@@ -38,6 +42,26 @@ def gather_PopSyCLE_refined_events():
     print(f'{N_samples} Samples')
 
 
+def fetch_objects(ra, dec, radius, limit=None):
+
+    print('Running query')
+    cone_filter = Source.cone_search(ra, dec, radius)
+    query = db.session.query(Source).filter(cone_filter).order_by(func.random())
+    if limit is not None:
+        query = query.limit(limit)
+    sources = query.all()
+
+    print('Extracting objects')
+    objects = []
+    for source in sources:
+        zort_source = source.load_zort_source()
+        nepochs_arr = [obj.nepochs for obj in zort_source.objects]
+        obj = zort_source.objects[np.argmax(nepochs_arr)]
+        objects.append(obj)
+
+    return objects
+
+
 def generate_random_lightcurves_lb(l, b, N_samples=1000, N_t0_samples=10, nepochs_min=20):
     popsycle_fname = f'{popsycle_base_folder}/l{l:.1f}_b{b:.1f}_refined_events_ztf_r_Damineli16.fits'
     popsycle_catalog = Table.read(popsycle_fname, format='fits')
@@ -59,32 +83,35 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000, N_t0_samples=10, nepoch
 
     coord = SkyCoord(l, b, unit=u.degree, frame='galactic')
     ra, dec = coord.icrs.ra.value, coord.icrs.dec.value
-    radius = np.sqrt(47 / np.pi)
-    delta_x = radius * np.sqrt(2) / 2
-    ra_start, ra_end = ra - delta_x, ra + delta_x
-    dec_start, dec_end = dec - delta_x, dec + delta_x
-    lightcurve_rcids = fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end)
+    radius = np.sqrt(47 / np.pi) * 3600.
+    # delta_x = radius * np.sqrt(2) / 2
+    # ra_start, ra_end = ra - delta_x, ra + delta_x
+    # dec_start, dec_end = dec - delta_x, dec + delta_x
+    # lightcurve_rcids = fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end)
+    #
+    # lightcurveFile_arr = []
+    # for lightcurve_filename, rcids in lightcurve_rcids:
+    #     field_id = lightcurve_file_to_field_id(lightcurve_filename)
+    #     if field_id > 1000:
+    #         continue
+    #     lightcurveFile = LightcurveFile(lightcurve_filename, rcids_to_read=rcids)
+    #     lightcurveFile_arr.append(lightcurveFile)
 
-    lightcurveFile_arr = []
-    for lightcurve_filename, rcids in lightcurve_rcids:
-        field_id = lightcurve_file_to_field_id(lightcurve_filename)
-        if field_id > 1000:
-            continue
-        lightcurveFile = LightcurveFile(lightcurve_filename, rcids_to_read=rcids)
-        lightcurveFile_arr.append(lightcurveFile)
+    print('Fetching objects')
+    objects = fetch_objects(ra, dec, radius, limit=N_samples)
 
-    for i in range(N_samples):
+    for i, obj1 in enumerate(objects):
         print('Generating Sample %i/%i' % (i, N_samples))
-        obj1 = None
-        lightcurveFile_idx = np.random.choice(np.arange(len(lightcurveFile_arr)))
-        lightcurveFile = lightcurveFile_arr[lightcurveFile_idx]
-        for obj in lightcurveFile:
-            n_days = len(np.unique(np.floor(obj.lightcurve.hmjd)))
-            print('-- %i (%i/%i)' % (n_days, i, N_samples))
-            if n_days >= nepochs_min:
-                obj1 = obj
-            if obj1 is not None:
-                break
+        # obj1 = None
+        # lightcurveFile_idx = np.random.choice(np.arange(len(lightcurveFile_arr)))
+        # lightcurveFile = lightcurveFile_arr[lightcurveFile_idx]
+        # for obj in lightcurveFile:
+        #     n_days = len(np.unique(np.floor(obj.lightcurve.hmjd)))
+        #     print('-- %i (%i/%i)' % (n_days, i, N_samples))
+        #     if n_days >= nepochs_min:
+        #         obj1 = obj
+        #     if obj1 is not None:
+        #         break
 
         tE = tE_arr[i]
         piE_E = piE_E_arr[i]
