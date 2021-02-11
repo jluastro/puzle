@@ -68,7 +68,7 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000, N_t0_samples=10, nepoch
     popsycle_catalog = popsycle_catalog[cond]
 
     N_samples = min(len(popsycle_catalog), N_samples)
-    idx_arr = np.random.choice(np.arange(N_samples), replace=False)
+    idx_arr = np.random.choice(np.arange(N_samples), size=N_samples, replace=False)
     tE_arr = popsycle_catalog['t_E'][idx_arr]
     pi_E_arr = popsycle_catalog['pi_E'][idx_arr]
     theta = np.random.uniform(0, 2 * np.pi, N_samples)
