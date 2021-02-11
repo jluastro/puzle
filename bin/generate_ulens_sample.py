@@ -131,6 +131,7 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000,
 
         obj_t = obj.lightcurve.hmjd
         obj_mag = obj.lightcurve.mag
+        obj_magerr = obj.lightcurve.magerr
         obj_flux = obj.lightcurve.flux
         obj_fluxerr = obj.lightcurve.fluxerr
         t0_min, t0_max = np.min(obj_t), np.max(obj_t)
@@ -151,11 +152,12 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000,
 
             amp = model.get_amplification(obj_t)
             obj_flux_micro = amp * b_sff * obj_flux + (1 - b_sff) * obj_flux
+
             obj_mag_micro, _ = fluxes_to_magnitudes(obj_flux_micro, obj_fluxerr)
             delta_m = obj_mag - obj_mag_micro
             delta_m_min_cond = delta_m >= delta_m_min
             if np.sum(delta_m_min_cond) >= delta_m_min_cut:
-                lightcurves.append((obj_t, obj_mag_micro))
+                lightcurves.append((obj_t, obj_mag_micro, obj_magerr))
                 break
 
     return lightcurves
