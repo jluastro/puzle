@@ -8,13 +8,12 @@ from astropy.coordinates import SkyCoord
 import astropy.units as u
 from sqlalchemy.sql.expression import func
 
-from zort.lightcurveFile import LightcurveFile
 from zort.photometry import fluxes_to_magnitudes
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle import db
 from puzle.models import Source
-from puzle.utils import fetch_lightcurve_rcids, return_figures_dir, lightcurve_file_to_field_id
+from puzle.utils import return_figures_dir
 
 popsycle_base_folder = '/global/cfs/cdirs/uLens/PopSyCLE_runs/PopSyCLE_runs_v3_refined_events'
 
@@ -65,21 +64,33 @@ def fetch_objects(ra, dec, radius, limit=None):
 def generate_random_lightcurves_lb(l, b, N_samples=1000, N_t0_samples=10, nepochs_min=20):
     popsycle_fname = f'{popsycle_base_folder}/l{l:.1f}_b{b:.1f}_refined_events_ztf_r_Damineli16.fits'
     popsycle_catalog = Table.read(popsycle_fname, format='fits')
+    cond = popsycle_catalog['delta_m_r'] >= 0.1
+    popsycle_catalog = popsycle_catalog[cond]
 
-    tE_log_catalog = np.log10(popsycle_catalog['t_E'])
-    tE_log_median = np.median(tE_log_catalog)
-    tE_log_std = np.std(tE_log_catalog)
-    tE_arr = 10 ** np.random.normal(tE_log_median, tE_log_std, size=N_samples)
-
-    pi_E_catalog = popsycle_catalog['pi_E']
-    loc, scale = expon.fit(pi_E_catalog)
-    pi_E = expon.rvs(loc, scale, N_samples)
+    N_samples = min(len(popsycle_catalog), N_samples)
+    idx_arr = np.random.choice(np.arange(N_samples), replace=False)
+    tE_arr = popsycle_catalog['t_E'][idx_arr]
+    pi_E_arr = popsycle_catalog['pi_E'][idx_arr]
     theta = np.random.uniform(0, 2 * np.pi, N_samples)
-    piE_E_arr = pi_E * np.cos(theta)
-    piE_N_arr = pi_E * np.sin(theta)
+    piE_E_arr = pi_E_arr * np.cos(theta)
+    piE_N_arr = pi_E_arr * np.sin(theta)
+    u0_arr = popsycle_catalog['u0'][idx_arr]
+    b_sff_arr = popsycle_catalog['f_blend_r'][idx_arr]
 
-    u0_arr = np.random.uniform(-2, 2, N_samples)
-    b_sff_arr = np.random.uniform(0, 1, N_samples)
+    # tE_log_catalog = np.log10(popsycle_catalog['t_E'])
+    # tE_log_median = np.median(tE_log_catalog)
+    # tE_log_std = np.std(tE_log_catalog)
+    # tE_arr = 10 ** np.random.normal(tE_log_median, tE_log_std, size=N_samples)
+    #
+    # pi_E_catalog = popsycle_catalog['pi_E']
+    # loc, scale = expon.fit(pi_E_catalog)
+    # pi_E = expon.rvs(loc, scale, N_samples)
+    # theta = np.random.uniform(0, 2 * np.pi, N_samples)
+    # piE_E_arr = pi_E * np.cos(theta)
+    # piE_N_arr = pi_E * np.sin(theta)
+    #
+    # u0_arr = np.random.uniform(-2, 2, N_samples)
+    # b_sff_arr = np.random.uniform(0, 1, N_samples)
 
     coord = SkyCoord(l, b, unit=u.degree, frame='galactic')
     ra, dec = coord.icrs.ra.value, coord.icrs.dec.value
@@ -113,6 +124,11 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000, N_t0_samples=10, nepoch
         #     if obj1 is not None:
         #         break
 
+        # tE = tE_arr[i]
+        # piE_E = piE_E_arr[i]
+        # piE_N = piE_N_arr[i]
+        # u0 = u0_arr[i]
+        # b_sff = b_sff_arr[i]
         tE = tE_arr[i]
         piE_E = piE_E_arr[i]
         piE_N = piE_N_arr[i]
