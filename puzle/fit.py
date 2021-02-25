@@ -1,10 +1,9 @@
-import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import numpy as np
 import logging
-from zort.photometry import magnitudes_to_fluxes, fluxes_to_magnitudes
+from zort.photometry import magnitudes_to_fluxes
 
-from puzle.utils import return_data_dir, load_stacked_array
+from puzle.utils import return_data_dir, load_stacked_arrays
 
 logger = logging.getLogger(__name__)
 
@@ -82,16 +81,20 @@ def fit_event(t_obs_arr, mag_arr, magerr_arr):
             ulens_func = ulens_func_a_type_two
             amplification_func = return_amplification_two
 
-        (t0, t_eff, f0, f1), _ = curve_fit(ulens_func,
-                                           t_obs_arr, flux_obs_arr,
-                                           bounds=bounds)
+        try:
+            (t0, t_eff, f0, f1), _ = curve_fit(ulens_func,
+                                               t_obs_arr, flux_obs_arr,
+                                               bounds=bounds)
+        except RuntimeError:
+            continue
         q = return_q(t_obs_arr, t0, t_eff)
         a = amplification_func(q)
         flux_model_arr = f1 * a + f0
 
         chi_squared_model = np.sum((flux_obs_arr - flux_model_arr) ** 2. / fluxerr_obs_arr ** 2.)
         chi_squared_flat = np.sum((flux_obs_arr - np.mean(flux_obs_arr)) ** 2. / fluxerr_obs_arr ** 2.)
-        chi_squared_delta = ((chi_squared_model / chi_squared_flat) - 1) * len(flux_model_arr)
+        # chi_squared_delta = ((chi_squared_model / chi_squared_flat) - 1) * len(flux_model_arr)
+        chi_squared_delta = chi_squared_flat - chi_squared_model
 
         t0_arr.append(t0)
         t_eff_arr.append(t_eff)
@@ -99,6 +102,9 @@ def fit_event(t_obs_arr, mag_arr, magerr_arr):
         f1_arr.append(f1)
         chi_squared_delta_arr.append(chi_squared_delta)
         a_type_arr.append(a_type)
+
+    if len(t0_arr) == 0:
+        return None
 
     idx = np.argmin(chi_squared_delta_arr)
 
@@ -112,15 +118,25 @@ def fit_event(t_obs_arr, mag_arr, magerr_arr):
     return t0, t_eff, f0, f1, chi_squared_delta, a_type
 
 
-if __name__ == '__main__':
-    # fname = '%s/ulens_sample.npz' % return_data_dir()
-    # lightcurves_arr = load_stacked_array(fname)
-    fname = '%s/sample_ulens_lightcurve.npz' % return_data_dir()
-    data = np.load(fname)
-    t_obs_arr = data['hmjd']
-    flux_arr = data['flux']
-    fluxerr_arr = data['fluxerr']
-    mag_arr, magerr_arr = fluxes_to_magnitudes(flux_arr, fluxerr_arr)
+def main():
+    fname = '%s/ulens_sample.npz' % return_data_dir()
+    lightcurves_arr = load_stacked_arrays(fname)
+    chi_squared_delta_arr = []
+    for i, lightcurve in enumerate(lightcurves_arr):
+        if i % 10 == 0:
+            print('Fitting lightcurve %i / %i' % (i, len(lightcurves_arr)))
+        t_obs_arr = lightcurve[:, 0]
+        mag_arr = lightcurve[:, 1]
+        magerr_arr = lightcurve[:, 2]
 
-    data = fit_event(t_obs_arr, mag_arr, magerr_arr)
-    t0, t_eff, f0, f1, chi_squared_delta, a_type = data
+        data = fit_event(t_obs_arr, mag_arr, magerr_arr)
+        if data is None:
+            chi_squared_delta_arr.append(0)
+        else:
+            t0, t_eff, f0, f1, chi_squared_delta, a_type = data
+            chi_squared_delta_arr.append(chi_squared_delta)
+    return chi_squared_delta_arr
+
+
+if __name__ == '__main__':
+    main()
