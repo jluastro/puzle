@@ -211,14 +211,20 @@ class Source(db.Model):
         if not os.path.exists(lightcurve_plot_filename):
             self.zort_source.plot_lightcurves(filename=lightcurve_plot_filename)
 
-    def fetch_ztf_ids(self):
+    def _fetch_mars_results(self):
         radius_deg = 2. / 3600.
         cone = '%f,%f,%f' % (self.ra, self.dec, radius_deg)
         query = {"queries": [{"cone": cone}]}
         results = requests.post('https://mars.lco.global/', json=query).json()
         if results['total'] == 0:
-            return 0
+            return None
+        else:
+            return results
 
+    def fetch_ztf_ids(self):
+        results = self._fetch_mars_results()
+        if results is None:
+            return 0
         ztf_ids = [str(r['objectId']) for r in
                    results['results'][0]['results']]
         ztf_ids = list(set(ztf_ids))
@@ -227,6 +233,14 @@ class Source(db.Model):
             self.ztf_ids = ztf_id
 
         return len(ztf_ids)
+
+    def fetch_ztf_sgscore(self):
+        results = self._fetch_mars_results()
+        if results is None:
+            return None
+
+        sgscore = results['results'][0]['results'][0]['candidate']['sgscore1']
+        return sgscore
 
 
 class SourceIngestJob(db.Model):
