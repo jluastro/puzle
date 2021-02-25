@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --account=m2218
-#SBATCH --qos=regular
+#SBATCH --qos=premium
 #SBATCH --constraint=haswell
 #SBATCH --nodes=1
 #SBATCH --time=42:00:00
