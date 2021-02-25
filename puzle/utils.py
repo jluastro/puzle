@@ -3,8 +3,12 @@
 utils.py
 """
 import os
+import glob
 import subprocess
+import numpy as np
 from datetime import datetime
+from zort.radec import return_shifted_ra, return_ZTF_RCID_corners
+from shapely.geometry.polygon import Polygon
 
 
 def return_dir(folder):
@@ -80,3 +84,76 @@ def lightcurve_file_to_field_id(lightcurve_file):
     lightcurve_file = os.path.basename(lightcurve_file)
     field_id = int(lightcurve_file.split('_')[0].replace('field', ''))
     return field_id
+
+
+def fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end):
+    DR3_dir = return_DR3_dir()
+    lightcurve_files = glob.glob(f'{DR3_dir}/field*txt')
+    lightcurve_files.sort()
+
+    lightcurve_rcids_arr = []
+    for i, lightcurve_file in enumerate(lightcurve_files):
+        field_id = lightcurve_file_to_field_id(lightcurve_file)
+
+        ra0, ra1, dec0, dec1 = lightcurve_file_to_ra_dec(lightcurve_file)
+        if ra1 < ra0:
+            ra0_shifted = return_shifted_ra(ra0, field_id)
+            ra1_shifted = return_shifted_ra(ra1, field_id)
+        else:
+            ra0_shifted = ra0
+            ra1_shifted = ra1
+
+        file_polygon = Polygon([(ra0_shifted, dec0),
+                                (ra0_shifted, dec1),
+                                (ra1_shifted, dec1),
+                                (ra1_shifted, dec0)])
+
+        if ra0_shifted < ra0 and ra_start > 180:
+            ra_start_shifted = ra_start - 360
+            ra_end_shifted = ra_end - 360
+        elif ra1_shifted > ra1 and ra_end < 180:
+            ra_start_shifted = ra_start + 360
+            ra_end_shifted = ra_end + 360
+        else:
+            ra_start_shifted = ra_start
+            ra_end_shifted = ra_end
+
+        job_polygon = Polygon([(ra_start_shifted, dec_start),
+                               (ra_start_shifted, dec_end),
+                               (ra_end_shifted, dec_end),
+                               (ra_end_shifted, dec_start)])
+
+        if not file_polygon.intersects(job_polygon):
+            continue
+
+        ZTF_RCID_corners = return_ZTF_RCID_corners(field_id)
+
+        rcids_to_read = []
+        for rcid, corners in ZTF_RCID_corners.items():
+            rcid_polygon = Polygon(corners)
+            if rcid_polygon.intersects(job_polygon):
+                rcids_to_read.append(rcid)
+
+        if len(rcids_to_read) > 0:
+            lightcurve_rcids_arr.append((lightcurve_file, rcids_to_read))
+
+    return lightcurve_rcids_arr
+
+
+def stack_ragged(array_list):
+    lengths = [np.shape(a)[1] for a in array_list]
+    idx = np.cumsum(lengths[:-1])
+    stacked = np.concatenate(array_list, axis=1)
+    return stacked, idx
+
+
+def save_stacked_array(fname, array_list):
+    stacked, idx = stack_ragged(array_list)
+    np.savez(fname, stacked_array=stacked, stacked_index=idx)
+
+
+def load_stacked_arrays(fname):
+    npzfile = np.load(fname)
+    idx = npzfile['stacked_index']
+    stacked = npzfile['stacked_array']
+    return np.split(stacked.T, idx, axis=0)
