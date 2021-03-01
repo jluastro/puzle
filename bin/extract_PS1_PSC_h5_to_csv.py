@@ -1,6 +1,7 @@
 import h5py
 import glob
 import os
+import numpy as np
 
 
 def _return_csv_filename(fi):
@@ -37,10 +38,20 @@ def extract_files():
     fis = glob.glob('dec*classifications.h5')
     fis.sort()
 
+    if 'SLURMD_NODENAME' in os.environ:
+        from mpi4py import MPI
+        comm = MPI.COMM_WORLD
+        rank = comm.rank
+        size = comm.size
+    else:
+        rank, size = 0, 1
+
+    my_fis = np.array_split(fis, size)[rank]
+
     num_chunk = int(1e6)
 
-    for i, fi in enumerate(fis):
-        print('Extracting %s (%i / %i)' % (fi, i+1, len(fis)))
+    for i, fi in enumerate(my_fis):
+        print('Extracting %s (%i / %i)' % (fi, i+1, len(my_fis)))
         with h5py.File(fi, 'r') as f:
             num_rows = f['class_table']['block0_values'].shape[0]
             init_csv(fi)
