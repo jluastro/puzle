@@ -13,7 +13,7 @@ def init_csv(fi):
         os.remove(fi_csv)
 
     with open(fi_csv, 'w') as f:
-        f.write('objID,raStack,decStack,rfScore,qualityFlag\n')
+        f.write('obj_id,ra_stack,dec_stack,rf_score,quality_flag\n')
 
 
 def export_rows(objIDs, raStacks, decStacks, rfScores, qualityFlags):
@@ -38,7 +38,8 @@ fis.sort()
 
 num_chunk = int(1e6)
 
-for fi in fis:
+for i, fi in enumerate(fis):
+    print('Extracting %s (%i / %i)' % (fi, i+1, len(fis)))
     with h5py.File(fi, 'r') as f:
         num_rows = f['class_table']['block0_values'].shape[0]
         init_csv(fi)

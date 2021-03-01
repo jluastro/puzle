@@ -2,6 +2,8 @@ import os
 import argparse
 from boxsdk import JWTAuth, Client
 
+from puzle.utils import return_data_dir
+
 
 def _return_fname(i):
     return 'download_PS1_PSC.%02d.sh' % i
@@ -38,7 +40,9 @@ def main():
                           default=1)
     args = parser.parse_args()
 
-    config = JWTAuth.from_settings_file('800207941_6guv3vhr_config.json')
+    data_dir = return_data_dir()
+    config_fname = '%s/800207941_6guv3vhr_config.json' % data_dir
+    config = JWTAuth.from_settings_file(config_fname)
     client = Client(config)
 
     _ = client.create_user('User', login=None)
@@ -63,6 +67,7 @@ def main():
             output_cmd(cmd, file.name, i, args.n_scripts)
 
     open_script_permissions(args.n_scripts)
+
 
 if __name__ == '__main__':
     main()
