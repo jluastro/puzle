@@ -16,7 +16,7 @@ def init_csv(fi):
         f.write('obj_id,ra_stack,dec_stack,rf_score,quality_flag\n')
 
 
-def export_rows(objIDs, raStacks, decStacks, rfScores, qualityFlags):
+def export_rows(fi, objIDs, raStacks, decStacks, rfScores, qualityFlags):
     fi_csv = _return_csv_filename(fi)
     num_entries = len(objIDs)
     with open(fi_csv, 'a') as f:
@@ -51,7 +51,7 @@ def extract_files():
                 decStacks = f['class_table']['block0_values'][row_low:row_high, 1]
                 rfScores = f['class_table']['block0_values'][row_low:row_high, 2]
                 qualityFlags = f['class_table']['block2_values'][row_low:row_high]
-                export_rows(objIDs, raStacks, decStacks, rfScores, qualityFlags)
+                export_rows(fi, objIDs, raStacks, decStacks, rfScores, qualityFlags)
 
 
 if __name__ == '__main__':
