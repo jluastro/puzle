@@ -33,21 +33,26 @@ def export_rows(objIDs, raStacks, decStacks, rfScores, qualityFlags):
                                           qualityFlag))
 
 
-fis = glob.glob('dec*classifications.h5')
-fis.sort()
+def extract_files():
+    fis = glob.glob('dec*classifications.h5')
+    fis.sort()
 
-num_chunk = int(1e6)
+    num_chunk = int(1e6)
 
-for i, fi in enumerate(fis):
-    print('Extracting %s (%i / %i)' % (fi, i+1, len(fis)))
-    with h5py.File(fi, 'r') as f:
-        num_rows = f['class_table']['block0_values'].shape[0]
-        init_csv(fi)
-        for row_low in range(0, num_rows, num_chunk):
-            row_high = row_low + num_chunk
-            objIDs = f['class_table']['block1_values'][row_low:row_high]
-            raStacks = f['class_table']['block0_values'][row_low:row_high, 0]
-            decStacks = f['class_table']['block0_values'][row_low:row_high, 1]
-            rfScores = f['class_table']['block0_values'][row_low:row_high, 2]
-            qualityFlags = f['class_table']['block2_values'][row_low:row_high]
-            export_rows(objIDs, raStacks, decStacks, rfScores, qualityFlags)
+    for i, fi in enumerate(fis):
+        print('Extracting %s (%i / %i)' % (fi, i+1, len(fis)))
+        with h5py.File(fi, 'r') as f:
+            num_rows = f['class_table']['block0_values'].shape[0]
+            init_csv(fi)
+            for row_low in range(0, num_rows, num_chunk):
+                row_high = row_low + num_chunk
+                objIDs = f['class_table']['block1_values'][row_low:row_high]
+                raStacks = f['class_table']['block0_values'][row_low:row_high, 0]
+                decStacks = f['class_table']['block0_values'][row_low:row_high, 1]
+                rfScores = f['class_table']['block0_values'][row_low:row_high, 2]
+                qualityFlags = f['class_table']['block2_values'][row_low:row_high]
+                export_rows(objIDs, raStacks, decStacks, rfScores, qualityFlags)
+
+
+if __name__ == '__main__':
+    extract_files()
