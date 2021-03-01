@@ -64,7 +64,7 @@ def main():
 
     for i, file in enumerate(shared_folder.get_items()):
         if file.type == 'file':
-            if overwrite and os.path.exists(file.name):
+            if not overwrite and os.path.exists(file.name):
                 continue
             dict_out = {'access_token': access_token,
                         'url': url,
