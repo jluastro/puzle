@@ -51,7 +51,7 @@ def extract_files():
     num_chunk = int(1e6)
 
     for i, fi in enumerate(my_fis):
-        print('Extracting %s (%i / %i)' % (fi, i+1, len(my_fis)))
+        print('%i) Extracting %s (%i / %i)' % (rank, fi, i+1, len(my_fis)))
         with h5py.File(fi, 'r') as f:
             num_rows = f['class_table']['block0_values'].shape[0]
             init_csv(fi)
