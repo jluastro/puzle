@@ -205,7 +205,7 @@ def save_stacked_array(fname, array_list):
     np.savez(fname, stacked_array=stacked, stacked_index=idx)
 
 
-def load_stacked_arrays(fname):
+def load_stacked_array(fname):
     npzfile = np.load(fname)
     idx = npzfile['stacked_index']
     stacked = npzfile['stacked_array']
