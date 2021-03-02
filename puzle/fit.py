@@ -3,7 +3,7 @@ import numpy as np
 import logging
 from zort.photometry import magnitudes_to_fluxes
 
-from puzle.utils import return_data_dir, load_stacked_arrays
+from puzle.utils import return_data_dir, load_stacked_array
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +120,7 @@ def fit_event(t_obs_arr, mag_arr, magerr_arr):
 
 def main():
     fname = '%s/ulens_sample.npz' % return_data_dir()
-    lightcurves_arr = load_stacked_arrays(fname)
+    lightcurves_arr = load_stacked_array(fname)
     chi_squared_delta_arr = []
     for i, lightcurve in enumerate(lightcurves_arr):
         if i % 10 == 0:
