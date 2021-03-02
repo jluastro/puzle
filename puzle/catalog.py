@@ -99,7 +99,7 @@ def query_ulens_db(query, con=None):
 def query_ps1_psc(ra, dec, radius=2, con=None):
     radius_deg = radius / 3600.
     query = f'select obj_id, ra_stack, dec_stack, rf_score, quality_flag, ' \
-            f'sqrt((ra_stack-{ra})^2+(dec_stack-{dec})^2) as dist from ps1_psc ' \
+            f'sqrt((ra_stack-({ra}))^2+(dec_stack-({dec}))^2) as dist from ps1_psc ' \
             f'where q3c_radial_query(ra_stack, dec_stack, {ra}, {dec}, {radius_deg}) ' \
             f'order by dist asc limit 1;'
     result = query_ulens_db(query, con=con)
