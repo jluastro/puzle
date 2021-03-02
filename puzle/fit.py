@@ -9,15 +9,15 @@ logger = logging.getLogger(__name__)
 
 
 def return_q(t_arr, t0, t_eff):
-    return 1 + ((t_arr - t0) / t_eff) ** 2.
+    return 1 + (((t_arr - t0) / t_eff)*((t_arr - t0) / t_eff))
 
 
 def return_amplification_one(q):
-    return q ** -0.5
+    return 1 / np.sqrt(q)
 
 
 def return_amplification_two(q):
-    return (1 - ((q / 2) + 1) ** -2.) ** -0.5
+    return 1 / np.sqrt((1 - (1 / (((q / 2) + 1)*((q / 2) + 1)))))
 
 
 def return_chi_squared_mask(flux_obs, fluxerr_obs, flux_model, percent_bad=10):
