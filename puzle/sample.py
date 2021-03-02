@@ -87,6 +87,8 @@ def fetch_sample_objects(lightcurve_file, n_days_min=20, rf_threshold=0.83,
             if num_objs >= num_sources_rcid:
                 break
 
+        print('---- %i objects added' % num_objs)
+
     ulens_con.close()
     return objs
 
