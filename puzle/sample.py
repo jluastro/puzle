@@ -45,7 +45,7 @@ def gather_PopSyCLE_refined_events():
 
 
 def fetch_sample_objects(lightcurve_file, n_days_min=20, rf_threshold=0.83,
-                         num_sources_in_query=150, rcid_radius=1250,
+                         num_sources_rcid=150, rcid_radius=1250,
                          rcid_list=None):
     ulens_con = catalog.ulens_con()
 
@@ -54,9 +54,9 @@ def fetch_sample_objects(lightcurve_file, n_days_min=20, rf_threshold=0.83,
 
     objs = []
     for rcid, corners in ZTF_RCID_corners.items():
-        print('-- fetching sample for rcid %i' % rcid)
         if rcid_list is not None and rcid not in rcid_list:
             continue
+        print('-- fetching sample for rcid %i' % rcid)
         polygon = Polygon(corners)
         ra_rcid, dec_rcid = polygon.centroid.x, polygon.centroid.y
 
@@ -65,21 +65,26 @@ def fetch_sample_objects(lightcurve_file, n_days_min=20, rf_threshold=0.83,
             order_by(Source.id)
         num_sources_db = query.count()
 
+        # limit search to 100 times the number required for the rcid
+        num_sources_query = min(num_sources_db, 100*num_sources_rcid)
+
         num_objs = 0
-        for row_min in range(0, num_sources_db, num_sources_in_query):
-            sources_db = query.offset(row_min).limit(num_sources_in_query).all()
+        for row_min in range(0, num_sources_query, num_sources_rcid):
+            sources_db = query.offset(row_min).limit(num_sources_rcid).all()
             for source in sources_db:
                 zort_source = source.load_zort_source()
                 nepochs_arr = [obj.nepochs for obj in zort_source.objects]
                 obj = zort_source.objects[np.argmax(nepochs_arr)]
                 n_days = len(np.unique(np.round(obj.lightcurve.hmjd)))
+                if n_days < n_days_min:
+                    continue
                 ps1_psc = catalog.query_ps1_psc(obj.ra, obj.dec, con=ulens_con)
                 if ps1_psc is None:
                     continue
-                if n_days >= n_days_min and ps1_psc.rf_score >= rf_threshold:
+                if ps1_psc.rf_score >= rf_threshold:
                     objs.append(obj)
                     num_objs += 1
-            if num_objs >= num_sources_in_query:
+            if num_objs >= num_sources_rcid:
                 break
 
     ulens_con.close()
