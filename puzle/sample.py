@@ -17,6 +17,7 @@ from microlens.jlu.model import PSPL_Phot_Par_Param1
 from puzle import catalog
 from puzle.utils import lightcurve_file_to_field_id, popsycle_base_folder
 from puzle.models import Source
+from puzle.fit import fit_event
 from puzle import db
 
 
@@ -53,6 +54,7 @@ def fetch_sample_objects(lightcurve_file, n_days_min=20, rf_threshold=0.83,
 
     objs = []
     for rcid, corners in ZTF_RCID_corners.items():
+        print('-- fetching sample for rcid %i' % rcid)
         if rcid_list is not None and rcid not in rcid_list:
             continue
         polygon = Polygon(corners)
@@ -126,7 +128,7 @@ def generate_random_lightcurves_lb(l, b, objs,
     u0_arr = u0_arr[delta_m_idx_arr]
     b_sff_arr = b_sff_arr[delta_m_idx_arr]
 
-    lightcurves_regular = []
+    lightcurves_norm = []
     lightcurves_ulens = []
 
     for i, obj in enumerate(objs):
@@ -167,7 +169,43 @@ def generate_random_lightcurves_lb(l, b, objs,
             delta_m_snr = delta_m / obj_magerr
             if np.sum(delta_m_snr >= 3) >= num_3sigma_cut:
                 lightcurves_ulens.append((obj_t, obj_mag_micro, obj_magerr))
-                lightcurves_regular.append((obj_t, obj_mag, obj_magerr))
+                lightcurves_norm.append((obj_t, obj_mag, obj_magerr))
                 break
 
-    return lightcurves_regular, lightcurves_ulens
+    return lightcurves_norm, lightcurves_ulens
+
+
+def calculate_eta(mag):
+    delta = np.sum((mag[1:] - mag[:-1])**2.) / (len(mag)-1)
+    variance = np.var(mag)
+    eta = delta / variance
+    return eta
+
+
+def calculate_J(mag, magerr):
+    n = len(mag)
+    mag_mean = np.mean(mag)
+    delta = np.sqrt(n / (n - 1)) * (mag - mag_mean) / magerr
+    J = np.sum(np.sign(delta[:-1]*delta[1:]) * np.sqrt(np.abs(delta[:-1]*delta[1:])))
+    return J
+
+
+def calculate_lightcurve_stats(lightcurves):
+    eta_arr = []
+    J_arr = []
+    chi_square_delta_arr = []
+    for lightcurve in lightcurves:
+        t, mag, magerr = lightcurve[0], lightcurve[1], lightcurve[2]
+
+        eta = calculate_eta(mag)
+        J = calculate_J(mag, magerr)
+        fit_data = fit_event(t, mag, magerr)
+        if fit_data is None:
+            continue
+        chi_squared_delta = fit_data[4]
+
+        eta_arr.append(eta)
+        J_arr.append(J)
+        chi_square_delta_arr.append(chi_squared_delta)
+
+    return eta_arr, J_arr, chi_square_delta_arr
