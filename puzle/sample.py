@@ -84,8 +84,8 @@ def fetch_sample_objects(lightcurve_file, n_days_min=20, rf_threshold=0.83,
                 if ps1_psc.rf_score >= rf_threshold:
                     objs.append(obj)
                     num_objs += 1
-                if num_objs >= num_sources_rcid:
-                    break
+            if num_objs >= num_sources_rcid:
+                break
 
         print('---- %i objects added' % num_objs)
 
