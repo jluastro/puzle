@@ -44,7 +44,8 @@ def gather_PopSyCLE_refined_events():
 
 
 def fetch_sample_objects(lightcurve_file, n_days_min=20, rf_threshold=0.83,
-                         num_sources_in_query=150, rcid_radius=1250):
+                         num_sources_in_query=150, rcid_radius=1250,
+                         rcid_list=None):
     ulens_con = catalog.ulens_con()
 
     field_id = lightcurve_file_to_field_id(lightcurve_file)
@@ -52,7 +53,8 @@ def fetch_sample_objects(lightcurve_file, n_days_min=20, rf_threshold=0.83,
 
     objs = []
     for rcid, corners in ZTF_RCID_corners.items():
-        print(rcid)
+        if rcid_list is not None and rcid not in rcid_list:
+            continue
         polygon = Polygon(corners)
         ra_rcid, dec_rcid = polygon.centroid.x, polygon.centroid.y
 
