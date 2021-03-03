@@ -23,8 +23,9 @@ For each field in the galactic plane:
 
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
-from puzle.utils import gather_PopSyCLE_lb, find_nearest_lightcurve_file
+from puzle.utils import gather_PopSyCLE_lb, find_nearest_lightcurve_file, return_data_dir
 from puzle.sample import generate_random_lightcurves_lb, fetch_sample_objects, \
     calculate_lightcurve_stats
 
@@ -126,14 +127,57 @@ def generate_whelen_stats_figure(stats_norm, stats_ulens):
     fig.tight_layout()
 
 
-lb_arr = gather_PopSyCLE_lb()
-for i, (l, b) in enumerate(lb_arr):
-    print('Processing (l, b) = (%.2f, %.2f) |  %i / %i' % (l, b, i, len(lb_arr)))
-    lightcurve_file = find_nearest_lightcurve_file(l, b)
-    objs = fetch_sample_objects(lightcurve_file)
-    lightcurves_norm, lightcurves_ulens = generate_random_lightcurves_lb(l, b, objs)
+def save_threshold_stats(overwrite=False):
+    lb_arr = gather_PopSyCLE_lb()
+    for i, (l, b) in enumerate(lb_arr):
+        fname = '%s/l%.1f_b%.1f_threshold_stats.npz' % (return_data_dir(), l, b)
+        if not overwrite and os.path.exists(fname):
+            continue
+        print('Processing (l, b) = (%.2f, %.2f) |  %i / %i' % (l, b, i, len(lb_arr)))
+        lightcurve_file = find_nearest_lightcurve_file(l, b)
+        objs = fetch_sample_objects(lightcurve_file)
+        lightcurves_norm, lightcurves_ulens = generate_random_lightcurves_lb(l, b, objs)
 
-    stats_norm = calculate_lightcurve_stats(lightcurves_norm)
-    eta_norm, J_norm, chi_squared_delta_norm = stats_norm
-    stats_ulens = calculate_lightcurve_stats(lightcurves_ulens)
-    eta_ulens, J_ulens, chi_squared_delta_ulens = stats_ulens
+        stats_norm = calculate_lightcurve_stats(lightcurves_norm)
+        eta_norm, J_norm, chi_norm = stats_norm
+        stats_ulens = calculate_lightcurve_stats(lightcurves_ulens)
+        eta_ulens, J_ulens, chi_ulens = stats_ulens
+
+        np.savez(fname,
+                 eta_ulens=eta_ulens,
+                 J_ulens=J_ulens,
+                 chi_ulens=chi_ulens,
+                 eta_norm=eta_norm,
+                 J_norm=J_norm,
+                 chi_norm=chi_norm)
+
+
+def calculate_threshold_stats():
+    threshold_stats = {}
+    lb_arr = gather_PopSyCLE_lb()
+    for i, (l, b) in enumerate(lb_arr):
+        print('Processing (l, b) = (%.2f, %.2f) |  %i / %i' % (l, b, i, len(lb_arr)))
+        fname = '%s/l%.1f_b%.1f_threshold_stats.npz' % (return_data_dir(), l, b)
+        data = np.load(fname)
+        eta_ulens = data['eta_ulens']
+        J_ulens = data['J_ulens']
+        chi_ulens = data['chi_ulens']
+        eta_norm = data['eta_norm']
+        J_norm = data['J_norm']
+        chi_norm = data['chi_norm']
+
+        eta_thresh = np.percentile(eta_norm, 1)
+        J_thresh = np.percentile(J_norm, 99)
+        chi_thresh = np.percentile(chi_norm, 99)
+
+        eta_tpr = np.sum(eta_ulens <= eta_thresh) / len(eta_ulens)
+        J_tpr = np.sum(J_ulens >= J_thresh) / len(J_ulens)
+        chi_tpr = np.sum(chi_ulens >= chi_thresh) / len(chi_ulens)
+
+        threshold_stats[(l, b)] = {
+            'eta_thresh': eta_thresh,
+            'J_thresh': J_thresh,
+            'chi_thresh': chi_thresh,
+            'eta_tpr': eta_tpr,
+            'J_tpr': J_tpr,
+            'chi_tpr': chi_tpr}
