@@ -211,6 +211,8 @@ def calculate_threshold_stats():
             'J_tpr': J_tpr,
             'chi_tpr': chi_tpr}
 
+    return threshold_stats
+
 
 if __name__ == '__main__':
     save_threshold_stats()
