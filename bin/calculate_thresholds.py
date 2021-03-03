@@ -210,3 +210,7 @@ def calculate_threshold_stats():
             'eta_tpr': eta_tpr,
             'J_tpr': J_tpr,
             'chi_tpr': chi_tpr}
+
+
+if __name__ == '__main__':
+    save_threshold_stats()
