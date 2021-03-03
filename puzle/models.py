@@ -283,6 +283,23 @@ class StarIngestJob(db.Model):
         self.source_ingest_job_id = source_ingest_job_id
 
 
+class StarProcessJob(db.Model):
+    __table_args__ = {'schema': 'puzle'}
+
+    id = db.Column(db.BigInteger, primary_key=True, nullable=False)
+    started = db.Column(db.Boolean, nullable=False, server_default='f')
+    finished = db.Column(db.Boolean, nullable=False, server_default='f')
+    uploaded = db.Column(db.Boolean, nullable=False, server_default='f')
+    datetime_started = db.Column(db.DateTime, nullable=True)
+    datetime_finished = db.Column(db.DateTime, nullable=True)
+    slurm_job_id = db.Column(db.Integer, nullable=True)
+    slurm_job_rank = db.Column(db.Integer, nullable=True)
+    source_ingest_job_id = db.Column(db.BigInteger, nullable=False)
+
+    def __init__(self, source_ingest_job_id):
+        self.source_ingest_job_id = source_ingest_job_id
+
+
 class Star(db.Model):
     __table_args__ = {'schema': 'puzle'}
 

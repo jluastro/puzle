@@ -181,7 +181,7 @@ def save_threshold_stats(overwrite=False):
                  chi_norm=chi_norm)
 
 
-def calculate_threshold_stats():
+def load_threshold_stats():
     threshold_stats = {}
     lb_arr = gather_PopSyCLE_lb()
     for i, (l, b) in enumerate(lb_arr):
