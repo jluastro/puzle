@@ -106,7 +106,7 @@ def calculate_delta_m(u0, b_sff):
 
 
 def generate_random_lightcurves_lb(l, b, objs,
-                                   tE_min=20, delta_m_min=0.1,
+                                   tE_min=20, delta_m_min=0.25,
                                    num_3sigma_cut=5):
     popsycle_fname = f'{popsycle_base_folder}/l{l:.1f}_b{b:.1f}_refined_events_ztf_r_Damineli16.fits'
     popsycle_catalog = Table.read(popsycle_fname, format='fits')
