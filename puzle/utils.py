@@ -77,6 +77,7 @@ def fetch_job_enddate():
 
 def gather_PopSyCLE_lb():
     fis = glob.glob(f'{popsycle_base_folder}/*fits')
+    fis.sort()
     lb_arr = []
     for fi in fis:
         lb = os.path.basename(fi).split('_')

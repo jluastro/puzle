@@ -200,7 +200,7 @@ def calculate_J(mag, magerr):
 def calculate_lightcurve_stats(lightcurves):
     eta_arr = []
     J_arr = []
-    chi_square_delta_arr = []
+    chi_arr = []
     for lightcurve in lightcurves:
         t, mag, magerr = lightcurve[0], lightcurve[1], lightcurve[2]
 
@@ -209,10 +209,10 @@ def calculate_lightcurve_stats(lightcurves):
         fit_data = fit_event(t, mag, magerr)
         if fit_data is None:
             continue
-        chi_squared_delta = fit_data[4]
+        chi = fit_data[4]
 
         eta_arr.append(eta)
         J_arr.append(J)
-        chi_square_delta_arr.append(chi_squared_delta)
+        chi_arr.append(chi)
 
-    return eta_arr, J_arr, chi_square_delta_arr
+    return eta_arr, J_arr, chi_arr
