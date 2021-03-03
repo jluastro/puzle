@@ -65,7 +65,7 @@ def ulens_func_a_type_two(t_arr, t0, t_eff, f0, f1):
 def fit_event(t_obs_arr, mag_arr, magerr_arr):
     flux_obs_arr, fluxerr_obs_arr = magnitudes_to_fluxes(mag_arr, magerr_arr)
     bounds = ([np.min(t_obs_arr) - 50, 0.01, -np.inf, 0],
-              [np.max(t_obs_arr) + 50, 1000, np.inf, np.inf])
+              [np.max(t_obs_arr) + 50, 5000, np.inf, np.inf])
 
     t0_arr = []
     t_eff_arr = []

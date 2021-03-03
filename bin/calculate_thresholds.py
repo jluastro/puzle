@@ -57,8 +57,8 @@ def generate_whelen_stats_figure(stats_norm, stats_ulens):
     chi_thresh = np.percentile(chi_squared_delta_norm, 99)
 
     fig, ax = plt.subplots(3, 2, figsize=(9, 18))
-    size = 5
-    alpha = 1
+    size = 2
+    alpha = .2
     for a in ax.flatten():
         a.clear()
         a.grid(True)

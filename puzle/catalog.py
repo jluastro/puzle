@@ -106,13 +106,13 @@ def query_ps1_psc(ra, dec, radius=2, con=None):
 
     if len(result) == 1:
         result = result[0]
-        ps1_psc_tuple = namedtuple('ps1_psc',
-                                   'obj_id ra_stack dec_stack rf_score quality_flag')
-        ps1_psc = ps1_psc_tuple(obj_id=int(result[0]),
-                                ra_stack=float(result[1]),
-                                dec_stack=float(result[2]),
-                                rf_score=float(result[3]),
-                                quality_flag=int(result[4]))
+        rf_tuple = namedtuple('rf',
+                              'obj_id ra_stack dec_stack rf_score quality_flag')
+        rf = rf_tuple(obj_id=int(result[0]),
+                      ra_stack=float(result[1]),
+                      dec_stack=float(result[2]),
+                      rf_score=float(result[3]),
+                      quality_flag=int(result[4]))
     else:
-        ps1_psc = None
-    return ps1_psc
+        rf = None
+    return rf

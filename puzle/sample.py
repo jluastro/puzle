@@ -44,7 +44,7 @@ def gather_PopSyCLE_refined_events():
     print(f'{N_samples} Samples')
 
 
-def fetch_sample_objects(lightcurve_file, n_days_min=20, rf_threshold=0.83,
+def fetch_sample_objects(lightcurve_file, n_days_min=20, rf_threshold=0.97,
                          num_sources_rcid=150, rcid_radius=1250,
                          rcid_list=None):
     ulens_con = catalog.ulens_con()
