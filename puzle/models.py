@@ -379,6 +379,10 @@ class Candidate(db.Model):
 
     id = db.Column(db.String(128), primary_key=True, nullable=False)
     source_ids = db.Column(db.ARRAY(db.String(128)))
+    filter_ids = db.Column(db.ARRAY(db.Integer))
+    etas = db.Column(db.ARRAY(db.Float))
+    rf_scores = db.Column(db.ARRAY(db.Float))
+    eta_residuals = db.Column(db.ARRAY(db.Float))
     ra = db.Column(db.Float, nullable=False)
     dec = db.Column(db.Float, nullable=False)
     ingest_job_id = db.Column(db.BigInteger, nullable=False)
