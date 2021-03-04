@@ -122,7 +122,8 @@ def fetch_stars_and_sources(source_job_id):
     return list(star_to_source_dict.items())
 
 
-def filter_stars_to_candidates(stars_and_sources):
+def filter_stars_to_candidates(source_job_id, stars_and_sources):
+    logger.info(f'Job {source_job_id}: Calculating eta')
     num_stars = 0
     num_sources = 0
     num_objs = 0
@@ -136,79 +137,95 @@ def filter_stars_to_candidates(stars_and_sources):
                 eta = calculate_eta(obj.lightcurve.mag)
                 eta_threshold = return_eta_threshold(obj.nepochs)
                 if eta <= eta_threshold:
-                    eta_idxs.append(i)
+                    eta_idxs.append((i, j, k))
 
+    logger.info(f'Job {source_job_id}: '
+                f'{num_stars} Stars | '
+                f'{num_sources} Sources | '
+                f'{num_objs} Objects')
     num_objs_pass_eta = len(eta_idxs)
-    eta_idxs = list(set(eta_idxs))
-    num_stars_pass_eta = len(eta_idxs)
+    num_stars_pass_eta = len(set([idx[0] for idx in eta_idxs]))
+
+    logger.info(f'Job {source_job_id}: '
+                f'{num_stars_pass_eta} stars pass eta cut | '
+                f'{num_objs_pass_eta} objects pass eta cut')
 
     insert_db_id()
     ulens_con = catalog.ulens_con()
     rf_idxs = []
-    for idx in eta_idxs:
-        star, sources = stars_and_sources[idx]
-        for source in sources:
-            for obj in source.zort_source.objects:
-                rf_score = catalog.query_ps1_psc(obj.ra, obj.dec,
-                                                 con=ulens_con)
-                if rf_score is None or rf_score.rf_score >= RF_THRESHOLD:
-                    rf_idxs.append(idx)
+    for (i, j, k) in eta_idxs:
+        _, sources = stars_and_sources[i]
+        source = sources[j]
+        obj = source.zort_source.objects[k]
+        rf_score = catalog.query_ps1_psc(obj.ra, obj.dec,
+                                         con=ulens_con)
+        if rf_score is None or rf_score.rf_score >= RF_THRESHOLD:
+            rf_idxs.append((i, j, k))
     ulens_con.close()
     remove_db_id()
 
     num_objs_pass_rf = len(rf_idxs)
     rf_idxs = list(set(rf_idxs))
-    num_stars_pass_rf = len(rf_idxs)
+    num_stars_pass_rf = len(set([idx[0] for idx in rf_idxs]))
+
+    logger.info(f'Job {source_job_id}: '
+                f'{num_stars_pass_rf} stars pass rf_score cut | '
+                f'{num_objs_pass_rf} objects pass rf_score cut')
 
     eta_residual_idxs = []
-    count = 0
-    for idx in rf_idxs:
-        count += 1
-        star, sources = stars_and_sources[idx]
-        for source in sources:
-            for obj in source.zort_source.objects:
-                hmjd = obj.lightcurve.hmjd
-                mag = obj.lightcurve.magerr
-                magerr = obj.lightcurve.magerr
-                eta_residual = calculate_eta_on_residuals(hmjd, mag, magerr)
-                eta_threshold = return_eta_threshold(obj.nepochs)
-                if eta_residual is not None and eta_residual > eta_threshold:
-                    eta_residual_idxs.append(idx)
+    for (i, j, k) in rf_idxs:
+        _, sources = stars_and_sources[i]
+        source = sources[j]
+        obj = source.zort_source.objects[k]
+        hmjd = obj.lightcurve.hmjd
+        mag = obj.lightcurve.magerr
+        magerr = obj.lightcurve.magerr
+        eta_residual = calculate_eta_on_residuals(hmjd, mag, magerr)
+        eta_threshold = return_eta_threshold(obj.nepochs)
+        if eta_residual is not None and eta_residual > eta_threshold:
+            eta_residual_idxs.append((i, j, k))
 
     num_objs_pass_eta_residual = len(eta_residual_idxs)
     eta_residual_idxs = list(set(eta_residual_idxs))
-    num_stars_pass_eta_residual = len(eta_residual_idxs)
+    num_stars_pass_eta_residual = len(set([idx[0] for idx in eta_residual_idxs]))
 
+    logger.info(f'Job {source_job_id}: '
+                f'{num_stars_pass_eta_residual} source pass eta_residual cut | '
+                f'{num_objs_pass_eta_residual} objects pass eta_residual cut')
+
+    logger.info(f'Job {source_job_id}: Assembling candidates')
     insert_db_id()
     ulens_con = catalog.ulens_con()
     candidates = []
-    for idx in eta_residual_idxs:
-        sources = stars_and_sources[idx][1]
+    unique_star_idxs = list(set([i for i, _, _ in eta_residual_idxs]))
+    for star_idx in unique_star_idxs:
+        star, sources = stars_and_sources[star_idx]
+        source_obj_idxs = [(j, k) for i, j, k in eta_residual_idxs if i == star_idx]
         source_id_arr = []
         filter_id_arr = []
         eta_arr = []
         rf_arr = []
         eta_residual_arr = []
-        for source in sources:
-            for obj in source.zort_source.objects:
-                eta = calculate_eta(obj.lightcurve.mag)
-                eta_threshold = return_eta_threshold(obj.nepochs)
-                if eta <= eta_threshold:
-                    rf_score = catalog.query_ps1_psc(obj.ra, obj.dec,
-                                                     con=ulens_con)
-                    if rf_score is None or rf_score.rf_score >= RF_THRESHOLD:
-                        hmjd = obj.lightcurve.hmjd
-                        mag = obj.lightcurve.magerr
-                        magerr = obj.lightcurve.magerr
-                        eta_residual = calculate_eta_on_residuals(hmjd, mag, magerr)
-                        if eta_residual > eta_threshold:
-                            source_id_arr.append(source.id)
-                            filter_id_arr.append(obj.filterid)
-                            eta_arr.append(eta)
-                            rf_arr.append(rf_score)
-                            eta_residual_arr.append(eta_residual)
+        eta_threshold_arr = []
+        for j, k in source_obj_idxs:
+            source = sources[j]
+            obj = source.zort_source.objects[k]
+            eta = calculate_eta(obj.lightcurve.mag)
+            eta_threshold = return_eta_threshold(obj.nepochs)
+            rf_score = catalog.query_ps1_psc(obj.ra, obj.dec,
+                                             con=ulens_con)
+            hmjd = obj.lightcurve.hmjd
+            mag = obj.lightcurve.magerr
+            magerr = obj.lightcurve.magerr
+            eta_residual = calculate_eta_on_residuals(hmjd, mag, magerr)
 
-        star = stars_and_sources[idx][0]
+            source_id_arr.append(source.id)
+            filter_id_arr.append(obj.filterid)
+            eta_arr.append(eta)
+            rf_arr.append(rf_score)
+            eta_residual_arr.append(eta_residual)
+            eta_threshold_arr.append(eta_threshold)
+
         cand = Candidate(id=star.id,
                          source_ids=source_id_arr,
                          filter_ids=filter_id_arr,
@@ -217,7 +234,8 @@ def filter_stars_to_candidates(stars_and_sources):
                          ingest_job_id=star.ingest_job_id,
                          etas=eta_arr,
                          rf_scores=rf_arr,
-                         eta_residuals=eta_residual_arr)
+                         eta_residuals=eta_residual_arr,
+                         eta_thresholds=eta_threshold_arr)
         candidates.append(cand)
 
     ulens_con.close()
@@ -266,7 +284,8 @@ def process_stars(shutdown_time=10, single_job=False):
 
         num_stars = len(stars_and_sources)
         logger.info(f'Job {source_job_id}: Processing {num_stars} stars')
-        candidates, job_stats = filter_stars_to_candidates(stars_and_sources)
+        candidates, job_stats = filter_stars_to_candidates(source_job_id,
+                                                           stars_and_sources)
         num_candidates = len(candidates)
         logger.info(f'Job {source_job_id}: Uploading {num_candidates} candidates')
         upload_candidates(candidates)

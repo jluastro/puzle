@@ -383,6 +383,7 @@ class Candidate(db.Model):
     etas = db.Column(db.ARRAY(db.Float))
     rf_scores = db.Column(db.ARRAY(db.Float))
     eta_residuals = db.Column(db.ARRAY(db.Float))
+    eta_thresholds = db.Column(db.ARRAY(db.Float))
     ra = db.Column(db.Float, nullable=False)
     dec = db.Column(db.Float, nullable=False)
     ingest_job_id = db.Column(db.BigInteger, nullable=False)
@@ -393,12 +394,14 @@ class Candidate(db.Model):
                  ingest_job_id=None, id=None,
                  comments=None, _ztf_ids=None,
                  filter_ids=None, etas=None,
-                 rf_scores=None, eta_residuals=None):
+                 rf_scores=None, eta_residuals=None,
+                 eta_thresholds=None):
         self.source_ids = source_ids
         self.filter_ids = filter_ids
         self.etas = etas
         self.rf_scores = rf_scores
         self.eta_residuals = eta_residuals
+        self.eta_thresholds = eta_thresholds
         self.ra = ra
         self.dec = dec
         self.ingest_job_id = ingest_job_id
