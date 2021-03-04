@@ -295,12 +295,86 @@ class StarProcessJob(db.Model):
     slurm_job_id = db.Column(db.Integer, nullable=True)
     slurm_job_rank = db.Column(db.Integer, nullable=True)
     source_ingest_job_id = db.Column(db.BigInteger, nullable=False)
+    num_stars = db.Column(db.Integer, nullable=True)
+    num_sources = db.Column(db.Integer, nullable=True)
+    num_objs = db.Column(db.Integer, nullable=True)
+    num_objs_pass_eta = db.Column(db.Integer, nullable=True)
+    num_stars_pass_eta = db.Column(db.Integer, nullable=True)
+    num_objs_pass_rf = db.Column(db.Integer, nullable=True)
+    num_stars_pass_rf = db.Column(db.Integer, nullable=True)
+    num_objs_pass_eta_residual = db.Column(db.Integer, nullable=True)
+    num_stars_pass_eta_residual = db.Column(db.Integer, nullable=True)
 
     def __init__(self, source_ingest_job_id):
         self.source_ingest_job_id = source_ingest_job_id
 
 
 class Star(db.Model):
+    __table_args__ = {'schema': 'puzle'}
+
+    id = db.Column(db.String(128), primary_key=True, nullable=False)
+    source_ids = db.Column(db.ARRAY(db.String(128)))
+    ra = db.Column(db.Float, nullable=False)
+    dec = db.Column(db.Float, nullable=False)
+    ingest_job_id = db.Column(db.BigInteger, nullable=False)
+    comments = db.Column(db.String(1024))
+    _ztf_ids = db.Column(db.String(256))
+
+    def __init__(self, source_ids, ra, dec,
+                 ingest_job_id=None, id=None,
+                 comments=None, _ztf_ids=None):
+        self.source_ids = source_ids
+        self.ra = ra
+        self.dec = dec
+        self.ingest_job_id = ingest_job_id
+        self.id = id
+        self.comments = comments
+        self._ztf_ids = _ztf_ids
+        self._glonlat = None
+
+    def __repr__(self):
+        str = 'Star \n'
+        str += f'Ra/Dec: ({self.ra:.5f}, {self.dec:.5f}) \n'
+        for i, source_id in enumerate(self.source_ids, 1):
+            str += f'Source {i} ID: {source_id} \n'
+        return str
+
+    @hybrid_property
+    def glonlat(self):
+        if self._glonlat is None:
+            coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
+            glon, glat = coord.galactic.l.value, coord.galactic.b.value
+            if glon > 180:
+                glon -= 360
+            self._glonlat = (glon, glat)
+        return self._glonlat
+
+    @property
+    def glon(self):
+        return self.glonlat[0]
+
+    @property
+    def glat(self):
+        return self.glonlat[1]
+
+    @property
+    def ztf_ids(self):
+        return [x for x in self._ztf_ids.split(';') if len(x) != 0]
+
+    @ztf_ids.setter
+    def ztf_ids(self, ztf_id):
+        if ztf_id:
+            self._ztf_ids += ';%s' % ztf_id
+        else:
+            self._ztf_ids = ''
+
+    @hybrid_method
+    def cone_search(self, ra, dec, radius=2):
+        radius_deg = radius / 3600.
+        return func.q3c_radial_query(text('ra'), text('dec'), ra, dec, radius_deg)
+
+
+class Candidate(db.Model):
     __table_args__ = {'schema': 'puzle'}
 
     id = db.Column(db.String(128), primary_key=True, nullable=False)
