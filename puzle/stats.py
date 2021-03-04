@@ -230,7 +230,10 @@ def calculate_lightcurve_stats(lightcurves):
 
 
 def calculate_eta_on_residuals(t_obs_arr, mag_arr, magerr_arr):
-    t0, t_eff, f0, f1, _, a_type = fit_event(t_obs_arr, mag_arr, magerr_arr)
+    fit_data = fit_event(t_obs_arr, mag_arr, magerr_arr)
+    if fit_data is None:
+        return None
+    t0, t_eff, f0, f1, _, a_type = fit_data
     flux_model_arr = return_flux_model(t_obs_arr, t0, t_eff, a_type, f0, f1)
 
     _, fluxerr_obs_arr = magnitudes_to_fluxes(mag_arr, magerr_arr)

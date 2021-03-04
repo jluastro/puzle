@@ -80,12 +80,13 @@ def finish_job(source_job_id, job_stats):
 
 
 def csv_line_to_star_and_sources(line):
-    ra = float(line.split(',')[0])
-    dec = float(line.split(',')[1])
-    ingest_job_id = int(line.split(',')[2])
+    star_id = float(line.split(',')[0])
+    ra = float(line.split(',')[1])
+    dec = float(line.split(',')[2])
+    ingest_job_id = int(line.split(',')[3])
     source_ids = line.split('{')[1].split('}')[0].split(',')
 
-    star = Star(source_ids=source_ids,
+    star = Star(id=star_id, source_ids=source_ids,
                 ra=ra, dec=dec,
                 ingest_job_id=ingest_job_id)
     return star
@@ -160,7 +161,9 @@ def filter_stars_to_candidates(stars_and_sources):
     num_stars_pass_rf = len(rf_idxs)
 
     eta_residual_idxs = []
-    for idx in num_stars_pass_rf:
+    count = 0
+    for idx in rf_idxs:
+        count += 1
         star, sources = stars_and_sources[idx]
         for source in sources:
             for obj in source.zort_source.objects:
@@ -169,7 +172,7 @@ def filter_stars_to_candidates(stars_and_sources):
                 magerr = obj.lightcurve.magerr
                 eta_residual = calculate_eta_on_residuals(hmjd, mag, magerr)
                 eta_threshold = return_eta_threshold(obj.nepochs)
-                if eta_residual > eta_threshold:
+                if eta_residual is not None and eta_residual > eta_threshold:
                     eta_residual_idxs.append(idx)
 
     num_objs_pass_eta_residual = len(eta_residual_idxs)
