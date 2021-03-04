@@ -189,7 +189,7 @@ def generate_random_lightcurves_lb(l, b, objs,
 
 
 def calculate_eta(mag):
-    delta = np.sum((mag[1:] - mag[:-1])**2.) / (len(mag)-1)
+    delta = np.sum((np.diff(mag)*np.diff(mag)) / (len(mag)-1))
     variance = np.var(mag)
     eta = delta / variance
     return eta
