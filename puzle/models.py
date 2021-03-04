@@ -391,8 +391,14 @@ class Candidate(db.Model):
 
     def __init__(self, source_ids, ra, dec,
                  ingest_job_id=None, id=None,
-                 comments=None, _ztf_ids=None):
+                 comments=None, _ztf_ids=None,
+                 filter_ids=None, etas=None,
+                 rf_scores=None, eta_residuals=None):
         self.source_ids = source_ids
+        self.filter_ids = filter_ids
+        self.etas = etas
+        self.rf_scores = rf_scores
+        self.eta_residuals = eta_residuals
         self.ra = ra
         self.dec = dec
         self.ingest_job_id = ingest_job_id
