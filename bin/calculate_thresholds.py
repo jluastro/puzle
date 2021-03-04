@@ -192,6 +192,8 @@ def load_threshold_stats():
     for i, (l, b) in enumerate(lb_arr):
         print('Processing (l, b) = (%.2f, %.2f) |  %i / %i' % (l, b, i, len(lb_arr)))
         fname = '%s/l%.1f_b%.1f_threshold_stats.npz' % (return_data_dir(), l, b)
+        if not os.path.exists(fname):
+            continue
         data = np.load(fname)
         eta_ulens = data['eta_ulens']
         J_ulens = data['J_ulens']

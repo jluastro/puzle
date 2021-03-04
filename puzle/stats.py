@@ -18,12 +18,17 @@ from puzle import catalog
 from puzle.utils import lightcurve_file_to_field_id, popsycle_base_folder
 from puzle.models import Source
 from puzle.fit import fit_event, return_flux_model
-from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle import db
 
 
-ETA_THRESHOLD = 0.01
 RF_THRESHOLD = 0.97
+ETA_THRESHOLD = {'power_law_cutoff': 120,
+                 'size_min': 20,
+                 'size_max': 2000,
+                 'm_low': 0.6331620862843054,
+                 'b_low': 0.3033749508035188,
+                 'm_high': 0.24044347374962108,
+                 'b_high': 1.1310472412803172}
 
 
 def gather_PopSyCLE_refined_events():
@@ -234,6 +239,48 @@ def calculate_eta_on_residuals(t_obs_arr, mag_arr, magerr_arr):
     mag_residual_arr = mag_arr - mag_model_arr
     eta = calculate_eta(mag_residual_arr)
     return eta
+
+
+def _calculate_eta_arr(size, sigma=1,
+                       N_samples=10000):
+    eta_arr = []
+    for i in range(N_samples):
+        sample = np.random.normal(0, sigma, size=size)
+        eta = calculate_eta(sample)
+        eta_arr.append(eta)
+    return eta_arr
+
+
+def calculate_eta_threshold_fits(power_law_cutoff=120,
+                             size_min=20, size_max=2000, size_num=100):
+    size_arr = np.logspace(np.log10(size_min),
+                           np.log10(size_max),
+                           size_num).astype(int)
+    eta_thresh_arr = []
+    for size in size_arr:
+        eta_arr = _calculate_eta_arr(size=size)
+        eta_thresh_arr.append(np.percentile(eta_arr, 1))
+    eta_thresh_arr = np.array(eta_thresh_arr)
+
+    cond = size_arr < power_law_cutoff
+    m_low, b_low = np.polyfit(np.log10(size_arr[cond]), eta_thresh_arr[cond], deg=1)
+    m_high, b_high = np.polyfit(np.log10(size_arr[~cond]), eta_thresh_arr[~cond], deg=1)
+
+    eta_thresholds = {'power_law_cutoff': power_law_cutoff,
+                      'size_min': size_min, 'size_max': size_max,
+                      'm_low': m_low, 'b_low': b_low,
+                      'm_high': m_high, 'b_high': b_high}
+    return eta_thresholds
+
+
+def return_eta_threshold(size):
+    if size < ETA_THRESHOLD['power_law_cutoff']:
+        m = ETA_THRESHOLD['m_low']
+        b = ETA_THRESHOLD['b_low']
+    else:
+        m = ETA_THRESHOLD['m_high']
+        b = ETA_THRESHOLD['b_high']
+    return np.log10(size) * m + b
 
 
 
