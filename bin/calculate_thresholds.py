@@ -27,7 +27,7 @@ import os
 
 from puzle.utils import gather_PopSyCLE_lb, find_nearest_lightcurve_file, \
     return_data_dir, return_figures_dir
-from puzle.sample import generate_random_lightcurves_lb, fetch_sample_objects, \
+from puzle.stats import generate_random_lightcurves_lb, fetch_sample_objects, \
     calculate_lightcurve_stats
 
 

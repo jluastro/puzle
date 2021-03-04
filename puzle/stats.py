@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """
-sample.py
+stats.py
 """
 
 import os
@@ -19,6 +19,10 @@ from puzle.utils import lightcurve_file_to_field_id, popsycle_base_folder
 from puzle.models import Source
 from puzle.fit import fit_event
 from puzle import db
+
+
+ETA_THRESHOLD = 0.01
+RF_THRESHOLD = 0.97
 
 
 def gather_PopSyCLE_refined_events():
@@ -44,7 +48,8 @@ def gather_PopSyCLE_refined_events():
     print(f'{N_samples} Samples')
 
 
-def fetch_sample_objects(lightcurve_file, n_days_min=20, rf_threshold=0.97,
+def fetch_sample_objects(lightcurve_file, n_days_min=20,
+                         rf_threshold=RF_THRESHOLD,
                          num_sources_rcid=150, rcid_radius=1250,
                          rcid_list=None):
     ulens_con = catalog.ulens_con()
