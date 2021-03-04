@@ -121,13 +121,15 @@ def _export_stars(source_job_id, stars):
         os.remove(fname)
 
     with open(fname, 'w') as f:
-        header = 'ra,'
+        header = 'id,'
+        header += 'ra,'
         header += 'dec,'
         header += 'ingest_job_id,'
         header += 'source_ids'
         f.write(f'{header}\n')
 
-        for star in stars:
+        for i, star in enumerate(stars):
+            star.id = '%s_%i' % (source_job_id, i)
             star_line = star_to_csv_line(star)
             f.write(f'{star_line}\n')
 
@@ -172,7 +174,8 @@ def export_stars(source_job_id, sources):
 
 
 def star_to_csv_line(star):
-    line = '%s,' % star.ra
+    line = '%s,' % star.id
+    line += '%s,' % star.ra
     line += '%s,' % star.dec
     line += '%s,' % star.ingest_job_id
     ids = [str(source_id) for source_id in star.source_ids]

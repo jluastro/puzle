@@ -303,7 +303,7 @@ class StarProcessJob(db.Model):
 class Star(db.Model):
     __table_args__ = {'schema': 'puzle'}
 
-    id = db.Column(db.BigInteger, primary_key=True, nullable=False)
+    id = db.Column(db.String(128), primary_key=True, nullable=False)
     source_ids = db.Column(db.ARRAY(db.String(128)))
     ra = db.Column(db.Float, nullable=False)
     dec = db.Column(db.Float, nullable=False)
@@ -312,12 +312,13 @@ class Star(db.Model):
     _ztf_ids = db.Column(db.String(256))
 
     def __init__(self, source_ids, ra, dec,
-                 ingest_job_id=None,
+                 ingest_job_id=None, id=None,
                  comments=None, _ztf_ids=None):
         self.source_ids = source_ids
         self.ra = ra
         self.dec = dec
         self.ingest_job_id = ingest_job_id
+        self.id = id
         self.comments = comments
         self._ztf_ids = _ztf_ids
         self._glonlat = None

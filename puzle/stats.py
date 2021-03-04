@@ -11,13 +11,14 @@ from astropy.table import Table, vstack
 from shapely.geometry.polygon import Polygon
 
 from zort.radec import return_ZTF_RCID_corners
-from zort.photometry import fluxes_to_magnitudes
+from zort.photometry import fluxes_to_magnitudes, magnitudes_to_fluxes
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle import catalog
 from puzle.utils import lightcurve_file_to_field_id, popsycle_base_folder
 from puzle.models import Source
-from puzle.fit import fit_event
+from puzle.fit import fit_event, return_flux_model
+from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle import db
 
 
@@ -221,3 +222,18 @@ def calculate_lightcurve_stats(lightcurves):
         chi_arr.append(chi)
 
     return eta_arr, J_arr, chi_arr
+
+
+def calculate_eta_on_residuals(t_obs_arr, mag_arr, magerr_arr):
+    t0, t_eff, f0, f1, _, a_type = fit_event(t_obs_arr, mag_arr, magerr_arr)
+    flux_model_arr = return_flux_model(t_obs_arr, t0, t_eff, a_type, f0, f1)
+
+    _, fluxerr_obs_arr = magnitudes_to_fluxes(mag_arr, magerr_arr)
+    mag_model_arr, _ = fluxes_to_magnitudes(flux_model_arr, fluxerr_obs_arr)
+
+    mag_residual_arr = mag_arr - mag_model_arr
+    eta = calculate_eta(mag_residual_arr)
+    return eta
+
+
+
