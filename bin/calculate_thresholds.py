@@ -135,6 +135,7 @@ def generate_whelen_stats_figure(l, b, eta_norm, J_norm, chi_norm,
 def generate_whelen_stats_figures():
     lb_arr = gather_PopSyCLE_lb()
     for (l, b) in lb_arr:
+        fname = '%s/l%.1f_b%.1f_threshold_stats.npz' % (return_data_dir(), l, b)
         data = np.load(fname)
         eta_ulens = data['eta_ulens']
         J_ulens = data['J_ulens']
@@ -155,13 +156,16 @@ def save_threshold_stats(overwrite=False):
     else:
         rank, size = 0, 1
 
-    lb_arr = gather_PopSyCLE_lb()
-    my_lb_arr = np.array_split(lb_arr, size)[rank]
-
-    for i, (l, b) in enumerate(my_lb_arr):
+    lb_arr_tmp = gather_PopSyCLE_lb()
+    lb_arr = []
+    for l, b in lb_arr_tmp:
         fname = '%s/l%.1f_b%.1f_threshold_stats.npz' % (return_data_dir(), l, b)
         if not overwrite and os.path.exists(fname):
             continue
+        lb_arr.append((l, b))
+    my_lb_arr = np.array_split(lb_arr, size)[rank]
+
+    for i, (l, b) in enumerate(my_lb_arr):
         print('%i) Processing (l, b) = (%.2f, %.2f) |  %i / %i' % (rank, l, b, i, len(my_lb_arr)))
         lightcurve_file = find_nearest_lightcurve_file(l, b)
         objs = fetch_sample_objects(lightcurve_file)
@@ -172,6 +176,7 @@ def save_threshold_stats(overwrite=False):
         stats_ulens = calculate_lightcurve_stats(lightcurves_ulens)
         eta_ulens, J_ulens, chi_ulens = stats_ulens
 
+        fname = '%s/l%.1f_b%.1f_threshold_stats.npz' % (return_data_dir(), l, b)
         np.savez(fname,
                  eta_ulens=eta_ulens,
                  J_ulens=J_ulens,
