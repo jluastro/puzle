@@ -211,6 +211,12 @@ def load_threshold_stats():
         chi_tpr = np.sum(chi_ulens >= chi_thresh) / len(chi_ulens)
 
         threshold_stats[(l, b)] = {
+            'eta_ulens': eta_ulens,
+            'J_ulens': J_ulens,
+            'chi_ulens': chi_ulens,
+            'eta_norm': eta_norm,
+            'J_norm': J_norm,
+            'chi_norm': chi_norm,
             'eta_thresh': eta_thresh,
             'J_thresh': J_thresh,
             'chi_thresh': chi_thresh,

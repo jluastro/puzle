@@ -23,6 +23,9 @@ from puzle.fit import fit_event, return_flux_model
 from puzle import db
 
 
+RF_THRESHOLD = 0.645
+
+
 def gather_PopSyCLE_refined_events():
     folders = glob.glob('PopSyCLE_runs_v3/l*')
     folders.sort()
@@ -304,5 +307,4 @@ def return_eta_threshold(size, size_min=20, size_max=2000):
             return None
 
 
-RF_THRESHOLD = 0.645
 ETA_THRESHOLDS = load_eta_thresholds()
