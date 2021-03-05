@@ -73,7 +73,7 @@ def remove_db_id():
     logger.info(f'{my_db_id}: Delete success')
 
 
-def insert_db_id(num_ids=50, retry_time=1):
+def insert_db_id(num_ids=50, retry_time=5):
     lock_path = ulensdb_file_path.replace('.txt', '.lock')
     lock = FileLock(lock_path)
 
