@@ -287,6 +287,7 @@ class StarProcessJob(db.Model):
     __table_args__ = {'schema': 'puzle'}
 
     id = db.Column(db.BigInteger, primary_key=True, nullable=False)
+    priority = db.Column(db.Integer, nullable=True)
     started = db.Column(db.Boolean, nullable=False, server_default='f')
     finished = db.Column(db.Boolean, nullable=False, server_default='f')
     uploaded = db.Column(db.Boolean, nullable=False, server_default='f')
