@@ -64,6 +64,7 @@ def plot_process_priority():
     fig.colorbar(im, ax=ax, label='priority')
     ax.set_xlabel('ra', fontsize=12)
     ax.set_ylabel('dec', fontsize=12)
+    ax.set_title('Star Process Job Ordering', fontsize=12)
     fig.tight_layout()
 
 
