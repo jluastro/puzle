@@ -275,7 +275,15 @@ def calculate_eta_thresholds(power_law_cutoff=120,
     fname = '%s/eta_thresholds.dct' % return_data_dir()
     pickle.dump(eta_thresholds, open(fname, 'wb'))
 
-    return eta_thresholds
+    eta_threshold_fits = {'power_law_cutoff': power_law_cutoff,
+                          'size_min': size_min,
+                          'size_max': size_max,
+                          'm_low': m_low,
+                          'b_low': b_low,
+                          'm_high': m_high,
+                          'b_high': b_high}
+
+    return eta_threshold_fits
 
 
 def load_eta_thresholds():
@@ -284,22 +292,22 @@ def load_eta_thresholds():
     return eta_thresholds
 
 
-def return_eta_threshold(size, size_min=20, size_max=2000):
+def return_eta_threshold(size):
     try:
         return ETA_THRESHOLDS[size]
     except KeyError:
         eta_threshold_fits = {'power_law_cutoff': 120,
                               'size_min': 20,
                               'size_max': 2000,
-                              'm_low': 0.6331620862843054,
-                              'b_low': 0.3033749508035188,
-                              'm_high': 0.24044347374962108,
-                              'b_high': 1.1310472412803172}
-        if size < size_min:
+                              'm_low': 0.6364915032656779,
+                              'b_low': 0.2947297887712072,
+                              'm_high': 0.24054218603097474,
+                              'b_high': 1.1305090550864132}
+        if size < eta_threshold_fits['size_min']:
             m = eta_threshold_fits['m_low']
             b = eta_threshold_fits['b_low']
             return np.log10(size) * m + b
-        elif size > size_max:
+        elif size > eta_threshold_fits['size_max']:
             m = eta_threshold_fits['m_high']
             b = eta_threshold_fits['b_high']
             return np.log10(size) * m + b
