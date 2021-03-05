@@ -3,34 +3,69 @@
 calculate_process_priority.py
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from puzle.models import SourceIngestJob, StarProcessJob
 from puzle.density import load_density_polygons, return_density
 from puzle import db
 
-density_polygons = load_density_polygons()
 
-jobs = db.session.query(SourceIngestJob, StarProcessJob). \
-    outerjoin(SourceIngestJob, StarProcessJob.source_ingest_job_id == SourceIngestJob.id). \
-    all()
+def calculate_process_priority():
+    density_polygons = load_density_polygons()
 
-# find the density at the center of the job field
-density_arr = []
-for source_ingest_job, star_process_job in jobs:
-    ra = (source_ingest_job.ra_start + source_ingest_job.ra_end) / 2.
-    dec = (source_ingest_job.dec_start + source_ingest_job.dec_end) / 2.
-    density = return_density(ra, dec, density_polygons)
-    if density is None:
-        density = 0
-    density_arr.append(density)
+    jobs = db.session.query(SourceIngestJob, StarProcessJob). \
+        outerjoin(SourceIngestJob, StarProcessJob.source_ingest_job_id == SourceIngestJob.id). \
+        all()
 
-# most to least dense
-priority_order = np.argsort(density_arr)[::-1]
+    # find the density at the center of the job field
+    density_arr = []
+    for source_ingest_job, _ in jobs:
+        ra = (source_ingest_job.ra_start + source_ingest_job.ra_end) / 2.
+        dec = (source_ingest_job.dec_start + source_ingest_job.dec_end) / 2.
+        density = return_density(ra, dec, density_polygons)
+        if density is None:
+            density = 0
+        density_arr.append(density)
 
-priority_idx_arr = []
-for i, (_, star_process_job) in enumerate(jobs):
-    priority = np.where(priority_order == i)[0][0]
-    star_process_job.priority = priority
-    db.session.add(star_process_job)
-db.session.commit()
+    # most to least dense
+    priority_order = np.argsort(density_arr)[::-1]
+
+    # add priority to star_process_job
+    for i, (_, star_process_job) in enumerate(jobs):
+        priority = int(np.where(priority_order == i)[0][0])
+        star_process_job.priority = priority
+        db.session.add(star_process_job)
+    db.session.commit()
+
+
+def plot_process_priority():
+    jobs = db.session.query(SourceIngestJob, StarProcessJob). \
+        outerjoin(SourceIngestJob, StarProcessJob.source_ingest_job_id == SourceIngestJob.id). \
+        all()
+
+    ra_arr = []
+    dec_arr = []
+    priority_arr = []
+    for source_ingest_job, star_process_job in jobs:
+        ra = (source_ingest_job.ra_start + source_ingest_job.ra_end) / 2.
+        dec = (source_ingest_job.dec_start + source_ingest_job.dec_end) / 2.
+        priority = star_process_job.priority
+        ra_arr.append(ra)
+        dec_arr.append(dec)
+        priority_arr.append(priority)
+
+    priority_arr = np.array(priority_arr)
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    im = ax.scatter(ra_arr, dec_arr,
+                    c=priority_arr,
+                    s=1, alpha=1)
+    fig.colorbar(im, ax=ax, label='priority')
+    ax.set_xlabel('ra', fontsize=12)
+    ax.set_ylabel('dec', fontsize=12)
+    fig.tight_layout()
+
+
+if __name__ == '__main__':
+    calculate_process_priority()

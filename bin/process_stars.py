@@ -5,14 +5,13 @@ process_stars.py
 import time
 import os
 from datetime import datetime, timedelta
-from sqlalchemy.sql.expression import func
 import logging
 from collections import defaultdict
 
 from puzle.models import Source, StarIngestJob, Star, StarProcessJob, Candidate
 from puzle.utils import fetch_job_enddate, return_DR3_dir
 from puzle.ulensdb import insert_db_id, remove_db_id
-from puzle.stats import calculate_eta, fit_event, \
+from puzle.stats import calculate_eta, \
     calculate_eta_on_residuals, \
     return_eta_threshold, RF_THRESHOLD
 from puzle import catalog
@@ -31,7 +30,7 @@ def fetch_job():
                   StarProcessJob.source_ingest_job_id == StarIngestJob.source_ingest_job_id).\
         filter(StarIngestJob.finished == True,
                StarProcessJob.started == False).\
-        order_by(func.random()).\
+        order_by(StarProcessJob.priority.asc()).\
         with_for_update().\
         first()
     if job is None:
