@@ -9,26 +9,18 @@ import numpy as np
 from scipy.stats import expon
 from astropy.table import Table, vstack
 from shapely.geometry.polygon import Polygon
+import pickle
 
 from zort.radec import return_ZTF_RCID_corners
 from zort.photometry import fluxes_to_magnitudes, magnitudes_to_fluxes
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle import catalog
-from puzle.utils import lightcurve_file_to_field_id, popsycle_base_folder
+from puzle.utils import lightcurve_file_to_field_id, popsycle_base_folder, \
+    return_data_dir
 from puzle.models import Source
 from puzle.fit import fit_event, return_flux_model
 from puzle import db
-
-
-RF_THRESHOLD = 0.97
-ETA_THRESHOLD = {'power_law_cutoff': 120,
-                 'size_min': 20,
-                 'size_max': 2000,
-                 'm_low': 0.6331620862843054,
-                 'b_low': 0.3033749508035188,
-                 'm_high': 0.24044347374962108,
-                 'b_high': 1.1310472412803172}
 
 
 def gather_PopSyCLE_refined_events():
@@ -254,7 +246,7 @@ def _calculate_eta_arr(size, sigma=1,
     return eta_arr
 
 
-def calculate_eta_threshold_fits(power_law_cutoff=120,
+def calculate_eta_thresholds(power_law_cutoff=120,
                              size_min=20, size_max=2000, size_num=100):
     size_arr = np.logspace(np.log10(size_min),
                            np.log10(size_max),
@@ -269,21 +261,48 @@ def calculate_eta_threshold_fits(power_law_cutoff=120,
     m_low, b_low = np.polyfit(np.log10(size_arr[cond]), eta_thresh_arr[cond], deg=1)
     m_high, b_high = np.polyfit(np.log10(size_arr[~cond]), eta_thresh_arr[~cond], deg=1)
 
-    eta_thresholds = {'power_law_cutoff': power_law_cutoff,
-                      'size_min': size_min, 'size_max': size_max,
-                      'm_low': m_low, 'b_low': b_low,
-                      'm_high': m_high, 'b_high': b_high}
+    eta_thresholds = {}
+    for size in size_arr:
+        if size < power_law_cutoff:
+            m, b = m_low, b_low
+        else:
+            m, b = m_high, b_high
+        eta_thresholds[size] = np.log10(size) * m + b
+
+    fname = '%s/eta_thresholds.dct' % return_data_dir()
+    pickle.dump(eta_thresholds, open(fname, 'wb'))
+
     return eta_thresholds
 
 
-def return_eta_threshold(size):
-    if size < ETA_THRESHOLD['power_law_cutoff']:
-        m = ETA_THRESHOLD['m_low']
-        b = ETA_THRESHOLD['b_low']
-    else:
-        m = ETA_THRESHOLD['m_high']
-        b = ETA_THRESHOLD['b_high']
-    return np.log10(size) * m + b
+def load_eta_thresholds():
+    fname = '%s/eta_thresholds.dct' % return_data_dir()
+    eta_thresholds = pickle.load(open(fname, 'rb'))
+    return eta_thresholds
 
 
+def return_eta_threshold(size, size_min=20, size_max=2000):
+    try:
+        return ETA_THRESHOLDS[size]
+    except KeyError:
+        eta_threshold_fits = {'power_law_cutoff': 120,
+                              'size_min': 20,
+                              'size_max': 2000,
+                              'm_low': 0.6331620862843054,
+                              'b_low': 0.3033749508035188,
+                              'm_high': 0.24044347374962108,
+                              'b_high': 1.1310472412803172}
+        if size < size_min:
+            m = eta_threshold_fits['m_low']
+            b = eta_threshold_fits['b_low']
+            return np.log10(size) * m + b
+        elif size > size_max:
+            m = eta_threshold_fits['m_high']
+            b = eta_threshold_fits['b_high']
+            return np.log10(size) * m + b
+        else:
+            return None
 
+
+RF_THRESHOLD = 0.645
+ETA_THRESHOLDS = load_eta_thresholds()
