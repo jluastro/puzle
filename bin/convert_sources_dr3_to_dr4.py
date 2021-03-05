@@ -62,8 +62,11 @@ def convert_sources_dr3_to_dr4():
         print('Converting %s (%i/%i)' % (source_file_dr3, i, len(source_files_dr3)))
         lines_dr3 = open(source_file_dr3, 'r').readlines()
         header = lines_dr3[0]
-        lines_dr4 = []
+
+        num_sources = len(lines_dr3) - 1
         num_missing = 0
+
+        lines_dr4 = []
         for line in lines_dr3[1:]:
             # get the dr4 lightcurve filename
             lightcurve_filename_dr3 = line.split(',')[7]
@@ -120,7 +123,7 @@ def convert_sources_dr3_to_dr4():
             for line in lines_dr4:
                 f.write(line)
 
-        print(f'-- conversion complete: {num_missing} sources missing')
+        print(f'-- conversion complete: {num_missing} of {num_sources} sources missing')
 
 
 if __name__ == '__main__':
