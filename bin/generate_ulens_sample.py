@@ -26,6 +26,7 @@ def gather_PopSyCLE_refined_events():
         print(f'Processing {folder} ({i}/{N_folders})')
         lb = os.path.basename(folder)
         fis = glob.glob(f'{folder}/*_5yrs_refined_events_ztf_r_Damineli16.fits')
+        print('-- %i files' % len(fis))
 
         tables = []
         for fi in fis:

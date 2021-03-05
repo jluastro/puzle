@@ -211,14 +211,20 @@ class Source(db.Model):
         if not os.path.exists(lightcurve_plot_filename):
             self.zort_source.plot_lightcurves(filename=lightcurve_plot_filename)
 
-    def fetch_ztf_ids(self):
+    def _fetch_mars_results(self):
         radius_deg = 2. / 3600.
         cone = '%f,%f,%f' % (self.ra, self.dec, radius_deg)
         query = {"queries": [{"cone": cone}]}
         results = requests.post('https://mars.lco.global/', json=query).json()
         if results['total'] == 0:
-            return 0
+            return None
+        else:
+            return results
 
+    def fetch_ztf_ids(self):
+        results = self._fetch_mars_results()
+        if results is None:
+            return 0
         ztf_ids = [str(r['objectId']) for r in
                    results['results'][0]['results']]
         ztf_ids = list(set(ztf_ids))
@@ -227,6 +233,14 @@ class Source(db.Model):
             self.ztf_ids = ztf_id
 
         return len(ztf_ids)
+
+    def fetch_ztf_sgscore(self):
+        results = self._fetch_mars_results()
+        if results is None:
+            return None
+
+        sgscore = results['results'][0]['results'][0]['candidate']['sgscore1']
+        return sgscore
 
 
 class SourceIngestJob(db.Model):
@@ -269,10 +283,36 @@ class StarIngestJob(db.Model):
         self.source_ingest_job_id = source_ingest_job_id
 
 
-class Star(db.Model):
+class StarProcessJob(db.Model):
     __table_args__ = {'schema': 'puzle'}
 
     id = db.Column(db.BigInteger, primary_key=True, nullable=False)
+    started = db.Column(db.Boolean, nullable=False, server_default='f')
+    finished = db.Column(db.Boolean, nullable=False, server_default='f')
+    uploaded = db.Column(db.Boolean, nullable=False, server_default='f')
+    datetime_started = db.Column(db.DateTime, nullable=True)
+    datetime_finished = db.Column(db.DateTime, nullable=True)
+    slurm_job_id = db.Column(db.Integer, nullable=True)
+    slurm_job_rank = db.Column(db.Integer, nullable=True)
+    source_ingest_job_id = db.Column(db.BigInteger, nullable=False)
+    num_stars = db.Column(db.Integer, nullable=True)
+    num_sources = db.Column(db.Integer, nullable=True)
+    num_objs = db.Column(db.Integer, nullable=True)
+    num_objs_pass_eta = db.Column(db.Integer, nullable=True)
+    num_stars_pass_eta = db.Column(db.Integer, nullable=True)
+    num_objs_pass_rf = db.Column(db.Integer, nullable=True)
+    num_stars_pass_rf = db.Column(db.Integer, nullable=True)
+    num_objs_pass_eta_residual = db.Column(db.Integer, nullable=True)
+    num_stars_pass_eta_residual = db.Column(db.Integer, nullable=True)
+
+    def __init__(self, source_ingest_job_id):
+        self.source_ingest_job_id = source_ingest_job_id
+
+
+class Star(db.Model):
+    __table_args__ = {'schema': 'puzle'}
+
+    id = db.Column(db.String(128), primary_key=True, nullable=False)
     source_ids = db.Column(db.ARRAY(db.String(128)))
     ra = db.Column(db.Float, nullable=False)
     dec = db.Column(db.Float, nullable=False)
@@ -281,12 +321,91 @@ class Star(db.Model):
     _ztf_ids = db.Column(db.String(256))
 
     def __init__(self, source_ids, ra, dec,
-                 ingest_job_id=None,
+                 ingest_job_id=None, id=None,
                  comments=None, _ztf_ids=None):
         self.source_ids = source_ids
         self.ra = ra
         self.dec = dec
         self.ingest_job_id = ingest_job_id
+        self.id = id
+        self.comments = comments
+        self._ztf_ids = _ztf_ids
+        self._glonlat = None
+
+    def __repr__(self):
+        str = 'Star \n'
+        str += f'Ra/Dec: ({self.ra:.5f}, {self.dec:.5f}) \n'
+        for i, source_id in enumerate(self.source_ids, 1):
+            str += f'Source {i} ID: {source_id} \n'
+        return str
+
+    @hybrid_property
+    def glonlat(self):
+        if self._glonlat is None:
+            coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
+            glon, glat = coord.galactic.l.value, coord.galactic.b.value
+            if glon > 180:
+                glon -= 360
+            self._glonlat = (glon, glat)
+        return self._glonlat
+
+    @property
+    def glon(self):
+        return self.glonlat[0]
+
+    @property
+    def glat(self):
+        return self.glonlat[1]
+
+    @property
+    def ztf_ids(self):
+        return [x for x in self._ztf_ids.split(';') if len(x) != 0]
+
+    @ztf_ids.setter
+    def ztf_ids(self, ztf_id):
+        if ztf_id:
+            self._ztf_ids += ';%s' % ztf_id
+        else:
+            self._ztf_ids = ''
+
+    @hybrid_method
+    def cone_search(self, ra, dec, radius=2):
+        radius_deg = radius / 3600.
+        return func.q3c_radial_query(text('ra'), text('dec'), ra, dec, radius_deg)
+
+
+class Candidate(db.Model):
+    __table_args__ = {'schema': 'puzle'}
+
+    id = db.Column(db.String(128), primary_key=True, nullable=False)
+    source_ids = db.Column(db.ARRAY(db.String(128)))
+    filter_ids = db.Column(db.ARRAY(db.Integer))
+    etas = db.Column(db.ARRAY(db.Float))
+    rf_scores = db.Column(db.ARRAY(db.Float))
+    eta_residuals = db.Column(db.ARRAY(db.Float))
+    eta_thresholds = db.Column(db.ARRAY(db.Float))
+    ra = db.Column(db.Float, nullable=False)
+    dec = db.Column(db.Float, nullable=False)
+    ingest_job_id = db.Column(db.BigInteger, nullable=False)
+    comments = db.Column(db.String(1024))
+    _ztf_ids = db.Column(db.String(256))
+
+    def __init__(self, source_ids, ra, dec,
+                 ingest_job_id=None, id=None,
+                 comments=None, _ztf_ids=None,
+                 filter_ids=None, etas=None,
+                 rf_scores=None, eta_residuals=None,
+                 eta_thresholds=None):
+        self.source_ids = source_ids
+        self.filter_ids = filter_ids
+        self.etas = etas
+        self.rf_scores = rf_scores
+        self.eta_residuals = eta_residuals
+        self.eta_thresholds = eta_thresholds
+        self.ra = ra
+        self.dec = dec
+        self.ingest_job_id = ingest_job_id
+        self.id = id
         self.comments = comments
         self._ztf_ids = _ztf_ids
         self._glonlat = None

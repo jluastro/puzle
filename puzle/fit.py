@@ -3,21 +3,21 @@ import numpy as np
 import logging
 from zort.photometry import magnitudes_to_fluxes
 
-from puzle.utils import return_data_dir, load_stacked_arrays
+from puzle.utils import return_data_dir, load_stacked_array
 
 logger = logging.getLogger(__name__)
 
 
 def return_q(t_arr, t0, t_eff):
-    return 1 + ((t_arr - t0) / t_eff) ** 2.
+    return 1 + (((t_arr - t0) / t_eff)*((t_arr - t0) / t_eff))
 
 
 def return_amplification_one(q):
-    return q ** -0.5
+    return 1 / np.sqrt(q)
 
 
 def return_amplification_two(q):
-    return (1 - ((q / 2) + 1) ** -2.) ** -0.5
+    return 1 / np.sqrt((1 - (1 / (((q / 2) + 1)*((q / 2) + 1)))))
 
 
 def return_chi_squared_mask(flux_obs, fluxerr_obs, flux_model, percent_bad=10):
@@ -65,7 +65,7 @@ def ulens_func_a_type_two(t_arr, t0, t_eff, f0, f1):
 def fit_event(t_obs_arr, mag_arr, magerr_arr):
     flux_obs_arr, fluxerr_obs_arr = magnitudes_to_fluxes(mag_arr, magerr_arr)
     bounds = ([np.min(t_obs_arr) - 50, 0.01, -np.inf, 0],
-              [np.max(t_obs_arr) + 50, 1000, np.inf, np.inf])
+              [np.max(t_obs_arr) + 50, 5000, np.inf, np.inf])
 
     t0_arr = []
     t_eff_arr = []
@@ -120,7 +120,7 @@ def fit_event(t_obs_arr, mag_arr, magerr_arr):
 
 def main():
     fname = '%s/ulens_sample.npz' % return_data_dir()
-    lightcurves_arr = load_stacked_arrays(fname)
+    lightcurves_arr = load_stacked_array(fname)
     chi_squared_delta_arr = []
     for i, lightcurve in enumerate(lightcurves_arr):
         if i % 10 == 0:

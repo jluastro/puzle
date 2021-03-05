@@ -7,8 +7,12 @@ import glob
 import subprocess
 import numpy as np
 from datetime import datetime
+from astropy.coordinates import SkyCoord
 from zort.radec import return_shifted_ra, return_ZTF_RCID_corners
 from shapely.geometry.polygon import Polygon
+
+
+popsycle_base_folder = '/global/cfs/cdirs/uLens/PopSyCLE_runs/PopSyCLE_runs_v3_refined_events'
 
 
 def return_dir(folder):
@@ -71,6 +75,18 @@ def fetch_job_enddate():
     return enddate
 
 
+def gather_PopSyCLE_lb():
+    fis = glob.glob(f'{popsycle_base_folder}/*fits')
+    fis.sort()
+    lb_arr = []
+    for fi in fis:
+        lb = os.path.basename(fi).split('_')
+        l = float(lb[0].replace('l', ''))
+        b = float(lb[1].replace('b', ''))
+        lb_arr.append((l, b))
+    return lb_arr
+
+
 def lightcurve_file_to_ra_dec(lightcurve_file):
     _, ra_str, dec_str = os.path.basename(lightcurve_file).split('_')
     ra0, ra1 = ra_str.replace('ra', '').split('to')
@@ -80,10 +96,48 @@ def lightcurve_file_to_ra_dec(lightcurve_file):
     return ra0, ra1, dec0, dec1
 
 
+def lightcurve_file_to_lb(lightcurve_file):
+    ra0, ra1, dec0, dec1 = lightcurve_file_to_ra_dec(lightcurve_file)
+    ra = (ra0 + ra1) / 2.
+    dec = (dec0 + dec1) / 2.
+    coord = SkyCoord(ra, dec, frame='icrs', unit='degree')
+    l = coord.galactic.l.value
+    b = coord.galactic.b.value
+    return l, b
+
+
 def lightcurve_file_to_field_id(lightcurve_file):
     lightcurve_file = os.path.basename(lightcurve_file)
     field_id = int(lightcurve_file.split('_')[0].replace('field', ''))
     return field_id
+
+
+def find_nearest_lightcurve_file(l, b):
+    coord = SkyCoord(l, b, frame='galactic', unit='degree')
+    ra, dec = coord.icrs.ra.value, coord.icrs.dec.value
+    lightcurve_files = glob.glob('/global/cfs/cdirs/uLens/ZTF/DR3/*txt')
+    dist_min = None
+    nearest_lightcurve_file = None
+    for lightcurve_file in lightcurve_files:
+        ra0, ra1, dec0, dec1 = lightcurve_file_to_ra_dec(lightcurve_file)
+        flipFlag = False
+        if ra1 < ra0:
+            flipFlag = True
+            ra1 += 360
+        ra_file = (ra0 + ra1) / 2.
+        dec_file = (dec0 + dec1) / 2.
+        if flipFlag:
+            if ra < 180:
+                dist = np.hypot(ra_file - ra, dec_file - dec)
+            else:
+                dist = np.hypot(ra_file - (ra + 360), dec_file - dec)
+        else:
+            dist = np.hypot(ra_file-ra, dec_file-dec)
+        if nearest_lightcurve_file is None or dist < dist_min:
+            dist_min = dist
+            nearest_lightcurve_file = lightcurve_file
+
+    return nearest_lightcurve_file
 
 
 def fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end):
@@ -152,7 +206,7 @@ def save_stacked_array(fname, array_list):
     np.savez(fname, stacked_array=stacked, stacked_index=idx)
 
 
-def load_stacked_arrays(fname):
+def load_stacked_array(fname):
     npzfile = np.load(fname)
     idx = npzfile['stacked_index']
     stacked = npzfile['stacked_array']
