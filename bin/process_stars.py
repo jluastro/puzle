@@ -125,7 +125,8 @@ def fetch_stars_and_sources(source_job_id):
     return list(star_to_source_dict.items())
 
 
-def filter_stars_to_candidates(source_job_id, stars_and_sources):
+def filter_stars_to_candidates(source_job_id, stars_and_sources,
+                               nepochs_min=20):
     logger.info(f'Job {source_job_id}: Calculating eta')
     num_stars = 0
     num_sources = 0
@@ -136,6 +137,8 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources):
         for j, source in enumerate(sources):
             num_sources += 1
             for k, obj in enumerate(source.zort_source.objects):
+                if obj.nepochs < nepochs_min:
+                    continue
                 num_objs += 1
                 eta = calculate_eta(obj.lightcurve.mag)
                 eta_threshold = return_eta_threshold(obj.nepochs)

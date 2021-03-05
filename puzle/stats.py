@@ -265,6 +265,7 @@ def calculate_eta_thresholds(power_law_cutoff=120,
     m_high, b_high = np.polyfit(np.log10(size_arr[~cond]), eta_thresh_arr[~cond], deg=1)
 
     eta_thresholds = {}
+    size_arr = np.arange(size_min, size_max+1)
     for size in size_arr:
         if size < power_law_cutoff:
             m, b = m_low, b_low

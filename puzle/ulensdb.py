@@ -27,7 +27,7 @@ def fetch_db_id():
         rank = 0
     slurm_job_id = os.getenv('SLURM_JOB_ID')
     if slurm_job_id is None:
-        slurm_job_id = 0
+        return None
     db_id = '%s.%s' % (slurm_job_id, rank)
     return db_id
 
@@ -55,8 +55,8 @@ def remove_db_id():
     lock = FileLock(lock_path)
 
     my_db_id = fetch_db_id()
-    if my_db_id == '0.0':
-        logger.info(f'{my_db_id}: Passing for local process')
+    if my_db_id is None:
+        logger.info(f'{my_db_id}: Skipping remove_db for local process')
         return
 
     logger.info(f'{my_db_id}: Attempting delete from {ulensdb_file_path}')
@@ -77,8 +77,8 @@ def insert_db_id(num_ids=50, retry_time=5):
     lock = FileLock(lock_path)
 
     my_db_id = fetch_db_id()
-    if my_db_id == '0.0':
-        logger.info(f'{my_db_id}: Passing for local process')
+    if my_db_id is None:
+        logger.info(f'{my_db_id}: Skipping insert_db or local process')
         return
 
     successFlag = False
