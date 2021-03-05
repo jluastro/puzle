@@ -65,6 +65,7 @@ def finish_job(source_job_id, job_stats):
     job = db.session.query(StarProcessJob).filter(
         StarProcessJob.source_ingest_job_id == source_job_id).one()
     job.finished = True
+    job.uploaded = True
     job.datetime_finished = datetime.now()
     job.num_stars = job_stats['num_stars']
     job.num_sources = job_stats['num_sources']
