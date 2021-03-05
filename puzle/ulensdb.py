@@ -27,7 +27,7 @@ def fetch_db_id():
         rank = 0
     slurm_job_id = os.getenv('SLURM_JOB_ID')
     if slurm_job_id is None:
-        slurm_job_id = os.getpid()
+        slurm_job_id = 0
     db_id = '%s.%s' % (slurm_job_id, rank)
     return db_id
 
@@ -40,12 +40,16 @@ def load_db_ids():
     # load db_ids from disk
     lines = open(ulensdb_file_path, 'r').readlines()
     db_ids = set([l.replace('\n', '') for l in lines])
+    loginFlag = '0.0' in db_ids
 
     if identify_is_nersc():
         # remove rows that are not currently running
         stdout, _ = execute('squeue --noheader -u mmedford --format="%i')
         job_ids = set([s.replace('"', '') for s in stdout.decode().split('\n')])
         db_ids = set([d for d in db_ids if d.split('.')[0] in job_ids])
+
+    if loginFlag:
+        db_ids.add('0.0')
 
     return db_ids
 
