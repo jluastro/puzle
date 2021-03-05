@@ -18,3 +18,4 @@ else
 fi
 $db_con -c "UPDATE source_ingest_job SET started='f', finished='f', datetime_started=NULL, datetime_finished=NULL, slurm_job_id=NULL, slurm_job_rank=NULL WHERE started='t' and finished='f' $slurm_cond";
 $db_con -c "UPDATE star_ingest_job SET started='f', finished='f', datetime_started=NULL, datetime_finished=NULL, slurm_job_id=NULL, slurm_job_rank=NULL WHERE started='t' and finished='f' $slurm_cond";
+$db_con -c "UPDATE star_process_job SET started='f', finished='f', datetime_started=NULL, datetime_finished=NULL, slurm_job_id=NULL, slurm_job_rank=NULL WHERE started='t' and finished='f' $slurm_cond";
