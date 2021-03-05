@@ -30,8 +30,10 @@ def fetch_unconverted_source_files_dr3():
     # grab source files in the DR3 folder
     source_files = []
     folders = glob.glob(f'{ulens_ztf_dir}/DR3/sources*')
+    folders.sort()
     for folder in folders:
         fis = glob.glob(f'{folder}/source*')
+        fis.sort()
         for fi in fis:
             folder_dr4 = folder.replace('DR3', 'DR4')
             fi_base = os.path.basename(fi)
@@ -50,15 +52,18 @@ def construct_lightcurve_filenames_dr4_dict():
         lightcurve_filenames_dr4_dict[field] = fi
     return lightcurve_filenames_dr4_dict
 
+
 def convert_sources_dr3_to_dr4():
     lightcurve_filenames_dr4_dict = construct_lightcurve_filenames_dr4_dict()
 
     lightcurveFile_dct = {}
     source_files_dr3 = fetch_unconverted_source_files_dr3()
-    for source_file_dr3 in source_files_dr3:
+    for i, source_file_dr3 in enumerate(source_files_dr3):
+        print('Converting %s (%i/%i)' % (source_file_dr3, i, len(source_files_dr3)))
         lines_dr3 = open(source_file_dr3, 'r').readlines()
         header = lines_dr3[0]
         lines_dr4 = []
+        num_missing = 0
         for line in lines_dr3[1:]:
             # get the dr4 lightcurve filename
             lightcurve_filename_dr3 = line.split(',')[7]
@@ -73,9 +78,9 @@ def convert_sources_dr3_to_dr4():
                 lightcurveFile = lightcurveFile_dct[lightcurve_filename_dr4]
 
             # looping over g, r and i
-            for i in [1, 2, 3]:
-                object_id_dr3 = line.split(',')[i]
-                lightcurve_position_dr3 = line.split(',')[i+3]
+            for j in [1, 2, 3]:
+                object_id_dr3 = line.split(',')[j]
+                lightcurve_position_dr3 = line.split(',')[j+3]
 
                 # if the object ID doesn't exist, nothing to replace
                 if object_id_dr3 == 'None':
@@ -84,10 +89,14 @@ def convert_sources_dr3_to_dr4():
                 # there could be objects that are no longer in the field due to the shifted boundaries
                 # in this case, simply zero out the object with a None
                 try:
-                    lightcurve_position_dr4 = lightcurveFile.objects_map[object_id_dr3]
+                    lightcurve_position_dr4 = lightcurveFile.objects_map[int(object_id_dr3)]
+                    lightcurve_position_dr4 = str(lightcurve_position_dr4)
                 except NameError:
+                    source_id = line.split(',')[0]
+                    print('---- source %s missing from DR4 lightcurve file' % source_id)
                     line = line.replace(object_id_dr3, 'None')
                     lightcurve_position_dr4 = 'None'
+                    num_missing += 1
 
                 # replace the DR3 lightcurve position with DR4
                 line = line.replace(lightcurve_position_dr3, lightcurve_position_dr4)
@@ -103,13 +112,15 @@ def convert_sources_dr3_to_dr4():
         source_file_dr4 = source_file_dr3.replace('DR3', 'DR4')
         source_folder = os.path.dirname(source_file_dr4)
         if not os.path.exists(source_folder):
-            os.makedir(source_folder)
+            os.makedirs(source_folder)
 
         # write the DR4 sources out to disk
-        with open(source_file_dr4, 'w'):
+        with open(source_file_dr4, 'w') as f:
             f.write(header)
             for line in lines_dr4:
                 f.write(line)
+
+        print(f'-- conversion complete: {num_missing} sources missing')
 
 
 if __name__ == '__main__':
