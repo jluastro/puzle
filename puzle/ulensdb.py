@@ -40,16 +40,12 @@ def load_db_ids():
     # load db_ids from disk
     lines = open(ulensdb_file_path, 'r').readlines()
     db_ids = set([l.replace('\n', '') for l in lines])
-    loginFlag = '0.0' in db_ids
 
     if identify_is_nersc():
         # remove rows that are not currently running
         stdout, _ = execute('squeue --noheader -u mmedford --format="%i')
         job_ids = set([s.replace('"', '') for s in stdout.decode().split('\n')])
         db_ids = set([d for d in db_ids if d.split('.')[0] in job_ids])
-
-    if loginFlag:
-        db_ids.add('0.0')
 
     return db_ids
 
@@ -59,6 +55,9 @@ def remove_db_id():
     lock = FileLock(lock_path)
 
     my_db_id = fetch_db_id()
+    if my_db_id == '0.0':
+        logger.info(f'{my_db_id}: Passing for local process')
+        return
 
     logger.info(f'{my_db_id}: Attempting delete from {ulensdb_file_path}')
     with lock:
@@ -78,6 +77,9 @@ def insert_db_id(num_ids=50, retry_time=5):
     lock = FileLock(lock_path)
 
     my_db_id = fetch_db_id()
+    if my_db_id == '0.0':
+        logger.info(f'{my_db_id}: Passing for local process')
+        return
 
     successFlag = False
     while True:
