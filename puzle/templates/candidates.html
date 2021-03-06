@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+    <table class="table table-hover">
+        <tr>
+            <td>
+                <h3>Candidates:</h3>
+                <table width="100%">
+                    <tr>
+                        <th>ID</th>
+                        <th>Glon</th>
+                        <th>Glat</th>
+                        <th>etas</th>
+                        <th>etas_thresholds</th>
+                        <th>rf_scores</th>
+                        <th>eta_residuals</th>
+                        <th>Followers</th>
+                    </tr>
+                {% for cand in cands.items %}
+                    <tr>
+                        <td>{{ "%i" % cand.id | int}}</td>
+                        </td>
+                        <td>{{ "%.5f" % cand.glon }}</td>
+                        <td>{{ "%.5f" % cand.glat }}</td>
+                        <td>
+                        {% for eta in cand.etas %}
+                            {{ "%.5f" % eta }} {{", " if not loop.last else "" }}
+                        {% endfor %}
+                        <td>
+                        {% for eta_thresh in cand.eta_thresholds %}
+                            {{ "%.5f" % eta_thresh }} {{", " if not loop.last else "" }}
+                        {% endfor %}
+                        </td>
+                        <td>
+                        {% for rf in cand.rf_scores %}
+                            {% if rf is float %}
+                                {{ "%.5f" % rf }}
+                            {%  else %}
+                                {{ "None" }}
+                            {% endif %}
+                            {{", " if not loop.last else "" }}
+                        {% endfor %}
+                        </td>
+                        <td>
+                        {% for eta in cand.eta_residuals %}
+                            {{ "%.5f" % eta }} {{", " if not loop.last else "" }}
+                        {% endfor %}
+                        </td>
+                        <td>
+                        {% for user in cand.users.all() %}
+                            <a href="{{ url_for('user', username=user.username) }}">{{ user.username }}</a> {{", " if not loop.last else "" }}
+                        {% endfor %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </table>
+                <!-- Pagination Links-->
+                <div class="text-right">
+                    <a href="{{ url_for('candidates', page=cands.prev_num) }}"
+                       class="btn btn-outline-dark
+                       {% if cands.page == 1 %}disabled{% endif %}">
+                        &laquo;
+                    </a><!-- Loop through the number of pages to display a link for each-->
+                    {% for page_num in cands.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}{% if page_num %}
+                <!-- Check for the active page and set the link to "Active"-->
+                            {% if cands.page == page_num %}
+                            <a href="{{ url_for('candidates', page=page_num) }}"
+                               class="btn btn-dark">
+                                {{ page_num }}
+                            </a>
+                            {% else %}
+                            <a href="{{ url_for('candidates', page=page_num) }}"
+                               class="btn btn-outline-dark">
+                                {{ page_num }}
+                            </a>
+                            {% endif %}
+                        {% else %}
+                            ...
+                        {% endif %}
+                    {% endfor %}    <a href="{{ url_for('candidates', page=cands.next_num) }}"
+                       class="btn btn-outline-dark
+                       {% if cands.page == cands.pages %}disabled{% endif %}">
+                        &raquo;
+                    </a>
+                </div>
+                <p class="text-right mt-3">
+                   Showing page {{ cands.page }} of {{ cands.pages }}
+                </p>
+            </td>
+        </tr>
+    </table>
+{% endblock %}

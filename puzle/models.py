@@ -33,7 +33,15 @@ user_source_association = db.Table(
 user_star_association = db.Table(
     'user_star_association',
     db.Column('user_id', db.Integer, db.ForeignKey('puzle.user.id')),
-    db.Column('star_id', db.BigInteger, db.ForeignKey('puzle.star.id')),
+    db.Column('star_id', db.String(128), db.ForeignKey('puzle.star.id')),
+    schema='puzle'
+)
+
+
+user_cand_association = db.Table(
+    'user_candidate_association',
+    db.Column('user_id', db.Integer, db.ForeignKey('puzle.user.id')),
+    db.Column('candidate_id', db.String(128), db.ForeignKey('puzle.candidate.id')),
     schema='puzle'
 )
 
@@ -53,6 +61,9 @@ class User(UserMixin, db.Model):
     stars = db.relationship('Star', secondary=user_star_association,
                             lazy='dynamic',
                             backref=db.backref('users', lazy='dynamic'))
+    candidates = db.relationship('Candidate', secondary=user_cand_association,
+                                 lazy='dynamic',
+                                 backref=db.backref('users', lazy='dynamic'))
 
     def __repr__(self):
         return f"User('{self.username}', '{self.email}')"
@@ -161,19 +172,24 @@ class Source(db.Model):
         self.zort_source = self.load_zort_source()
 
     @hybrid_property
-    def glon(self):
-        coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
-        glon = coord.galactic.l.value
-        if glon > 180:
-            return glon - 360
-        else:
-            return glon
+    def glonlat(self):
+        try:
+            return self._glonlat
+        except AttributeError:
+            coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
+            glon, glat = coord.galactic.l.value, coord.galactic.b.value
+            if glon > 180:
+                glon -= 360
+            self._glonlat = (glon, glat)
+            return self._glonlat
 
-    @hybrid_property
+    @property
+    def glon(self):
+        return self.glonlat[0]
+
+    @property
     def glat(self):
-        coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
-        glat = coord.galactic.b.value
-        return glat
+        return self.glonlat[1]
 
     @property
     def ztf_ids(self):
@@ -342,13 +358,15 @@ class Star(db.Model):
 
     @hybrid_property
     def glonlat(self):
-        if self._glonlat is None:
+        try:
+            return self._glonlat
+        except AttributeError:
             coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
             glon, glat = coord.galactic.l.value, coord.galactic.b.value
             if glon > 180:
                 glon -= 360
             self._glonlat = (glon, glat)
-        return self._glonlat
+            return self._glonlat
 
     @property
     def glon(self):
@@ -412,7 +430,7 @@ class Candidate(db.Model):
         self._glonlat = None
 
     def __repr__(self):
-        str = 'Star \n'
+        str = 'Candidate \n'
         str += f'Ra/Dec: ({self.ra:.5f}, {self.dec:.5f}) \n'
         for i, source_id in enumerate(self.source_ids, 1):
             str += f'Source {i} ID: {source_id} \n'
@@ -420,13 +438,15 @@ class Candidate(db.Model):
 
     @hybrid_property
     def glonlat(self):
-        if self._glonlat is None:
+        try:
+            return self._glonlat
+        except AttributeError:
             coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
             glon, glat = coord.galactic.l.value, coord.galactic.b.value
             if glon > 180:
                 glon -= 360
             self._glonlat = (glon, glat)
-        return self._glonlat
+            return self._glonlat
 
     @property
     def glon(self):

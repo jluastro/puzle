@@ -78,7 +78,7 @@ def insert_db_id(num_ids=50, retry_time=5):
 
     my_db_id = fetch_db_id()
     if my_db_id is None:
-        logger.info(f'{my_db_id}: Skipping insert_db or local process')
+        logger.info(f'{my_db_id}: Skipping insert_db for local process')
         return
 
     successFlag = False

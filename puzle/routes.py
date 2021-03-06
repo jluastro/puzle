@@ -8,7 +8,7 @@ from puzle import app, db
 from puzle.forms import LoginForm, RegistrationForm, \
     EditProfileForm, ResetPasswordRequestForm, ResetPasswordForm, \
     EditSourceCommentForm, SearchForm, EmptyForm
-from puzle.models import User, Source
+from puzle.models import User, Source, Candidate
 from puzle.email import send_password_reset_email
 
 
@@ -239,4 +239,17 @@ def sources():
     prev_url = url_for('sources', page=sources.prev_num) \
         if sources.has_prev else None
     return render_template('sources.html', sources=sources,
+                           next_url=next_url, prev_url=prev_url)
+
+
+@app.route('/candidates', methods=['GET', 'POST'])
+@login_required
+def candidates():
+    page = request.args.get('page', 1, type=int)
+    cands = Candidate.query.order_by(Candidate.id.asc()).paginate(page, app.config['SOURCES_PER_PAGE'], False)
+    next_url = url_for('candidates', page=cands.next_num) \
+        if cands.has_next else None
+    prev_url = url_for('candidates', page=cands.prev_num) \
+        if cands.has_prev else None
+    return render_template('candidates.html', cands=cands,
                            next_url=next_url, prev_url=prev_url)
