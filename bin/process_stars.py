@@ -83,7 +83,7 @@ def finish_job(source_job_id, job_stats):
 
 
 def csv_line_to_star_and_sources(line):
-    star_id = float(line.split(',')[0])
+    star_id = str(line.split(',')[0])
     ra = float(line.split(',')[1])
     dec = float(line.split(',')[2])
     ingest_job_id = int(line.split(',')[3])
@@ -290,6 +290,7 @@ def process_stars(shutdown_time=10, single_job=False):
 
         num_stars = len(stars_and_sources)
         logger.info(f'Job {source_job_id}: Processing {num_stars} stars')
+
         candidates, job_stats = filter_stars_to_candidates(source_job_id,
                                                            stars_and_sources)
         num_candidates = len(candidates)

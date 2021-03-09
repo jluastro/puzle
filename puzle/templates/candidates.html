@@ -12,17 +12,15 @@
                         <th>Glat</th>
                         <th>Source ID</th>
                         <th>etas</th>
-                        <th>etas_thresholds</th>
-                        <th>rf_scores</th>
-                        <th>eta_residuals</th>
-                        <th>Followers</th>
+                        <th>etas_threshold</th>
+                        <th>rf_score</th>
+                        <th>eta_residual</th>
                     </tr>
                 {% for cand in cands.items %}
                     <tr>
                         <td>{{ "%i" % cand.id | int}}</td>
                         <td>{{ "%.5f" % cand.glon }}</td>
                         <td>{{ "%.5f" % cand.glat }}</td>
-                        <td></td>
                         <td></td>
                         <td></td>
                         <td></td>
