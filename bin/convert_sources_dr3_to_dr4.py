@@ -56,6 +56,7 @@ def construct_lightcurve_filenames_dr4_dict():
 def convert_sources_dr3_to_dr4():
     lightcurve_filenames_dr4_dict = construct_lightcurve_filenames_dr4_dict()
 
+    lightcurveFile_dct = {}
     source_files_dr3 = fetch_unconverted_source_files_dr3()
     for i, source_file_dr3 in enumerate(source_files_dr3):
         print('Converting %s (%i/%i)' % (source_file_dr3, i, len(source_files_dr3)))
@@ -67,7 +68,6 @@ def convert_sources_dr3_to_dr4():
 
         lines_dr4 = []
         skipFlag = False
-        lightcurveFile_dct = {}
         for line in lines_dr3[1:]:
             # get the dr4 lightcurve filename
             lightcurve_filename_dr3 = line.split(',')[7]
