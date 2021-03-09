@@ -67,6 +67,7 @@ def convert_sources_dr3_to_dr4():
         num_missing = 0
 
         lines_dr4 = []
+        skipFlag = False
         for line in lines_dr3[1:]:
             # get the dr4 lightcurve filename
             lightcurve_filename_dr3 = line.split(',')[7]
@@ -74,11 +75,16 @@ def convert_sources_dr3_to_dr4():
             lightcurve_filename_dr4 = lightcurve_filenames_dr4_dict[field_id]
 
             # either load the lightcurveFile and cache it, or load from cache
-            if lightcurve_filename_dr4 not in lightcurveFile_dct:
-                lightcurveFile = LightcurveFile(lightcurve_filename_dr4)
-                lightcurveFile_dct[lightcurve_filename_dr4] = lightcurveFile
-            else:
-                lightcurveFile = lightcurveFile_dct[lightcurve_filename_dr4]
+            try:
+                if lightcurve_filename_dr4 not in lightcurveFile_dct:
+                    lightcurveFile = LightcurveFile(lightcurve_filename_dr4)
+                    lightcurveFile_dct[lightcurve_filename_dr4] = lightcurveFile
+                else:
+                    lightcurveFile = lightcurveFile_dct[lightcurve_filename_dr4]
+            except FileNotFoundError:
+                print('---- Skipping %s due to missing objects_map file' % source_file_dr3)
+                skipFlag = True
+                break
 
             # looping over g, r and i
             for j in [1, 2, 3]:
@@ -94,7 +100,7 @@ def convert_sources_dr3_to_dr4():
                 try:
                     lightcurve_position_dr4 = lightcurveFile.objects_map[int(object_id_dr3)]
                     lightcurve_position_dr4 = str(lightcurve_position_dr4)
-                except NameError:
+                except KeyError:
                     source_id = line.split(',')[0]
                     print('---- source %s missing from DR4 lightcurve file' % source_id)
                     line = line.replace(object_id_dr3, 'None')
@@ -110,6 +116,9 @@ def convert_sources_dr3_to_dr4():
 
             # keep the line for DR4 source file
             lines_dr4.append(line)
+
+        if skipFlag:
+            continue
 
         # create the DR4 source folder (if DNE)
         source_file_dr4 = source_file_dr3.replace('DR3', 'DR4')
