@@ -28,8 +28,8 @@
                         <td></td>
                     </tr>
                     <tr>
-                        <td></td>
                         {% for source_id, eta, eta_thresh, eta_residual in zip(cand.source_ids, cand.etas, cand.eta_thresholds, cand.eta_residuals) %}
+                            <td></td>
                             <td></td>
                             <td></td>
                             <td><a href="{{ url_for('source', sourceid=source_id) }}">{{ source_id }}</a></td>

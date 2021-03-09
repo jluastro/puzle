@@ -59,6 +59,8 @@ def convert_sources_dr3_to_dr4():
     lightcurveFile_dct = {}
     source_files_dr3 = fetch_unconverted_source_files_dr3()
     for i, source_file_dr3 in enumerate(source_files_dr3):
+        if len(lightcurveFile_dct) >= 100:
+            lightcurveFile_dct = {}
         print('Converting %s (%i/%i)' % (source_file_dr3, i, len(source_files_dr3)))
         lines_dr3 = open(source_file_dr3, 'r').readlines()
         header = lines_dr3[0]
