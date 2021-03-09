@@ -132,11 +132,12 @@ def reset_password(token):
 @app.route('/source/<sourceid>')
 @login_required
 def source(sourceid):
+    title = 'Source %s' % sourceid
     form = EmptyForm()
     source = Source.query.filter_by(id=sourceid).first_or_404()
     source.load_lightcurve_plot()
     return render_template('source.html', source=source,
-                           form=form)
+                           form=form, title=title)
 
 
 @app.route('/edit_source_comments/<sourceid>', methods=['GET', 'POST'])
@@ -192,7 +193,7 @@ def search():
             Source.cone_search(ra, dec, form.radius.data)).all()
         sources.sort(key=lambda x: x.id)
         return render_template('search.html', form=form, sources=sources)
-    return render_template('search.html', form=form)
+    return render_template('search.html', form=form, title='PUZLE search')
 
 
 @app.route('/follow/<sourceid>', methods=['POST'])
@@ -239,7 +240,8 @@ def sources():
     prev_url = url_for('sources', page=sources.prev_num) \
         if sources.has_prev else None
     return render_template('sources.html', sources=sources,
-                           next_url=next_url, prev_url=prev_url)
+                           next_url=next_url, prev_url=prev_url,
+                           title='PUZLE sources')
 
 
 @app.route('/candidates', methods=['GET', 'POST'])
@@ -252,4 +254,5 @@ def candidates():
     prev_url = url_for('candidates', page=cands.prev_num) \
         if cands.has_prev else None
     return render_template('candidates.html', cands=cands,
-                           next_url=next_url, prev_url=prev_url)
+                           next_url=next_url, prev_url=prev_url,
+                           title='PUZLE candidates', zip=zip)
