@@ -28,7 +28,7 @@ import os
 from puzle.utils import gather_PopSyCLE_lb, find_nearest_lightcurve_file, \
     return_data_dir, return_figures_dir
 from puzle.stats import generate_random_lightcurves_lb, fetch_sample_objects, \
-    calculate_lightcurve_stats
+    calculate_lightcurve_stats, return_eta_threshold
 
 
 def generate_example_lightcurves(lightcurves_norm, lightcurves_ulens):
@@ -53,77 +53,100 @@ def generate_example_lightcurves(lightcurves_norm, lightcurves_ulens):
 def generate_whelen_stats_figure(l, b, eta_norm, J_norm, chi_norm,
                                  eta_ulens, J_ulens, chi_ulens):
 
-    eta_thresh = np.percentile(eta_norm, 1)
-    J_thresh = np.percentile(J_norm, 99)
-    chi_thresh = np.percentile(chi_norm, 99)
+    eta_thresh = np.log10(np.percentile(eta_norm, 1))
+    J_thresh = np.log10(np.percentile(J_norm, 99))
+    chi_thresh = np.log10(np.percentile(chi_norm, 99))
 
     fig, ax = plt.subplots(3, 2, figsize=(9, 18))
-    size = 2
-    alpha = .2
+    # size = 1
+    # alpha = .01
     for a in ax.flatten():
         a.clear()
         a.grid(True)
-    ax[0, 0].set_xlabel('Eta', fontsize=12)
-    ax[0, 0].set_ylabel('Chi-Squared', fontsize=12)
-    ax[0, 0].scatter(eta_norm, chi_norm,
-                     s=size, alpha=alpha)
-    ax[0, 1].set_xlabel('Eta', fontsize=12)
-    ax[0, 1].scatter(eta_ulens, chi_ulens,
-                     s=size, alpha=alpha)
+    ax[0, 0].set_xlabel('log(Eta)', fontsize=12)
+    ax[0, 0].set_ylabel('log(Chi-Squared)', fontsize=12)
+    # ax[0, 0].scatter(eta_norm, chi_norm,
+    #                  s=size, alpha=alpha)
+    ax[0, 0].hexbin(np.log10(eta_norm), np.log10(chi_norm),
+                    bins='log', gridsize=50, mincnt=1)
+    ax[0, 1].set_xlabel('log(Eta)', fontsize=12)
+    # ax[0, 1].scatter(eta_ulens, chi_ulens,
+    #                  s=size, alpha=alpha)
+    ax[0, 1].hexbin(np.log10(eta_ulens), np.log10(chi_ulens),
+                    bins='log', gridsize=50, mincnt=1)
     for a in ax[0, :]:
-        a.set_xlim(1e-2, 1e1)
-        a.set_ylim(1e-4, 1e7)
+        # a.set_xlim(1e-3, 1e1)
+        # a.set_ylim(1e-5, 1e7)
+        a.set_xlim(-3, 1)
+        a.set_ylim(-5, 7)
         a.axvline(eta_thresh, color='r',
                   alpha=.8, linestyle='--')
         a.axhline(chi_thresh, color='r',
                   alpha=.8, linestyle='--')
-        a.fill_between([1e-2, eta_thresh],
+        a.fill_between([a.get_xlim()[0], eta_thresh],
                        [chi_thresh, chi_thresh],
-                       [1e7, 1e7],
+                       [7, 7],
                        color='r', alpha=.1)
 
 
-    ax[1, 0].set_xlabel('Eta', fontsize=12)
-    ax[1, 0].set_ylabel('J', fontsize=12)
-    ax[1, 0].scatter(eta_norm, J_norm,
-                     s=size, alpha=alpha)
-    ax[1, 1].set_xlabel('Eta', fontsize=12)
-    ax[1, 1].scatter(eta_ulens, J_ulens,
-                     s=size, alpha=alpha)
+    ax[1, 0].set_xlabel('log(Eta)', fontsize=12)
+    ax[1, 0].set_ylabel('log(J)', fontsize=12)
+    # ax[1, 0].scatter(eta_norm, J_norm,
+    #                  s=size, alpha=alpha)
+    ax[1, 0].hexbin(np.log10(eta_norm), np.log10(J_norm),
+                    bins='log', gridsize=50, mincnt=1)
+    ax[1, 1].set_xlabel('log(Eta)', fontsize=12)
+    # ax[1, 1].scatter(eta_ulens, J_ulens,
+    #                  s=size, alpha=alpha)
+    ax[1, 1].hexbin(np.log10(eta_ulens), np.log10(J_ulens),
+                    bins='log', gridsize=50, mincnt=1)
     for a in ax[1, :]:
-        a.set_xlim(1e-2, 1e1)
-        a.set_ylim(1e-3, 1e5)
+        # a.set_xlim(1e-3, 1e1)
+        # a.set_ylim(1e-3, 1e5)
+        a.set_xlim(-3, 1)
+        a.set_ylim(-3, 5)
         a.axvline(eta_thresh, color='r',
                   alpha=.8, linestyle='--')
         a.axhline(J_thresh, color='r',
                   alpha=.8, linestyle='--')
-        a.fill_between([1e-2, eta_thresh],
+        a.fill_between([a.get_xlim()[0], eta_thresh],
                        [J_thresh, J_thresh],
-                       [1e5, 1e5],
+                       [5, 5],
                        color='r', alpha=.1)
 
-    ax[2, 0].set_xlabel('Chi-Squared', fontsize=12)
-    ax[2, 0].set_ylabel('J', fontsize=12)
-    ax[2, 0].scatter(chi_norm, J_norm,
-                     s=size, alpha=alpha)
-    ax[2, 1].set_xlabel('Chi-Squared', fontsize=12)
-    ax[2, 1].scatter(chi_ulens, J_ulens,
-                     s=size, alpha=alpha)
+    ax[2, 0].set_xlabel('log(Chi-Squared)', fontsize=12)
+    ax[2, 0].set_ylabel('log(J)', fontsize=12)
+    # ax[2, 0].scatter(chi_norm, J_norm,
+    #                  s=size, alpha=alpha)
+    ax[2, 0].hexbin(np.log10(chi_norm), np.log10(J_norm),
+                    bins='log', gridsize=50, mincnt=1)
+    ax[2, 1].set_xlabel('log(Chi-Squared)', fontsize=12)
+    # ax[2, 1].scatter(chi_ulens, J_ulens,
+    #                  s=size, alpha=alpha)
+    ax[2, 1].hexbin(np.log10(chi_ulens), np.log10(J_ulens),
+                    bins='log', gridsize=50, mincnt=1)
     for a in ax[2, :]:
-        a.set_xlim(1e-4, 1e7)
-        a.set_ylim(1e-3, 1e5)
+        # a.set_xlim(1e-5, 1e7)
+        # a.set_ylim(1e-3, 1e5)
+        a.set_xlim(-5, 8)
+        a.set_ylim(-3, 5)
         a.axvline(chi_thresh, color='r',
                   alpha=.8, linestyle='--')
         a.axhline(J_thresh, color='r',
                   alpha=.8, linestyle='--')
-        a.fill_between([chi_thresh, 1e7],
+        a.fill_between([chi_thresh, a.get_xlim()[1]],
                        [J_thresh, J_thresh],
-                       [1e5, 1e5],
+                       [5, 5],
                        color='r', alpha=.1)
 
-    for a in ax.flatten():
-        a.set_xscale('log')
-        a.set_yscale('log')
+    for a in np.append(ax[0, :], ax[1, :]):
+        for size in [25, 50, 100]:
+            eta_thresh_stats = return_eta_threshold(size)
+            a.axvline(np.log10(eta_thresh_stats), color='g', linestyle='--')
+
+    # for a in ax.flatten():
+    #     a.set_xscale('log')
+    #     a.set_yscale('log')
     fig.tight_layout()
 
     fname = '%s/l%.1f_b%.1f_thresholds.png' % (return_figures_dir(), l, b)

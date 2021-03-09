@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """
-convert_sources_dr3_to_dr4.py
+convert_dr3_to_dr4.py
 """
 
 """
@@ -19,6 +19,7 @@ which have object IDs as keys and their lightcurve positions as sources.
 
 import os
 import glob
+import shutil
 from zort.lightcurveFile import LightcurveFile
 
 from puzle.utils import lightcurve_file_to_field_id
@@ -26,13 +27,16 @@ from puzle.utils import lightcurve_file_to_field_id
 ulens_ztf_dir = '/global/cfs/cdirs/uLens/ZTF'
 
 
-def fetch_unconverted_source_files_dr3():
+def fetch_unconverted_files_dr3(file_type):
+    if file_type not in ['star', 'source']:
+        print('file_type must be either star or source')
+        return
     # grab source files in the DR3 folder
     source_files = []
-    folders = glob.glob(f'{ulens_ztf_dir}/DR3/sources*')
+    folders = glob.glob(f'{ulens_ztf_dir}/DR3/{file_type}s*')
     folders.sort()
     for folder in folders:
-        fis = glob.glob(f'{folder}/source*')
+        fis = glob.glob(f'{folder}/{file_type}*')
         fis.sort()
         for fi in fis:
             folder_dr4 = folder.replace('DR3', 'DR4')
@@ -57,7 +61,7 @@ def convert_sources_dr3_to_dr4():
     lightcurve_filenames_dr4_dict = construct_lightcurve_filenames_dr4_dict()
 
     lightcurveFile_dct = {}
-    source_files_dr3 = fetch_unconverted_source_files_dr3()
+    source_files_dr3 = fetch_unconverted_files_dr3(file_type='source')
     for i, source_file_dr3 in enumerate(source_files_dr3):
         if len(lightcurveFile_dct) >= 100:
             lightcurveFile_dct = {}
@@ -137,5 +141,17 @@ def convert_sources_dr3_to_dr4():
         print(f'-- conversion complete: {num_missing} of {num_sources} sources missing')
 
 
+def copy_stars_dr3_to_dr4():
+    star_files_dr3 = fetch_unconverted_files_dr3(file_type='star')
+    for i, star_file_dr3 in enumerate(star_files_dr3):
+        print('Copying %s (%i/%i)' % (star_file_dr3, i, len(star_files_dr3)))
+        star_file_dr4 = star_file_dr3.replace('DR3', 'DR4')
+        star_folder_dr4 = os.path.dirname(star_file_dr4)
+        if not os.path.exists(star_folder_dr4):
+            os.makedirs(star_folder_dr4)
+        shutil.copy(star_file_dr3, star_file_dr4)
+
+
 if __name__ == '__main__':
     convert_sources_dr3_to_dr4()
+    copy_stars_dr3_to_dr4()
