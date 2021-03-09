@@ -6,7 +6,7 @@ plot_survival_rates.py
 import matplotlib.pyplot as plt
 import numpy as np
 from puzle import db
-from puzle.models import StarProcessJob
+from puzle.models import StarProcessJob, SourceIngestJob
 
 
 def parse_cut_rates(job):
@@ -54,6 +54,34 @@ def plot_survival_rates():
     fig.tight_layout()
     fig.subplots_adjust(top=.9)
     fig.suptitle('25 Sample Fields', fontsize=10)
+
+
+def plot_job_locations():
+    # grab ra_arr, dec_arr, N_sources_arr from plot_ingest_progress
+    fig, ax = plt.subplots(figsize=(12, 5))
+    im = ax.scatter(ra_arr, dec_arr, c=N_sources_arr, edgecolor='None', s=5)
+    cond = N_sources_arr == 0
+    ax.scatter(ra_arr[cond], dec_arr[cond], c='r', edgecolor='None', s=5)
+    cbar = fig.colorbar(im, ax=ax)
+    cbar.set_label('log(num sources)', fontsize=12)
+    ax.set_xlabel('ra', fontsize=12)
+    ax.set_ylabel('dec', fontsize=12)
+    fig.tight_layout()
+
+    jobs = db.session.query(SourceIngestJob, StarProcessJob). \
+        outerjoin(SourceIngestJob, StarProcessJob.source_ingest_job_id == SourceIngestJob.id). \
+        filter(StarProcessJob.finished==True).all()
+
+    # find the density at the center of the job field
+    ra_job_arr = []
+    dec_job_arr = []
+    for source_ingest_job, _ in jobs:
+        ra = (source_ingest_job.ra_start + source_ingest_job.ra_end) / 2.
+        dec = (source_ingest_job.dec_start + source_ingest_job.dec_end) / 2.
+        ra_job_arr.append(ra)
+        dec_job_arr.append(dec)
+    ax.scatter(ra_job_arr, dec_job_arr, marker='*', s=5, color='k')
+
 
 
 if __name__ == '__main__':
