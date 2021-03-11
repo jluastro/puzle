@@ -227,9 +227,9 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
             source = sources[j]
             obj = source.zort_source.objects[k]
             eta = calculate_eta(obj.lightcurve.mag)
-            eta_threshold = return_eta_threshold(obj.nepochs)
             rf_score = catalog.query_ps1_psc(obj.ra, obj.dec,
                                              con=ulens_con)
+            # eta_threshold = return_eta_threshold(obj.nepochs)
             hmjd = obj.lightcurve.hmjd
             mag = obj.lightcurve.magerr
             magerr = obj.lightcurve.magerr
@@ -240,7 +240,7 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
             eta_arr.append(eta)
             rf_arr.append(rf_score)
             eta_residual_arr.append(eta_residual)
-            eta_threshold_arr.append(eta_threshold)
+            eta_threshold_arr.append(eta_thresh)
 
         cand = Candidate(id=star.id,
                          source_ids=source_id_arr,

@@ -106,7 +106,7 @@ def fit_event(t_obs_arr, mag_arr, magerr_arr):
     if len(t0_arr) == 0:
         return None
 
-    idx = np.argmin(chi_squared_delta_arr)
+    idx = np.argmax(chi_squared_delta_arr)
 
     t0 = t0_arr[idx]
     t_eff = t_eff_arr[idx]
