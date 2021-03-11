@@ -4,6 +4,7 @@ process_stars.py
 """
 import time
 import os
+import numpy as np
 from datetime import datetime, timedelta
 import logging
 from collections import defaultdict
@@ -131,7 +132,8 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
     num_stars = 0
     num_sources = 0
     num_objs = 0
-    eta_idxs = []
+    idxs = []
+    eta_arr = []
     for i, (star, sources) in enumerate(stars_and_sources):
         num_stars += 1
         for j, source in enumerate(sources):
@@ -141,9 +143,13 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
                     continue
                 num_objs += 1
                 eta = calculate_eta(obj.lightcurve.mag)
-                eta_threshold = return_eta_threshold(obj.nepochs)
-                if eta <= eta_threshold:
-                    eta_idxs.append((i, j, k))
+                idxs.append((i, j, k))
+                eta_arr.append(eta)
+    eta_arr = np.array(eta_arr)
+    idxs = np.array(idxs)
+    eta_thresh = np.percentile(eta_arr, 1)
+    eta_cond = np.where(eta_arr <= eta_thresh)[0]
+    eta_idxs = idxs[eta_cond]
 
     logger.info(f'Job {source_job_id}: '
                 f'{num_stars} Stars | '
@@ -154,7 +160,8 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
 
     logger.info(f'Job {source_job_id}: '
                 f'{num_stars_pass_eta} stars pass eta cut | '
-                f'{num_objs_pass_eta} objects pass eta cut')
+                f'{num_objs_pass_eta} objects pass eta cut | '
+                f'eta_thresh = {eta_thresh:.3f}')
 
     insert_db_id()
     ulens_con = catalog.ulens_con()
@@ -187,8 +194,7 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
         mag = obj.lightcurve.magerr
         magerr = obj.lightcurve.magerr
         eta_residual = calculate_eta_on_residuals(hmjd, mag, magerr)
-        eta_threshold = return_eta_threshold(obj.nepochs)
-        if eta_residual is not None and eta_residual > eta_threshold:
+        if eta_residual is not None and eta_residual > eta_thresh:
             eta_residual_idxs.append((i, j, k))
 
     num_objs_pass_eta_residual = len(eta_residual_idxs)
