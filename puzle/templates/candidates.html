@@ -25,13 +25,13 @@
                         <td>{{ "%s" % cand.id}}</td>
                         <td>{{ "%.5f" % cand.glon }}</td>
                         <td>{{ "%.5f" % cand.glat }}</td>
-                        <td>{{ "%.5f" % cand.t_E_best }}</td>
-                        <td>{{ "%.5f" % cand.chi_squared_delta_best }}</td>
-                        <td>{{ "%.5f" % cand.eta_best }}</td>
-                        <td>{{ "%.5f" % cand.eta_residual_best }}</td>
-                        <td>{{ "%.5f" % cand.eta_threshold }}</td>
+                        <td>{{ "%.2f" % cand.t_E_best }}</td>
+                        <td>{{ "%.2f" % cand.chi_squared_delta_best }}</td>
+                        <td>{{ "%.2f" % cand.eta_best }}</td>
+                        <td>{{ "%.2f" % cand.eta_residual_best }}</td>
+                        <td>{{ "%.2f" % cand.eta_threshold }}</td>
                         {% if cand.rf_score is float %}
-                            <td>{{ "%.5f" % cand.rf_score }}</td>
+                            <td>{{ "%.2f" % cand.rf_score }}</td>
                         {%  else %}
                             <td>{{ "None" }}</td>
                         {% endif %}

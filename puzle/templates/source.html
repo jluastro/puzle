@@ -77,7 +77,7 @@
                 <tr>
                     <th>t<sub>0</sub></th>
                     {% if source.fit_t_0 is float %}
-                        <td>{{ "%.5f" % source.fit_t_0 }}</td>
+                        <td>{{ "%.2f" % source.fit_t_0 }}</td>
                     {% else %}
                         <td>{{ "None" }}</td>
                     {% endif %}
@@ -85,7 +85,7 @@
                 <tr>
                     <th>t<sub>E</sub></th>
                     {% if source.fit_t_E is float %}
-                        <td>{{ "%.5f" % source.fit_t_E }}</td>
+                        <td>{{ "%.2f" % source.fit_t_E }}</td>
                     {% else %}
                         <td>{{ "None" }}</td>
                     {% endif %}
@@ -93,7 +93,7 @@
                 <tr>
                     <th>Chi Squared Flat</th>
                     {% if source.fit_chi_squared_flat is float %}
-                        <td>{{ "%.5f" % source.fit_chi_squared_flat }}</td>
+                        <td>{{ "%.2f" % source.fit_chi_squared_flat }}</td>
                     {% else %}
                         <td>{{ "None" }}</td>
                     {% endif %}
@@ -101,7 +101,7 @@
                 <tr>
                    <th>Chi Squared Delta</th>
                     {% if source.fit_chi_squared_delta is float %}
-                        <td>{{ "%.5f" % source.fit_chi_squared_delta }}</td>
+                        <td>{{ "%.2f" % source.fit_chi_squared_delta }}</td>
                     {% else %}
                         <td>{{ "None" }}</td>
                     {% endif %}
