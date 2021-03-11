@@ -4,7 +4,7 @@
     <table class="table table-hover">
         <tr>
             <td>
-                <h3>Candidates:</h3>
+                <h3>Candidates | {{ cands_rows|length }} results</h3>
                 <table width="100%">
                     <tr>
                         <th>Cand ID</th>
@@ -19,7 +19,7 @@
                         <th>Source ID</th>
                         <th>Filter ID</th>
                     </tr>
-                {% for cand in cands.items %}
+                {% for cand in cands_rows %}
                     <tr>
                         <td>{{ "%s" % cand.id}}</td>
                         <td>{{ "%.5f" % cand.glon }}</td>
@@ -54,6 +54,7 @@
                     </tr>
                 {% endfor %}
                 </table>
+                {% if paginate == true %}
                 <!-- Pagination Links-->
                 <div class="text-right">
                     <a href="{{ url_for('candidates', page=cands.prev_num) }}"
@@ -86,6 +87,7 @@
                 <p class="text-right mt-3">
                    Showing page {{ cands.page }} of {{ cands.pages }}
                 </p>
+                {%  endif %}
             </td>
         </tr>
     </table>

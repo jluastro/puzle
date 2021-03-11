@@ -67,34 +67,44 @@
                 {% endif %}
                 <tr class="blank_row"></tr>
                 <tr>
+                    <th>Fit Filter</th>
+                    {% if source.fit_filter is string %}
+                        <td>{{ "%s" % source.fit_filter }}</td>
+                    {% else %}
+                        <td>{{ "None" }}</td>
+                    {% endif %}
+                </tr>
+                <tr>
                     <th>t<sub>0</sub></th>
-                    <td>
-                        0
-                    </td>
+                    {% if source.fit_t_0 is float %}
+                        <td>{{ "%.5f" % source.fit_t_0 }}</td>
+                    {% else %}
+                        <td>{{ "None" }}</td>
+                    {% endif %}
                 </tr>
                 <tr>
                     <th>t<sub>E</sub></th>
-                    <td>
-                        0
-                    </td>
+                    {% if source.fit_t_E is float %}
+                        <td>{{ "%.5f" % source.fit_t_E }}</td>
+                    {% else %}
+                        <td>{{ "None" }}</td>
+                    {% endif %}
                 </tr>
                 <tr>
-                    <th>mag<sub>src</sub></th>
-                    <td>
-                        0
-                    </td>
+                    <th>Chi Squared Flat</th>
+                    {% if source.fit_chi_squared_flat is float %}
+                        <td>{{ "%.5f" % source.fit_chi_squared_flat }}</td>
+                    {% else %}
+                        <td>{{ "None" }}</td>
+                    {% endif %}
                 </tr>
                 <tr>
-                    <th>b<sub>sff</sub></th>
-                    <td>
-                        0
-                    </td>
-                </tr>
-                <tr>
-                    <th>pi<sub>E</sub></th>
-                    <td>
-                        0
-                    </td>
+                   <th>Chi Squared Delta</th>
+                    {% if source.fit_chi_squared_delta is float %}
+                        <td>{{ "%.5f" % source.fit_chi_squared_delta }}</td>
+                    {% else %}
+                        <td>{{ "None" }}</td>
+                    {% endif %}
                 </tr>
                 <tr class="blank_row"></tr>
                 <tr>

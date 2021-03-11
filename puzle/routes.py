@@ -170,14 +170,15 @@ def fetch_ztf_ids(sourceid):
 @login_required
 def search():
     form = SearchForm()
+    radius = form.radius.data
     if form.validate_on_submit():
         if form.ra.data and form.dec.data:
             ra, dec = form.ra.data, form.dec.data
-            flash('Searching (ra,dec) = (%.5f, %.5f)' % (ra, dec),
+            flash('Searching (ra, dec, radius) = (%.5f, %.5f, %.2f)' % (ra, dec, radius),
                   'info')
         elif form.glon.data and form.glat.data:
             glon, glat = form.glon.data, form.glat.data
-            flash('Searching (glon, glat) = (%.5f, %.5f)' % (glon, glat),
+            flash('Searching (glon, glat, radius) = (%.5f, %.5f, %.2f)' % (glon, glat, radius),
                   'info')
             coord = SkyCoord(glon, glat,
                              unit=u.degree, frame='galactic')
@@ -189,10 +190,14 @@ def search():
                   'must be entered.', 'danger')
             return redirect(url_for('search'))
 
-        sources = db.session.query(Source).filter(
-            Source.cone_search(ra, dec, form.radius.data)).all()
-        sources.sort(key=lambda x: x.id)
-        return render_template('search.html', form=form, sources=sources)
+        cands = db.session.query(Candidate).filter(
+            Candidate.cone_search(ra, dec, radius)).all()
+        print(ra, dec, len(cands))
+        cands.sort(key=lambda x: x.id)
+        # return render_template('search.html', form=form, sources=cands)
+        return render_template('candidates.html', cands_rows=cands,
+                               title='PUZLE candidates from search', zip=zip,
+                               paginate=False)
     return render_template('search.html', form=form, title='PUZLE search')
 
 
@@ -254,5 +259,7 @@ def candidates():
     prev_url = url_for('candidates', page=cands.prev_num) \
         if cands.has_prev else None
     return render_template('candidates.html', cands=cands,
+                           cands_rows=cands.items,
                            next_url=next_url, prev_url=prev_url,
-                           title='PUZLE candidates', zip=zip)
+                           title='PUZLE candidates', zip=zip,
+                           paginate=True)

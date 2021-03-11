@@ -140,11 +140,24 @@ class Source(db.Model):
     lightcurve_filename = db.Column(db.String(128), index=True, nullable=False)
     comments = db.Column(db.String(1024))
     _ztf_ids = db.Column(db.String(256))
+    fit_filter = db.Column(db.String(128))
+    fit_t_0 = db.Column(db.Float)
+    fit_t_E = db.Column(db.Float)
+    fit_f_0 = db.Column(db.Float)
+    fit_f_1 = db.Column(db.Float)
+    fit_a_type = db.Column(db.String(128))
+    fit_chi_squared_flat = db.Column(db.Float)
+    fit_chi_squared_delta = db.Column(db.Float)
 
     def __init__(self, object_id_g, object_id_r, object_id_i,
                  lightcurve_position_g, lightcurve_position_r, lightcurve_position_i,
                  ra, dec, lightcurve_filename, ingest_job_id,
-                 id=None, comments=None, _ztf_ids=None):
+                 id=None, comments=None, _ztf_ids=None,
+                 fit_filter=None, fit_t_0=None,
+                 fit_t_E=None, fit_f_0=None,
+                 fit_f_1=None, fit_a_type=None,
+                 fit_chi_squared_flat=None,
+                 fit_chi_squared_delta=None):
         self.object_id_g = object_id_g
         self.object_id_r = object_id_r
         self.object_id_i = object_id_i
@@ -159,6 +172,14 @@ class Source(db.Model):
         self.comments = comments
         self.zort_source = self.load_zort_source()
         self._ztf_ids = _ztf_ids
+        self.fit_filter = fit_filter
+        self.fit_t_0 = fit_t_0
+        self.fit_t_E = fit_t_E
+        self.fit_f_0 = fit_f_0
+        self.fit_f_1 = fit_f_1
+        self.fit_a_type = fit_a_type
+        self.fit_chi_squared_flat = fit_chi_squared_flat
+        self.fit_chi_squared_delta = fit_chi_squared_delta
         
     def __repr__(self):
         return f'Source \n' \

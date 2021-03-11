@@ -214,6 +214,8 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
     ulens_con = catalog.ulens_con()
     candidates = []
     unique_star_idxs = list(set([i for i, _, _ in eta_residual_idxs]))
+    source_ids = []
+    best_fit_stats = []
     for star_idx in unique_star_idxs:
         star, sources = stars_and_sources[star_idx]
         source_obj_idxs = [(j, k) for i, j, k in eta_residual_idxs if i == star_idx]
@@ -232,7 +234,6 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
 
         idx_best = int(np.argmax(n_days_arr))
         j, k = source_obj_idxs[idx_best]
-        source = sources[j]
         obj = source.zort_source.objects[k]
 
         eta = calculate_eta(obj.lightcurve.mag)
@@ -270,6 +271,11 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
                          idx_best=idx_best)
         candidates.append(cand)
 
+        source = sources[j]
+        fit_filter = obj.color
+        source_ids.append(source.id)
+        best_fit_stats.append((fit_filter, t_E, t_0, f_0, f_1, a_type, chi_squared_flat, chi_squared_delta))
+
     ulens_con.close()
     remove_db_id()
 
@@ -282,13 +288,24 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
                  'num_stars_pass_rf': num_stars_pass_rf,
                  'num_objs_pass_eta_residual': num_objs_pass_eta_residual,
                  'num_stars_pass_eta_residual': num_stars_pass_eta_residual}
-    return candidates, job_stats
+    return candidates, job_stats, source_ids, best_fit_stats
 
 
-def upload_candidates(candidates):
+def upload_candidates(candidates, source_ids, best_fit_stats):
     insert_db_id()  # get permission to make a db connection
     for cand in candidates:
         db.session.add(cand)
+    for source_id, best_fit_stat in zip(source_ids, best_fit_stats):
+        source_db = db.session.query(Source).filter(Source.id==source_id).first()
+        fit_filter, t_E, t_0, f_0, f_1, a_type, chi_squared_flat, chi_squared_delta = best_fit_stat
+        source_db.fit_filter = fit_filter
+        source_db.fit_t_0 = t_0
+        source_db.fit_t_E = t_E
+        source_db.fit_f_0 = f_0
+        source_db.fit_f_1 = f_1
+        source_db.fit_a_type = a_type
+        source_db.fit_chi_squared_flat = chi_squared_flat
+        source_db.fit_chi_squared_delta = chi_squared_delta
     db.session.commit()
     db.session.close()
     remove_db_id()  # release permission for this db connection
@@ -318,11 +335,11 @@ def process_stars(shutdown_time=10, single_job=False):
         num_stars = len(stars_and_sources)
         if num_stars > 0:
             logger.info(f'Job {source_job_id}: Processing {num_stars} stars')
-            candidates, job_stats = filter_stars_to_candidates(source_job_id,
-                                                               stars_and_sources)
+            candidates, job_stats, source_ids, best_fit_stats = filter_stars_to_candidates(
+                source_job_id, stars_and_sources)
             num_candidates = len(candidates)
             logger.info(f'Job {source_job_id}: Uploading {num_candidates} candidates')
-            upload_candidates(candidates)
+            upload_candidates(candidates, source_ids, best_fit_stats)
             logger.info(f'Job {source_job_id}: Processing complete')
         else:
             logger.info(f'Job {source_job_id}: No stars, skipping process')
