@@ -43,6 +43,7 @@ def fetch_job():
     job.slurm_job_id = os.getenv('SLURM_JOB_ID')
     job.datetime_started = datetime.now()
     db.session.commit()
+    db.session.close()
 
     remove_db_id()  # release permission for this db connection
     return source_job_id
@@ -54,6 +55,8 @@ def reset_job(source_job_id):
         StarIngestJob.source_ingest_job_id == source_job_id).one()
     job.started = False
     db.session.commit()
+    db.session.close()
+
     remove_db_id()  # release permission for this db connection
 
 
@@ -64,6 +67,8 @@ def finish_job(source_job_id):
     job.finished = True
     job.datetime_finished = datetime.now()
     db.session.commit()
+    db.session.close()
+
     remove_db_id()  # release permission for this db connection
 
 

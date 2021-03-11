@@ -49,6 +49,7 @@ def fetch_job():
     job.slurm_job_id = os.getenv('SLURM_JOB_ID')
     job.datetime_started = datetime.now()
     db.session.commit()
+    db.session.close()
 
     remove_db_id()  # release permission for this db connection
     return source_job_id
@@ -60,6 +61,7 @@ def reset_job(source_job_id):
         StarProcessJob.source_ingest_job_id == source_job_id).one()
     job.started = False
     db.session.commit()
+    db.session.close()
     remove_db_id()  # release permission for this db connection
 
 
@@ -80,6 +82,7 @@ def finish_job(source_job_id, job_stats):
     job.num_objs_pass_eta_residual = job_stats['num_objs_pass_eta_residual']
     job.num_stars_pass_eta_residual = job_stats['num_stars_pass_eta_residual']
     db.session.commit()
+    db.session.close()
     remove_db_id()  # release permission for this db connection
 
 
@@ -117,6 +120,7 @@ def fetch_stars_and_sources(source_job_id):
 
     insert_db_id()
     sources_db = db.session.query(Source).filter(Source.id.in_(source_ids)).all()
+    db.session.close()
     remove_db_id()
     star_to_source_dict = defaultdict(list)
     for source_db in sources_db:
@@ -270,6 +274,7 @@ def upload_candidates(candidates):
     for cand in candidates:
         db.session.add(cand)
     db.session.commit()
+    db.session.close()
     remove_db_id()  # release permission for this db connection
 
 
