@@ -13,8 +13,7 @@ from puzle.models import Source, StarIngestJob, Star, StarProcessJob, Candidate
 from puzle.utils import fetch_job_enddate, return_DR3_dir
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle.stats import calculate_eta, \
-    calculate_eta_on_residuals, \
-    return_eta_threshold, RF_THRESHOLD
+    calculate_eta_on_residuals, RF_THRESHOLD
 from puzle import catalog
 from puzle import db
 
@@ -227,9 +226,12 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
             source = sources[j]
             obj = source.zort_source.objects[k]
             eta = calculate_eta(obj.lightcurve.mag)
-            rf_score = catalog.query_ps1_psc(obj.ra, obj.dec,
-                                             con=ulens_con)
-            # eta_threshold = return_eta_threshold(obj.nepochs)
+            rf_score_obj = catalog.query_ps1_psc(obj.ra, obj.dec,
+                                                 con=ulens_con)
+            if rf_score_obj is None:
+                rf_score = None
+            else:
+                rf_score = rf_score_obj.rf_score
             hmjd = obj.lightcurve.hmjd
             mag = obj.lightcurve.magerr
             magerr = obj.lightcurve.magerr
