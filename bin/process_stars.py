@@ -244,7 +244,7 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
         else:
             rf_score = rf_score_obj.rf_score
         hmjd = obj.lightcurve.hmjd
-        mag = obj.lightcurve.magerr
+        mag = obj.lightcurve.mag
         magerr = obj.lightcurve.magerr
         eta_residual = calculate_eta_on_residuals(hmjd, mag, magerr)
 
