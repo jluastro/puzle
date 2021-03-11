@@ -310,6 +310,15 @@ def process_stars(shutdown_time=10, single_job=False):
             logger.info(f'Job {source_job_id}: Processing complete')
         else:
             logger.info(f'Job {source_job_id}: No stars, skipping process')
+            job_stats = {'num_stars': 0,
+                         'num_sources': 0,
+                         'num_objs': 0,
+                         'num_objs_pass_eta': 0,
+                         'num_stars_pass_eta': 0,
+                         'num_objs_pass_rf': 0,
+                         'num_stars_pass_rf': 0,
+                         'num_objs_pass_eta_residual': 0,
+                         'num_stars_pass_eta_residual': 0}
 
         finish_job(source_job_id, job_stats)
         logger.info(f'Job {source_job_id}: Job complete')

@@ -9,7 +9,7 @@ from puzle.utils import execute
 
 logger = logging.getLogger(__name__)
 ulensdb_file_path = os.getenv('ULENS_DB_FILEPATH')
-logging.getLogger("FileLock").setLevel(logging.DEBUG)
+logging.getLogger('filelock').setLevel(logging.WARNING)
 
 
 def identify_is_nersc():
