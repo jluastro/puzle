@@ -10,12 +10,12 @@
                         <th>Cand ID</th>
                         <th>Glon</th>
                         <th>Glat</th>
-                        <th>t_E_best</th>
-                        <th>chi_squared_delta_best</th>
-                        <th>eta_best</th>
-                        <th>eta_residual_best</th>
+                        <th>t_E</th>
+                        <th>chi_squared_delta</th>
+                        <th>eta</th>
+                        <th>eta_residual</th>
                         <th>eta_threshold</th>
-                        <th>rf_score_best</th>
+                        <th>rf_score</th>
                         <th>idx_best</th>
                         <th>Source ID</th>
                         <th>Filter ID</th>
@@ -25,8 +25,16 @@
                         <td>{{ "%s" % cand.id}}</td>
                         <td>{{ "%.5f" % cand.glon }}</td>
                         <td>{{ "%.5f" % cand.glat }}</td>
-                        <td>{{ "%.2f" % cand.t_E_best }}</td>
-                        <td>{{ "%.2f" % cand.chi_squared_delta_best }}</td>
+                        {% if cand.t_E_best is float %}
+                            <td>{{ "%.2f" %  cand.t_E_best }}</td>
+                        {%  else %}
+                            <td>{{ "None" }}</td>
+                        {% endif %}
+                        {% if cand.chi_squared_delta_best is float %}
+                            <td>{{ "%.2f" %  cand.chi_squared_delta_best }}</td>
+                        {%  else %}
+                            <td>{{ "None" }}</td>
+                        {% endif %}
                         <td>{{ "%.2f" % cand.eta_best }}</td>
                         <td>{{ "%.2f" % cand.eta_residual_best }}</td>
                         <td>{{ "%.2f" % cand.eta_threshold }}</td>

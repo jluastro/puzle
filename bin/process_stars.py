@@ -195,7 +195,7 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
         source = sources[j]
         obj = source.zort_source.objects[k]
         hmjd = obj.lightcurve.hmjd
-        mag = obj.lightcurve.magerr
+        mag = obj.lightcurve.mag
         magerr = obj.lightcurve.magerr
         eta_residual = calculate_eta_on_residuals(hmjd, mag, magerr)
         if eta_residual is not None and eta_residual > eta_threshold:
