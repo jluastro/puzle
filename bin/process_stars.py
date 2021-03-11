@@ -14,6 +14,7 @@ from puzle.utils import fetch_job_enddate, return_DR3_dir
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle.stats import calculate_eta, \
     calculate_eta_on_residuals, RF_THRESHOLD
+from puzle.fit import fit_event
 from puzle import catalog
 from puzle import db
 
@@ -150,8 +151,8 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
                 eta_arr.append(eta)
     eta_arr = np.array(eta_arr)
     idxs = np.array(idxs)
-    eta_thresh = np.percentile(eta_arr, 1)
-    eta_cond = np.where(eta_arr <= eta_thresh)[0]
+    eta_threshold = np.percentile(eta_arr, 1)
+    eta_cond = np.where(eta_arr <= eta_threshold)[0]
     eta_idxs = idxs[eta_cond]
 
     logger.info(f'Job {source_job_id}: '
@@ -164,7 +165,7 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
     logger.info(f'Job {source_job_id}: '
                 f'{num_stars_pass_eta} stars pass eta cut | '
                 f'{num_objs_pass_eta} objects pass eta cut | '
-                f'eta_thresh = {eta_thresh:.3f}')
+                f'eta_threshold = {eta_threshold:.3f}')
 
     insert_db_id()
     ulens_con = catalog.ulens_con()
@@ -197,7 +198,7 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
         mag = obj.lightcurve.magerr
         magerr = obj.lightcurve.magerr
         eta_residual = calculate_eta_on_residuals(hmjd, mag, magerr)
-        if eta_residual is not None and eta_residual > eta_thresh:
+        if eta_residual is not None and eta_residual > eta_threshold:
             eta_residual_idxs.append((i, j, k))
 
     num_objs_pass_eta_residual = len(eta_residual_idxs)
@@ -216,56 +217,38 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
     for star_idx in unique_star_idxs:
         star, sources = stars_and_sources[star_idx]
         source_obj_idxs = [(j, k) for i, j, k in eta_residual_idxs if i == star_idx]
+
+        n_days_arr = []
         source_id_arr = []
         filter_id_arr = []
-        eta_arr = []
-        rf_arr = []
-        eta_residual_arr = []
-        eta_threshold_arr = []
-        t_E_arr = []
-        t_0_arr = []
-        f_0_arr = []
-        f_1_arr = []
-        a_type_arr = []
-        chi_squared_flat_arr = []
-        chi_squared_delta_arr = []
-        n_days_arr = []
-        for j, k in source_obj_idxs:
+        for idx, (j, k) in enumerate(source_obj_idxs):
             source = sources[j]
             obj = source.zort_source.objects[k]
-            eta = calculate_eta(obj.lightcurve.mag)
-            rf_score_obj = catalog.query_ps1_psc(obj.ra, obj.dec,
-                                                 con=ulens_con)
-            if rf_score_obj is None:
-                rf_score = None
-            else:
-                rf_score = rf_score_obj.rf_score
-            hmjd = obj.lightcurve.hmjd
-            mag = obj.lightcurve.magerr
-            magerr = obj.lightcurve.magerr
-            eta_residual, fit_data = calculate_eta_on_residuals(hmjd, mag, magerr,
-                                                                return_fit_data=True)
+            n_days = len(np.unique(np.floor(obj.lightcurve.hmjd)))
 
             source_id_arr.append(source.id)
             filter_id_arr.append(obj.filterid)
-            eta_arr.append(eta)
-            rf_arr.append(rf_score)
-            eta_residual_arr.append(eta_residual)
-            eta_threshold_arr.append(eta_thresh)
+            n_days_arr.append(n_days)
 
-            t_0, t_E, f_0, f_1, chi_squared_delta, chi_squared_flat, a_type = fit_data
-            t_E_arr.append(t_E)
-            t_0_arr.append(t_0)
-            f_0_arr.append(f_0)
-            f_1_arr.append(f_1)
-            a_type_arr.append(a_type)
-            chi_squared_flat_arr.append(chi_squared_flat)
-            chi_squared_delta_arr.append(chi_squared_delta)
-
-            n_days = len(np.unique(np.floor(obj.lightcurve.hmjd)))
-
-        n_days_arr.append(n_days)
         idx_best = int(np.argmax(n_days_arr))
+        j, k = source_obj_idxs[idx_best]
+        source = sources[j]
+        obj = source.zort_source.objects[k]
+
+        eta = calculate_eta(obj.lightcurve.mag)
+        rf_score_obj = catalog.query_ps1_psc(obj.ra, obj.dec,
+                                             con=ulens_con)
+        if rf_score_obj is None:
+            rf_score = None
+        else:
+            rf_score = rf_score_obj.rf_score
+        hmjd = obj.lightcurve.hmjd
+        mag = obj.lightcurve.magerr
+        magerr = obj.lightcurve.magerr
+        eta_residual = calculate_eta_on_residuals(hmjd, mag, magerr)
+
+        fit_data = fit_event(hmjd, mag, magerr)
+        t_0, t_E, f_0, f_1, chi_squared_delta, chi_squared_flat, a_type = fit_data
 
         cand = Candidate(id=star.id,
                          source_id_arr=source_id_arr,
@@ -273,17 +256,17 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
                          ra=star.ra,
                          dec=star.dec,
                          ingest_job_id=star.ingest_job_id,
-                         eta_arr=eta_arr,
-                         rf_score_arr=rf_arr,
-                         eta_residual_arr=eta_residual_arr,
-                         eta_threshold_arr=eta_threshold_arr,
-                         t_E_arr=t_E_arr,
-                         t_0_arr=t_0_arr,
-                         f_0_arr=f_0_arr,
-                         f_1_arr=f_1_arr,
-                         a_type_arr=a_type_arr,
-                         chi_squared_flat_arr=chi_squared_flat_arr,
-                         chi_squared_delta_arr=chi_squared_delta_arr,
+                         eta_best=eta,
+                         rf_score_best=rf_score,
+                         eta_residual_best=eta_residual,
+                         eta_threshold=eta_threshold,
+                         t_E_best=t_E,
+                         t_0_best=t_0,
+                         f_0_best=f_0,
+                         f_1_best=f_1,
+                         a_type_best=a_type,
+                         chi_squared_flat_best=chi_squared_flat,
+                         chi_squared_delta_best=chi_squared_delta,
                          idx_best=idx_best)
         candidates.append(cand)
 

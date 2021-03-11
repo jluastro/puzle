@@ -10,37 +10,46 @@
                         <th>Cand ID</th>
                         <th>Glon</th>
                         <th>Glat</th>
+                        <th>t_E_best</th>
+                        <th>eta_best</th>
+                        <th>eta_residual_best</th>
+                        <th>eta_threshold</th>
+                        <th>rf_score_best</th>
+                        <th>idx_best</th>
                         <th>Source ID</th>
-                        <th>etas</th>
-                        <th>etas_threshold</th>
-                        <th>rf_score</th>
-                        <th>eta_residual</th>
+                        <th>Filter ID</th>
                     </tr>
                 {% for cand in cands.items %}
                     <tr>
                         <td>{{ "%s" % cand.id}}</td>
                         <td>{{ "%.5f" % cand.glon }}</td>
                         <td>{{ "%.5f" % cand.glat }}</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
+                        <td>{{ "%.5f" % cand.t_E_best }}</td>
+                        <td>{{ "%.5f" % cand.eta_best }}</td>
+                        <td>{{ "%.5f" % cand.eta_residual_best }}</td>
+                        <td>{{ "%.5f" % cand.eta_threshold }}</td>
+                        {% if cand.rf_score is float %}
+                            <td>{{ "%.5f" % cand.rf_score }}</td>
+                        {%  else %}
+                            <td>{{ "None" }}</td>
+                        {% endif %}
+                        <td>{{ "%i" % cand.idx_best }}</td>
                         <td></td>
                         <td></td>
                     </tr>
                     <tr>
-                        {% for source_id, eta, eta_thresh, eta_residual in zip(cand.source_ids, cand.etas, cand.eta_thresholds, cand.eta_residuals) %}
+                        {% for source_id, filter_id in zip(cand.source_id_arr, cand.filter_id_arr) %}
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
                             <td></td>
                             <td></td>
                             <td></td>
                             <td><a href="{{ url_for('source', sourceid=source_id) }}">{{ source_id }}</a></td>
-                            <td>{{ "%.5f" % eta }}</td>
-                            <td>{{ "%.5f" % eta_thresh }}</td>
-                            {% if rf_score is float %}
-                                <td>{{ "%.5f" % rf_score }}</td>
-                            {%  else %}
-                                <td>{{ "None" }}</td>
-                            {% endif %}
-                            <td>{{ "%.5f" % eta_residual }}</td>
+                            <td>{{ "%i" % filter_id }}</td>
                         {% endfor %}
                     </tr>
                 {% endfor %}

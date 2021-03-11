@@ -9,6 +9,7 @@ from time import time
 import jwt
 import os
 import requests
+from collections import defaultdict
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 from zort.source import Source as zort_source
@@ -399,17 +400,17 @@ class Candidate(db.Model):
     id = db.Column(db.String(128), primary_key=True, nullable=False)
     source_id_arr = db.Column(db.ARRAY(db.String(128)))
     filter_id_arr = db.Column(db.ARRAY(db.Integer))
-    eta_arr = db.Column(db.ARRAY(db.Float))
-    rf_score_arr = db.Column(db.ARRAY(db.Float))
-    eta_residual_arr = db.Column(db.ARRAY(db.Float))
-    eta_threshold_arr = db.Column(db.ARRAY(db.Float))
-    t_E_arr = db.Column(db.ARRAY(db.Float))
-    t_0_arr = db.Column(db.ARRAY(db.Float))
-    f_0_arr = db.Column(db.ARRAY(db.Float))
-    f_1_arr = db.Column(db.ARRAY(db.Float))
-    a_type_arr = db.Column(db.ARRAY(db.String(256)))
-    chi_squared_flat_arr = db.Column(db.ARRAY(db.Float))
-    chi_squared_delta_arr = db.Column(db.ARRAY(db.Float))
+    eta_best = db.Column(db.Float)
+    rf_score_best = db.Column(db.Float)
+    eta_residual_best = db.Column(db.Float)
+    eta_threshold = db.Column(db.Float)
+    t_E_best = db.Column(db.Float)
+    t_0_best = db.Column(db.Float)
+    f_0_best = db.Column(db.Float)
+    f_1_best = db.Column(db.Float)
+    a_type_best = db.Column(db.String(128))
+    chi_squared_flat_best = db.Column(db.Float)
+    chi_squared_delta_best = db.Column(db.Float)
     idx_best = db.Column(db.Integer)
     ra = db.Column(db.Float, nullable=False)
     dec = db.Column(db.Float, nullable=False)
@@ -419,26 +420,26 @@ class Candidate(db.Model):
 
     def __init__(self, source_id_arr, ra, dec,
                  ingest_job_id, id,
-                 filter_id_arr, eta_arr,
-                 rf_score_arr, eta_residual_arr,
-                 eta_threshold_arr,
-                 t_E_arr, t_0_arr, f_0_arr,
-                 f_1_arr, a_type_arr,
-                 chi_squared_flat_arr, chi_squared_delta_arr,
+                 filter_id_arr, eta_best,
+                 rf_score_best, eta_residual_best,
+                 eta_threshold,
+                 t_E_best, t_0_best, f_0_best,
+                 f_1_best, a_type_best,
+                 chi_squared_flat_best, chi_squared_delta_best,
                  idx_best, comments=None, _ztf_ids=None,):
         self.source_id_arr = source_id_arr
         self.filter_id_arr = filter_id_arr
-        self.eta_arr = eta_arr
-        self.rf_score_arr = rf_score_arr
-        self.eta_residual_arr = eta_residual_arr
-        self.eta_threshold_arr = eta_threshold_arr
-        self.t_E_arr = t_E_arr
-        self.t_0_arr = t_0_arr
-        self.f_0_arr = f_0_arr
-        self.f_1_arr = f_1_arr
-        self.a_type_arr = a_type_arr
-        self.chi_squared_flat_arr = chi_squared_flat_arr
-        self.chi_squared_delta_arr = chi_squared_delta_arr
+        self.eta_best = eta_best
+        self.rf_score_best = rf_score_best
+        self.eta_residual_best = eta_residual_best
+        self.eta_threshold = eta_threshold
+        self.t_E_best = t_E_best
+        self.t_0_best = t_0_best
+        self.f_0_best = f_0_best
+        self.f_1_best = f_1_best
+        self.a_type_best = a_type_best
+        self.chi_squared_flat_best = chi_squared_flat_best
+        self.chi_squared_delta_best = chi_squared_delta_best
         self.idx_best = idx_best
         self.ra = ra
         self.dec = dec
