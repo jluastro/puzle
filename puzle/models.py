@@ -247,16 +247,21 @@ class Source(db.Model):
 
         lightcurve_plot_filename = f'{folder}/lightcurve.png'
         if not os.path.exists(lightcurve_plot_filename):
-            model_params = {
-                't_0': self.fit_t_0,
-                't_E': self.fit_t_E,
-                'a_type': self.fit_a_type,
-                'f_0': self.fit_f_0,
-                'f_1': self.fit_f_1
-            }
+            if self.fit_t_0:
+                model_params = {
+                    't_0': self.fit_t_0,
+                    't_E': self.fit_t_E,
+                    'a_type': self.fit_a_type,
+                    'f_0': self.fit_f_0,
+                    'f_1': self.fit_f_1
+                }
+                model_color = self.fit_filter
+            else:
+                model_params = None
+                model_color = None
             self.zort_source.plot_lightcurves(filename=lightcurve_plot_filename,
                                               model_params=model_params,
-                                              model_color=self.fit_filter)
+                                              model_color=model_color)
 
     def _fetch_mars_results(self):
         radius_deg = 2. / 3600.

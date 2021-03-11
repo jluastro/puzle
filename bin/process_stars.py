@@ -249,7 +249,16 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
         eta_residual = calculate_eta_on_residuals(hmjd, mag, magerr)
 
         fit_data = fit_event(hmjd, mag, magerr)
-        t_0, t_E, f_0, f_1, chi_squared_delta, chi_squared_flat, a_type = fit_data
+        if fit_data:
+            t_0, t_E, f_0, f_1, chi_squared_delta, chi_squared_flat, a_type = fit_data
+        else:
+            t_0 = None
+            t_E = None
+            f_0 = None
+            f_1 = None
+            chi_squared_delta = None
+            chi_squared_flat = None
+            a_type = None
 
         cand = Candidate(id=star.id,
                          source_id_arr=source_id_arr,
