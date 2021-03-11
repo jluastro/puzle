@@ -72,6 +72,7 @@ def fit_event(t_obs_arr, mag_arr, magerr_arr):
     f0_arr = []
     f1_arr = []
     chi_squared_delta_arr = []
+    chi_squared_flat_arr = []
     a_type_arr = []
     for a_type in ['one', 'two']:
         if a_type == 'one':
@@ -101,6 +102,7 @@ def fit_event(t_obs_arr, mag_arr, magerr_arr):
         f0_arr.append(f0)
         f1_arr.append(f1)
         chi_squared_delta_arr.append(chi_squared_delta)
+        chi_squared_flat_arr.append(chi_squared_flat)
         a_type_arr.append(a_type)
 
     if len(t0_arr) == 0:
@@ -113,9 +115,10 @@ def fit_event(t_obs_arr, mag_arr, magerr_arr):
     f0 = f0_arr[idx]
     f1 = f1_arr[idx]
     chi_squared_delta = chi_squared_delta_arr[idx]
+    chi_squared_flat = chi_squared_flat_arr[idx]
     a_type = a_type_arr[idx]
 
-    return t0, t_eff, f0, f1, chi_squared_delta, a_type
+    return t0, t_eff, f0, f1, chi_squared_delta, chi_squared_flat, a_type
 
 
 def main():
@@ -133,7 +136,7 @@ def main():
         if data is None:
             chi_squared_delta_arr.append(0)
         else:
-            t0, t_eff, f0, f1, chi_squared_delta, a_type = data
+            t0, t_eff, f0, f1, chi_squared_delta, chi_squared_flat, a_type = data
             chi_squared_delta_arr.append(chi_squared_delta)
     return chi_squared_delta_arr
 

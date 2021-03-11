@@ -222,6 +222,14 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
         rf_arr = []
         eta_residual_arr = []
         eta_threshold_arr = []
+        t_E_arr = []
+        t_0_arr = []
+        f_0_arr = []
+        f_1_arr = []
+        a_type_arr = []
+        chi_squared_flat_arr = []
+        chi_squared_delta_arr = []
+        n_days_arr = []
         for j, k in source_obj_idxs:
             source = sources[j]
             obj = source.zort_source.objects[k]
@@ -235,7 +243,8 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
             hmjd = obj.lightcurve.hmjd
             mag = obj.lightcurve.magerr
             magerr = obj.lightcurve.magerr
-            eta_residual = calculate_eta_on_residuals(hmjd, mag, magerr)
+            eta_residual, fit_data = calculate_eta_on_residuals(hmjd, mag, magerr,
+                                                                return_fit_data=True)
 
             source_id_arr.append(source.id)
             filter_id_arr.append(obj.filterid)
@@ -244,16 +253,38 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
             eta_residual_arr.append(eta_residual)
             eta_threshold_arr.append(eta_thresh)
 
+            t_0, t_E, f_0, f_1, chi_squared_delta, chi_squared_flat, a_type = fit_data
+            t_E_arr.append(t_E)
+            t_0_arr.append(t_0)
+            f_0_arr.append(f_0)
+            f_1_arr.append(f_1)
+            a_type_arr.append(a_type)
+            chi_squared_flat_arr.append(chi_squared_flat)
+            chi_squared_delta_arr.append(chi_squared_delta)
+
+            n_days = len(np.unique(np.floor(obj.lightcurve.hmjd)))
+
+        n_days_arr.append(n_days)
+        idx_best = int(np.argmax(n_days_arr))
+
         cand = Candidate(id=star.id,
-                         source_ids=source_id_arr,
-                         filter_ids=filter_id_arr,
+                         source_id_arr=source_id_arr,
+                         filter_id_arr=filter_id_arr,
                          ra=star.ra,
                          dec=star.dec,
                          ingest_job_id=star.ingest_job_id,
-                         etas=eta_arr,
-                         rf_scores=rf_arr,
-                         eta_residuals=eta_residual_arr,
-                         eta_thresholds=eta_threshold_arr)
+                         eta_arr=eta_arr,
+                         rf_score_arr=rf_arr,
+                         eta_residual_arr=eta_residual_arr,
+                         eta_threshold_arr=eta_threshold_arr,
+                         t_E_arr=t_E_arr,
+                         t_0_arr=t_0_arr,
+                         f_0_arr=f_0_arr,
+                         f_1_arr=f_1_arr,
+                         a_type_arr=a_type_arr,
+                         chi_squared_flat_arr=chi_squared_flat_arr,
+                         chi_squared_delta_arr=chi_squared_delta_arr,
+                         idx_best=idx_best)
         candidates.append(cand)
 
     ulens_con.close()
