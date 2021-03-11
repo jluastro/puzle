@@ -300,14 +300,16 @@ def process_stars(shutdown_time=10, single_job=False):
         stars_and_sources = fetch_stars_and_sources(source_job_id)
 
         num_stars = len(stars_and_sources)
-        logger.info(f'Job {source_job_id}: Processing {num_stars} stars')
-
-        candidates, job_stats = filter_stars_to_candidates(source_job_id,
-                                                           stars_and_sources)
-        num_candidates = len(candidates)
-        logger.info(f'Job {source_job_id}: Uploading {num_candidates} candidates')
-        upload_candidates(candidates)
-        logger.info(f'Job {source_job_id}: Processing complete')
+        if num_stars > 0:
+            logger.info(f'Job {source_job_id}: Processing {num_stars} stars')
+            candidates, job_stats = filter_stars_to_candidates(source_job_id,
+                                                               stars_and_sources)
+            num_candidates = len(candidates)
+            logger.info(f'Job {source_job_id}: Uploading {num_candidates} candidates')
+            upload_candidates(candidates)
+            logger.info(f'Job {source_job_id}: Processing complete')
+        else:
+            logger.info(f'Job {source_job_id}: No stars, skipping process')
 
         finish_job(source_job_id, job_stats)
         logger.info(f'Job {source_job_id}: Job complete')
