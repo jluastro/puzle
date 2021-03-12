@@ -7,7 +7,7 @@ import astropy.units as u
 from puzle import app, db
 from puzle.forms import LoginForm, RegistrationForm, \
     EditProfileForm, ResetPasswordRequestForm, ResetPasswordForm, \
-    EditSourceCommentForm, SearchForm, EmptyForm
+    EditSourceCommentForm, RadialSearchForm, EmptyForm
 from puzle.models import User, Source, Candidate
 from puzle.email import send_password_reset_email
 
@@ -231,10 +231,10 @@ def candidates():
                            paginate=True)
 
 
-@app.route('/search', methods=['GET', 'POST'])
+@app.route('/radial_search', methods=['GET', 'POST'])
 @login_required
-def search():
-    form = SearchForm()
+def radial_search():
+    form = RadialSearchForm()
     radius = form.radius.data
     if form.validate_on_submit():
         if form.ra.data and form.dec.data:
@@ -253,7 +253,7 @@ def search():
             flash('Either (ra, dec) or '
                   '(glon, glat) '
                   'must be entered.', 'danger')
-            return redirect(url_for('search'))
+            return redirect(url_for('radial_search'))
 
         page = request.args.get('page', 1, type=int)
         cands = db.session.query(Candidate).\
@@ -267,4 +267,4 @@ def search():
                                next_url=next_url, prev_url=prev_url,
                                title='PUZLE candidates', zip=zip,
                                paginate=True)
-    return render_template('search.html', form=form, title='PUZLE search')
+    return render_template('radial_search.html', form=form, title='PUZLE search')
