@@ -334,8 +334,15 @@ def upload_candidates(candidates, source_ids, best_fit_stats):
     insert_db_id()  # get permission to make a db connection
     for cand in candidates:
         db.session.add(cand)
+
+    # grab sources from db and hash them in dictionary
+    source_dbs = db.session.query(Source).filter(Source.id.in_(source_ids)).all()
+    source_db_dct = {}
+    for source_db in source_dbs:
+        source_db_dct[source_db.id] = source_db
+
     for source_id, best_fit_stat in zip(source_ids, best_fit_stats):
-        source_db = db.session.query(Source).filter(Source.id==source_id).first()
+        source_db = source_db_dct[source_id]
         fit_filter, t_E, t_0, f_0, f_1, a_type, chi_squared_flat, chi_squared_delta = best_fit_stat
         source_db.fit_filter = fit_filter
         source_db.fit_t_0 = t_0
