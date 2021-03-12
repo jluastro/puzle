@@ -10,6 +10,7 @@
                         <th>Cand ID</th>
                         <th>Glon</th>
                         <th>Glat</th>
+                        <th>n_objs</th>
                         <th>t_E</th>
                         <th>chi_squared_delta</th>
                         <th>eta</th>
@@ -25,6 +26,7 @@
                         <td>{{ "%s" % cand.id}}</td>
                         <td>{{ "%.5f" % cand.glon }}</td>
                         <td>{{ "%.5f" % cand.glat }}</td>
+                        <td>{{ "%i" % cand.num_objs_pass }}</td>
                         {% if cand.t_E_best is float %}
                             <td>{{ "%.2f" %  cand.t_E_best }}</td>
                         {%  else %}
@@ -49,6 +51,7 @@
                     </tr>
                     <tr>
                         {% for source_id, filter_id in zip(cand.source_id_arr, cand.filter_id_arr) %}
+                            <td></td>
                             <td></td>
                             <td></td>
                             <td></td>
