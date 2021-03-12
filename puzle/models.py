@@ -452,6 +452,7 @@ class Candidate(db.Model):
     ingest_job_id = db.Column(db.BigInteger, nullable=False)
     comments = db.Column(db.String(1024))
     _ztf_ids = db.Column(db.String(256))
+    num_objs_pass = db.Column(db.Integer)
 
     def __init__(self, source_id_arr, ra, dec,
                  ingest_job_id, id,
@@ -461,7 +462,8 @@ class Candidate(db.Model):
                  t_E_best, t_0_best, f_0_best,
                  f_1_best, a_type_best,
                  chi_squared_flat_best, chi_squared_delta_best,
-                 idx_best, comments=None, _ztf_ids=None,):
+                 idx_best, num_objs_pass,
+                 comments=None, _ztf_ids=None,):
         self.source_id_arr = source_id_arr
         self.filter_id_arr = filter_id_arr
         self.eta_best = eta_best
@@ -476,6 +478,7 @@ class Candidate(db.Model):
         self.chi_squared_flat_best = chi_squared_flat_best
         self.chi_squared_delta_best = chi_squared_delta_best
         self.idx_best = idx_best
+        self.num_objs_pass = num_objs_pass
         self.ra = ra
         self.dec = dec
         self.ingest_job_id = ingest_job_id

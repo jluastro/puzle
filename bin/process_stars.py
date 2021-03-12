@@ -136,8 +136,8 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
     num_stars = 0
     num_sources = 0
     num_objs = 0
-    idxs = []
-    eta_arr = []
+    idxs_dct = defaultdict(list)
+    eta_dct = defaultdict(list)
     for i, (star, sources) in enumerate(stars_and_sources):
         num_stars += 1
         for j, source in enumerate(sources):
@@ -147,20 +147,32 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
                     continue
                 num_objs += 1
                 eta = calculate_eta(obj.lightcurve.mag)
-                idxs.append((i, j, k))
-                eta_arr.append(eta)
-    eta_arr = np.array(eta_arr)
-    idxs = np.array(idxs)
-    eta_threshold = np.percentile(eta_arr, 1)
-    eta_cond = np.where(eta_arr <= eta_threshold)[0]
-    eta_idxs = idxs[eta_cond]
+                key = (obj.fieldid, obj.filterid)
+                idxs_dct[key].append((i, j, k))
+                eta_dct[key].append(eta)
 
     logger.info(f'Job {source_job_id}: '
                 f'{num_stars} Stars | '
                 f'{num_sources} Sources | '
                 f'{num_objs} Objects')
-    num_objs_pass_eta = len(eta_idxs)
-    num_stars_pass_eta = len(set([idx[0] for idx in eta_idxs]))
+
+    eta_threshold_dct = {}
+    eta_idxs_dct = {}
+    num_objs_pass_eta = 0
+    num_stars_pass_eta = 0
+    for key, eta_arr in eta_dct.items():
+        eta_arr = np.array(eta_arr)
+        idxs = np.array(idxs_dct[key])
+
+        eta_threshold = np.percentile(eta_arr, 1)
+        eta_threshold_dct[key] = eta_threshold
+
+        eta_cond = np.where(eta_arr <= eta_threshold)[0]
+        eta_idxs = idxs[eta_cond]
+        eta_idxs_dct[key] = idxs[eta_cond]
+
+        num_objs_pass_eta += len(eta_idxs)
+        num_stars_pass_eta += len(set([idx[0] for idx in eta_idxs]))
 
     logger.info(f'Job {source_job_id}: '
                 f'{num_stars_pass_eta} stars pass eta cut | '
@@ -169,41 +181,56 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
 
     insert_db_id()
     ulens_con = catalog.ulens_con()
-    rf_idxs = []
-    for (i, j, k) in eta_idxs:
-        _, sources = stars_and_sources[i]
-        source = sources[j]
-        obj = source.zort_source.objects[k]
-        rf_score = catalog.query_ps1_psc(obj.ra, obj.dec,
-                                         con=ulens_con)
-        if rf_score is None or rf_score.rf_score >= RF_THRESHOLD:
-            rf_idxs.append((i, j, k))
+    rf_idxs_dct = defaultdict(list)
+    rf_score_dct = defaultdict(list)
+    for key, eta_idxs in eta_idxs_dct.items():
+        for (i, j, k) in eta_idxs:
+            _, sources = stars_and_sources[i]
+            source = sources[j]
+            obj = source.zort_source.objects[k]
+            rf_score = catalog.query_ps1_psc(obj.ra, obj.dec,
+                                             con=ulens_con)
+            if rf_score is None or rf_score.rf_score >= RF_THRESHOLD:
+                key = (obj.fieldid, obj.filterid)
+                rf_idxs_dct[key].append((i, j, k))
+                if rf_score is None:
+                    rf_score_dct[key].append(0)
+                else:
+                    rf_score_dct[key].append(rf_score)
     ulens_con.close()
     remove_db_id()
 
-    num_objs_pass_rf = len(rf_idxs)
-    rf_idxs = list(set(rf_idxs))
-    num_stars_pass_rf = len(set([idx[0] for idx in rf_idxs]))
+    num_objs_pass_rf = 0
+    num_stars_pass_rf = 0
+    for rf_idxs in rf_idxs_dct.values():
+        num_objs_pass_rf += len(rf_idxs)
+        num_stars_pass_rf += len(set([idx[0] for idx in rf_idxs]))
 
     logger.info(f'Job {source_job_id}: '
                 f'{num_stars_pass_rf} stars pass rf_score cut | '
                 f'{num_objs_pass_rf} objects pass rf_score cut')
 
-    eta_residual_idxs = []
-    for (i, j, k) in rf_idxs:
-        _, sources = stars_and_sources[i]
-        source = sources[j]
-        obj = source.zort_source.objects[k]
-        hmjd = obj.lightcurve.hmjd
-        mag = obj.lightcurve.mag
-        magerr = obj.lightcurve.magerr
-        eta_residual = calculate_eta_on_residuals(hmjd, mag, magerr)
-        if eta_residual is not None and eta_residual > eta_threshold:
-            eta_residual_idxs.append((i, j, k))
+    eta_residual_idxs_dct = defaultdict(list)
+    eta_residual_dct = defaultdict(list)
+    for key, rf_idxs in rf_idxs_dct.items():
+        for (i, j, k) in rf_idxs:
+            _, sources = stars_and_sources[i]
+            source = sources[j]
+            obj = source.zort_source.objects[k]
+            hmjd = obj.lightcurve.hmjd
+            mag = obj.lightcurve.mag
+            magerr = obj.lightcurve.magerr
+            eta_residual = calculate_eta_on_residuals(hmjd, mag, magerr)
+            key = (obj.fieldid, obj.filterid)
+            if eta_residual is not None and eta_residual > eta_threshold:
+                eta_residual_idxs_dct[key].append((i, j, k))
+                eta_residual_dct[key].append(eta_residual)
 
-    num_objs_pass_eta_residual = len(eta_residual_idxs)
-    eta_residual_idxs = list(set(eta_residual_idxs))
-    num_stars_pass_eta_residual = len(set([idx[0] for idx in eta_residual_idxs]))
+    num_objs_pass_eta_residual = 0
+    num_stars_pass_eta_residual = 0
+    for eta_residual_idxs in eta_residual_idxs_dct.values():
+        num_objs_pass_eta_residual += len(eta_residual_idxs)
+        num_stars_pass_eta_residual += len(set([idx[0] for idx in eta_residual_idxs]))
 
     logger.info(f'Job {source_job_id}: '
                 f'{num_stars_pass_eta_residual} source pass eta_residual cut | '
@@ -213,77 +240,80 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
     insert_db_id()
     ulens_con = catalog.ulens_con()
     candidates = []
-    unique_star_idxs = list(set([i for i, _, _ in eta_residual_idxs]))
     source_ids = []
     best_fit_stats = []
-    for star_idx in unique_star_idxs:
-        star, sources = stars_and_sources[star_idx]
-        source_obj_idxs = [(j, k) for i, j, k in eta_residual_idxs if i == star_idx]
+    for eta_residual_idxs in eta_residual_idxs_dct.values():
+        unique_star_idxs = list(set([i for i, _, _ in eta_residual_idxs]))
+        for star_idx in unique_star_idxs:
+            star, sources = stars_and_sources[star_idx]
+            source_obj_idxs = [(j, k) for i, j, k in eta_residual_idxs if i == star_idx]
+            num_objs_pass = len(source_obj_idxs)
 
-        n_days_arr = []
-        source_id_arr = []
-        filter_id_arr = []
-        for idx, (j, k) in enumerate(source_obj_idxs):
+            n_days_arr = []
+            source_id_arr = []
+            filter_id_arr = []
+            for idx, (j, k) in enumerate(source_obj_idxs):
+                source = sources[j]
+                obj = source.zort_source.objects[k]
+                n_days = len(np.unique(np.floor(obj.lightcurve.hmjd)))
+
+                source_id_arr.append(source.id)
+                filter_id_arr.append(obj.filterid)
+                n_days_arr.append(n_days)
+
+            idx_best = int(np.argmax(n_days_arr))
+            j, k = source_obj_idxs[idx_best]
             source = sources[j]
+            source_ids.append(source.id)
             obj = source.zort_source.objects[k]
-            n_days = len(np.unique(np.floor(obj.lightcurve.hmjd)))
 
-            source_id_arr.append(source.id)
-            filter_id_arr.append(obj.filterid)
-            n_days_arr.append(n_days)
+            eta = calculate_eta(obj.lightcurve.mag)
+            rf_score_obj = catalog.query_ps1_psc(obj.ra, obj.dec,
+                                                 con=ulens_con)
+            if rf_score_obj is None:
+                rf_score = None
+            else:
+                rf_score = rf_score_obj.rf_score
+            hmjd = obj.lightcurve.hmjd
+            mag = obj.lightcurve.mag
+            magerr = obj.lightcurve.magerr
+            eta_residual = calculate_eta_on_residuals(hmjd, mag, magerr)
 
-        idx_best = int(np.argmax(n_days_arr))
-        j, k = source_obj_idxs[idx_best]
-        obj = source.zort_source.objects[k]
+            fit_data = fit_event(hmjd, mag, magerr)
+            if fit_data:
+                t_0, t_E, f_0, f_1, chi_squared_delta, chi_squared_flat, a_type = fit_data
+            else:
+                t_0 = None
+                t_E = None
+                f_0 = None
+                f_1 = None
+                chi_squared_delta = None
+                chi_squared_flat = None
+                a_type = None
 
-        eta = calculate_eta(obj.lightcurve.mag)
-        rf_score_obj = catalog.query_ps1_psc(obj.ra, obj.dec,
-                                             con=ulens_con)
-        if rf_score_obj is None:
-            rf_score = None
-        else:
-            rf_score = rf_score_obj.rf_score
-        hmjd = obj.lightcurve.hmjd
-        mag = obj.lightcurve.mag
-        magerr = obj.lightcurve.magerr
-        eta_residual = calculate_eta_on_residuals(hmjd, mag, magerr)
+            cand = Candidate(id=star.id,
+                             source_id_arr=source_id_arr,
+                             filter_id_arr=filter_id_arr,
+                             ra=star.ra,
+                             dec=star.dec,
+                             ingest_job_id=star.ingest_job_id,
+                             eta_best=eta,
+                             rf_score_best=rf_score,
+                             eta_residual_best=eta_residual,
+                             eta_threshold=eta_threshold,
+                             t_E_best=t_E,
+                             t_0_best=t_0,
+                             f_0_best=f_0,
+                             f_1_best=f_1,
+                             a_type_best=a_type,
+                             chi_squared_flat_best=chi_squared_flat,
+                             chi_squared_delta_best=chi_squared_delta,
+                             idx_best=idx_best,
+                             num_objs_pass=num_objs_pass)
+            candidates.append(cand)
 
-        fit_data = fit_event(hmjd, mag, magerr)
-        if fit_data:
-            t_0, t_E, f_0, f_1, chi_squared_delta, chi_squared_flat, a_type = fit_data
-        else:
-            t_0 = None
-            t_E = None
-            f_0 = None
-            f_1 = None
-            chi_squared_delta = None
-            chi_squared_flat = None
-            a_type = None
-
-        cand = Candidate(id=star.id,
-                         source_id_arr=source_id_arr,
-                         filter_id_arr=filter_id_arr,
-                         ra=star.ra,
-                         dec=star.dec,
-                         ingest_job_id=star.ingest_job_id,
-                         eta_best=eta,
-                         rf_score_best=rf_score,
-                         eta_residual_best=eta_residual,
-                         eta_threshold=eta_threshold,
-                         t_E_best=t_E,
-                         t_0_best=t_0,
-                         f_0_best=f_0,
-                         f_1_best=f_1,
-                         a_type_best=a_type,
-                         chi_squared_flat_best=chi_squared_flat,
-                         chi_squared_delta_best=chi_squared_delta,
-                         idx_best=idx_best)
-        candidates.append(cand)
-
-        source = sources[j]
-        fit_filter = obj.color
-        source_ids.append(source.id)
-        best_fit_stats.append((fit_filter, t_E, t_0, f_0, f_1, a_type, chi_squared_flat, chi_squared_delta))
+            fit_filter = obj.color
+            best_fit_stats.append((fit_filter, t_E, t_0, f_0, f_1, a_type, chi_squared_flat, chi_squared_delta))
 
     ulens_con.close()
     remove_db_id()
