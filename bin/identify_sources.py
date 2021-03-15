@@ -84,12 +84,17 @@ def fetch_job():
     dec_start = job.dec_start
     dec_end = job.dec_end
 
-    from mpi4py import MPI
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
+    if 'SLURMD_NODENAME' in os.environ:
+        from mpi4py import MPI
+        comm = MPI.COMM_WORLD
+        rank = comm.rank
+        slurm_job_id = os.getenv('SLURM_JOB_ID')
+    else:
+        rank = 0
+        slurm_job_id = 0
     job.slurm_job_rank = rank
     job.started = True
-    job.slurm_job_id = os.getenv('SLURM_JOB_ID')
+    job.slurm_job_id = slurm_job_id
     job.datetime_started = datetime.now()
     db.session.commit()
     db.session.close()
