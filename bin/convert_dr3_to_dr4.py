@@ -123,7 +123,7 @@ def convert_sources_dr3_to_dr4():
 
             # replace the DR3 lightcurve filename with DR4
             new_line = new_line.replace(lightcurve_filename_dr3,
-                                        os.path.basename(lightcurve_filename_dr4))
+                                        lightcurve_filename_dr4)
 
             # keep the line for DR4 source file
             lines_dr4.append(new_line)
