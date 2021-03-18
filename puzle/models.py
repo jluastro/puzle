@@ -152,7 +152,7 @@ class Source(db.Model):
     def __init__(self, object_id_g, object_id_r, object_id_i,
                  lightcurve_position_g, lightcurve_position_r, lightcurve_position_i,
                  ra, dec, lightcurve_filename, ingest_job_id,
-                 version='DR3', id=None, comments=None, _ztf_ids=None,
+                 version='DR4', id=None, comments=None, _ztf_ids=None,
                  fit_filter=None, fit_t_0=None,
                  fit_t_E=None, fit_f_0=None,
                  fit_f_1=None, fit_a_type=None,

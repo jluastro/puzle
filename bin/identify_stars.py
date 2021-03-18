@@ -212,6 +212,7 @@ def identify_stars(shutdown_time=10, single_job=False):
             time.sleep(2 * 60 * shutdown_time)
             return
 
+        logger.info(f'Job {source_job_id}: Fetching sources')
         sources = fetch_sources(source_job_id)
 
         num_sources = len(sources)
