@@ -96,7 +96,8 @@ def csv_line_to_source(line):
                     lightcurve_filename=attrs[7],
                     ra=float(attrs[8]),
                     dec=float(attrs[9]),
-                    ingest_job_id=int(attrs[10]))
+                    ingest_job_id=int(attrs[10]),
+                    version='DR3')
     return source
 
 

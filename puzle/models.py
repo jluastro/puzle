@@ -152,7 +152,7 @@ class Source(db.Model):
     def __init__(self, object_id_g, object_id_r, object_id_i,
                  lightcurve_position_g, lightcurve_position_r, lightcurve_position_i,
                  ra, dec, lightcurve_filename, ingest_job_id,
-                 id=None, comments=None, _ztf_ids=None,
+                 version='DR3', id=None, comments=None, _ztf_ids=None,
                  fit_filter=None, fit_t_0=None,
                  fit_t_E=None, fit_f_0=None,
                  fit_f_1=None, fit_a_type=None,
@@ -168,6 +168,7 @@ class Source(db.Model):
         self.dec = dec
         self.lightcurve_filename = lightcurve_filename
         self.ingest_job_id = ingest_job_id
+        self.version = version
         self.id = id
         self.comments = comments
         self.zort_source = self.load_zort_source()
@@ -232,8 +233,8 @@ class Source(db.Model):
     def load_zort_source(self):
         dir_path_puzle = os.path.dirname(os.path.dirname(
             os.path.realpath(__file__)))
-        dir_path_DR4 = f'{dir_path_puzle}/data/DR4'
-        fname = '%s/%s' % (dir_path_DR4, os.path.basename(self.lightcurve_filename))
+        dir_path = f'{dir_path_puzle}/data/{self.version}'
+        fname = '%s/%s' % (dir_path, os.path.basename(self.lightcurve_filename))
         source = zort_source(filename=fname,
                              lightcurve_position_g=self.lightcurve_position_g,
                              lightcurve_position_r=self.lightcurve_position_r,
