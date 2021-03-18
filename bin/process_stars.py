@@ -6,11 +6,12 @@ import time
 import os
 import numpy as np
 from datetime import datetime, timedelta
+from scipy.stats import binned_statistic
 import logging
 from collections import defaultdict
 
 from puzle.models import Source, StarIngestJob, Star, StarProcessJob, Candidate
-from puzle.utils import fetch_job_enddate, return_DR3_dir
+from puzle.utils import fetch_job_enddate, return_DR4_dir
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle.stats import calculate_eta, \
     calculate_eta_on_residuals, RF_THRESHOLD
@@ -75,6 +76,7 @@ def finish_job(source_job_id, job_stats):
     job.num_stars = job_stats['num_stars']
     job.num_sources = job_stats['num_sources']
     job.num_objs = job_stats['num_objs']
+    job.num_objs_pass_n_days = job_stats['num_objs_pass_n_days']
     job.num_objs_pass_eta = job_stats['num_objs_pass_eta']
     job.num_stars_pass_eta = job_stats['num_stars_pass_eta']
     job.num_objs_pass_rf = job_stats['num_objs_pass_rf']
@@ -100,8 +102,8 @@ def csv_line_to_star_and_sources(line):
 
 
 def fetch_stars_and_sources(source_job_id):
-    DR3_dir = return_DR3_dir()
-    dir = '%s/stars_%s' % (DR3_dir, str(source_job_id)[:3])
+    DR4_dir = return_DR4_dir()
+    dir = '%s/stars_%s' % (DR4_dir, str(source_job_id)[:3])
 
     if not os.path.exists(dir):
         logging.error('Source directory missing!')
@@ -130,12 +132,46 @@ def fetch_stars_and_sources(source_job_id):
     return list(star_to_source_dict.items())
 
 
-def filter_stars_to_candidates(source_job_id, stars_and_sources,
-                               nepochs_min=20):
-    logger.info(f'Job {source_job_id}: Calculating eta')
+def evenly_split_sample(arr, arr_min, arr_max):
+    # generate PDF of sample with a histogram
+    bins = np.linspace(arr_min, arr_max, 10000)
+    counts, _, idxs = binned_statistic(arr, arr, 'count', bins=bins)
+
+    # transform PDF into CDF
+    cdf = np.cumsum(counts) / np.sum(counts)
+
+    # find bin idxs for equal sections of the cdf
+    bin_idx_low = set(np.where(cdf <= 0.33)[0])
+    bin_idx_mid = set(np.where((cdf > 0.33) * (cdf <= 0.67))[0])
+    # bin_idx_high = set(np.where(cdf > 0.67)[0])
+
+    # sort array into low, mid and high buckets
+    arr_low = []
+    arr_mid = []
+    arr_high = []
+    idx_low = []
+    idx_mid = []
+    idx_high = []
+    for i, a in enumerate(arr):
+        idx = idxs[i]
+        if idx in bin_idx_low:
+            arr_low.append(a)
+            idx_low.append(i)
+        elif idx in bin_idx_mid:
+            arr_mid.append(a)
+            idx_mid.append(i)
+        else:
+            arr_high.append(a)
+            idx_high.append(i)
+
+    return arr_low, arr_mid, arr_high, idx_low, idx_mid, idx_high
+
+
+def construct_eta_dct(stars_and_sources, job_stats, n_days_min=20):
     num_stars = 0
     num_sources = 0
     num_objs = 0
+    num_objs_pass_n_days = 0
     idxs_dct = defaultdict(list)
     eta_dct = defaultdict(list)
     for i, (star, sources) in enumerate(stars_and_sources):
@@ -143,19 +179,25 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
         for j, source in enumerate(sources):
             num_sources += 1
             for k, obj in enumerate(source.zort_source.objects):
-                if obj.nepochs < nepochs_min:
-                    continue
                 num_objs += 1
+                n_days = len(np.unique(np.round(obj.lightcurve.hmjd)))
+                if n_days < n_days_min:
+                    continue
+                num_objs_pass_n_days += 1
                 eta = calculate_eta(obj.lightcurve.mag)
                 key = (obj.fieldid, obj.filterid)
                 idxs_dct[key].append((i, j, k))
                 eta_dct[key].append(eta)
 
-    logger.info(f'Job {source_job_id}: '
-                f'{num_stars} Stars | '
-                f'{num_sources} Sources | '
-                f'{num_objs} Objects')
+    job_stats['num_stars'] = num_stars
+    job_stats['num_sources'] = num_sources
+    job_stats['num_objs'] = num_objs
+    job_stats['num_objs_pass_n_days'] = num_objs_pass_n_days
 
+    return eta_dct, idxs_dct
+
+
+def construct_eta_idxs_dct(eta_dct, idxs_dct, job_stats):
     eta_threshold_dct = {}
     eta_idxs_dct = {}
     num_objs_pass_eta = 0
@@ -163,6 +205,9 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
     for key, eta_arr in eta_dct.items():
         eta_arr = np.array(eta_arr)
         idxs = np.array(idxs_dct[key])
+
+        # data = evenly_split_sample(eta_arr, 0.5, 2.5)
+        # eta_low_arr, eta_mid_arr, eta_high_arr, idx_low, idx_mid, idx_high = data
 
         eta_threshold = np.percentile(eta_arr, 1)
         eta_threshold_dct[key] = eta_threshold
@@ -174,11 +219,13 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
         num_objs_pass_eta += len(eta_idxs)
         num_stars_pass_eta += len(set([idx[0] for idx in eta_idxs]))
 
-    logger.info(f'Job {source_job_id}: '
-                f'{num_stars_pass_eta} stars pass eta cut | '
-                f'{num_objs_pass_eta} objects pass eta cut | '
-                f'eta_threshold = {eta_threshold:.3f}')
+    job_stats['num_objs_pass_eta'] = num_objs_pass_eta
+    job_stats['num_stars_pass_eta'] = num_stars_pass_eta
 
+    return eta_idxs_dct, eta_threshold_dct
+
+
+def construct_rf_idxs_dct(stars_and_sources, eta_idxs_dct, job_stats):
     insert_db_id()
     ulens_con = catalog.ulens_con()
     rf_idxs_dct = defaultdict(list)
@@ -206,13 +253,17 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
         num_objs_pass_rf += len(rf_idxs)
         num_stars_pass_rf += len(set([idx[0] for idx in rf_idxs]))
 
-    logger.info(f'Job {source_job_id}: '
-                f'{num_stars_pass_rf} stars pass rf_score cut | '
-                f'{num_objs_pass_rf} objects pass rf_score cut')
+    job_stats['num_objs_pass_rf'] = num_objs_pass_rf
+    job_stats['num_stars_pass_rf'] = num_stars_pass_rf
 
+    return rf_idxs_dct, rf_score_dct
+
+
+def construct_eta_residual_idxs_dct(stars_and_sources, eta_threshold_dct, rf_idxs_dct, job_stats):
     eta_residual_idxs_dct = defaultdict(list)
     eta_residual_dct = defaultdict(list)
     for key, rf_idxs in rf_idxs_dct.items():
+        eta_threshold = eta_threshold_dct[key]
         for (i, j, k) in rf_idxs:
             _, sources = stars_and_sources[i]
             source = sources[j]
@@ -232,11 +283,13 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
         num_objs_pass_eta_residual += len(eta_residual_idxs)
         num_stars_pass_eta_residual += len(set([idx[0] for idx in eta_residual_idxs]))
 
-    logger.info(f'Job {source_job_id}: '
-                f'{num_stars_pass_eta_residual} source pass eta_residual cut | '
-                f'{num_objs_pass_eta_residual} objects pass eta_residual cut')
+    job_stats['num_objs_pass_eta_residual'] = num_objs_pass_eta_residual
+    job_stats['num_stars_pass_eta_residual'] = num_stars_pass_eta_residual
 
-    logger.info(f'Job {source_job_id}: Assembling candidates')
+    return eta_residual_idxs_dct, eta_residual_dct
+
+
+def assemble_candidates(stars_and_sources, eta_residual_idxs_dct, eta_threshold_dct):
     insert_db_id()
     ulens_con = catalog.ulens_con()
     candidates = []
@@ -266,6 +319,9 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
             source = sources[j]
             source_ids.append(source.id)
             obj = source.zort_source.objects[k]
+
+            key = (obj.fieldid, obj.filterid)
+            eta_threshold = eta_threshold_dct[key]
 
             eta = calculate_eta(obj.lightcurve.mag)
             rf_score_obj = catalog.query_ps1_psc(obj.ra, obj.dec,
@@ -300,7 +356,7 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
                              eta_best=eta,
                              rf_score_best=rf_score,
                              eta_residual_best=eta_residual,
-                             eta_threshold=eta_threshold,
+                             eta_threshold_best=eta_threshold,
                              t_E_best=t_E,
                              t_0_best=t_0,
                              f_0_best=f_0,
@@ -318,15 +374,41 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
     ulens_con.close()
     remove_db_id()
 
-    job_stats = {'num_stars': num_stars,
-                 'num_sources': num_sources,
-                 'num_objs': num_objs,
-                 'num_objs_pass_eta': num_objs_pass_eta,
-                 'num_stars_pass_eta': num_stars_pass_eta,
-                 'num_objs_pass_rf': num_objs_pass_rf,
-                 'num_stars_pass_rf': num_stars_pass_rf,
-                 'num_objs_pass_eta_residual': num_objs_pass_eta_residual,
-                 'num_stars_pass_eta_residual': num_stars_pass_eta_residual}
+    return candidates, source_ids, best_fit_stats
+
+
+def filter_stars_to_candidates(source_job_id, stars_and_sources,
+                               n_days_min=20):
+    job_stats = {}
+    logger.info(f'Job {source_job_id}: Calculating eta')
+    eta_dct, idxs_dct = construct_eta_dct(stars_and_sources, job_stats,
+                                          n_days_min=n_days_min)
+    logger.info(f'Job {source_job_id}: '
+                f'{job_stats["num_stars"]} Stars | '
+                f'{job_stats["num_objs_pass_n_days"]} Stars Past Days Cuts | '
+                f'{job_stats["num_sources"]} Sources | '
+                f'{job_stats["num_objs"]} Objects')
+
+    eta_idxs_dct, eta_threshold_dct = construct_eta_idxs_dct(eta_dct, idxs_dct, job_stats)
+    logger.info(f'Job {source_job_id}: '
+                f'{job_stats["num_stars_pass_eta"]} stars pass eta cut | '
+                f'{job_stats["num_objs_pass_eta"]} objects pass eta cut')
+
+    rf_idxs_dct, rf_score_dct = construct_rf_idxs_dct(stars_and_sources, eta_idxs_dct, job_stats)
+    logger.info(f'Job {source_job_id}: '
+                f'{job_stats["num_stars_pass_rf"]} stars pass rf_score cut | '
+                f'{job_stats["num_objs_pass_rf"]} objects pass rf_score cut')
+
+    eta_residual_idxs_dct, eta_residual_dct = construct_eta_residual_idxs_dct(stars_and_sources,
+                                                                              eta_threshold_dct,
+                                                                              rf_idxs_dct, job_stats)
+    logger.info(f'Job {source_job_id}: '
+                f'{job_stats["num_stars_pass_eta_residual"]} source pass eta_residual cut | '
+                f'{job_stats["num_objs_pass_eta_residual"]} objects pass eta_residual cut')
+
+    logger.info(f'Job {source_job_id}: Assembling candidates')
+    candidates, source_ids, best_fit_stats = assemble_candidates(stars_and_sources, eta_residual_idxs_dct, eta_threshold_dct)
+
     return candidates, job_stats, source_ids, best_fit_stats
 
 
@@ -393,6 +475,7 @@ def process_stars(shutdown_time=10, single_job=False):
             job_stats = {'num_stars': 0,
                          'num_sources': 0,
                          'num_objs': 0,
+                         'num_objs_pass_n_days': 0,
                          'num_objs_pass_eta': 0,
                          'num_stars_pass_eta': 0,
                          'num_objs_pass_rf': 0,

@@ -95,9 +95,9 @@ def convert_sources_dr3_to_dr4():
             line_split = line.split(',')
 
             # looping over g, r and i
-            for j in [1, 2, 3]:
-                object_id_dr3 = line_split[j]
-                lightcurve_position_idx = j + 3
+            for object_id_idx in [1, 2, 3]:
+                object_id_dr3 = line_split[object_id_idx]
+                lightcurve_position_idx = object_id_idx + 3
 
                 # if the object ID doesn't exist, nothing to replace
                 if object_id_dr3 == 'None':
@@ -110,7 +110,7 @@ def convert_sources_dr3_to_dr4():
                 except KeyError:
                     source_id = line_split[0]
                     print('---- source %s missing from DR4 lightcurve file' % source_id)
-                    line_split[j] = 'None'
+                    line_split[object_id_idx] = 'None'
                     line_split[lightcurve_position_idx] = 'None'
                     num_missing += 1
                     continue

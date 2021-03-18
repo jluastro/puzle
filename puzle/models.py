@@ -232,8 +232,8 @@ class Source(db.Model):
     def load_zort_source(self):
         dir_path_puzle = os.path.dirname(os.path.dirname(
             os.path.realpath(__file__)))
-        dir_path_DR3 = f'{dir_path_puzle}/data/DR3'
-        fname = '%s/%s' % (dir_path_DR3, os.path.basename(self.lightcurve_filename))
+        dir_path_DR4 = f'{dir_path_puzle}/data/DR4'
+        fname = '%s/%s' % (dir_path_DR4, os.path.basename(self.lightcurve_filename))
         source = zort_source(filename=fname,
                              lightcurve_position_g=self.lightcurve_position_g,
                              lightcurve_position_r=self.lightcurve_position_r,
@@ -351,6 +351,7 @@ class StarProcessJob(db.Model):
     num_stars = db.Column(db.Integer, nullable=True)
     num_sources = db.Column(db.Integer, nullable=True)
     num_objs = db.Column(db.Integer, nullable=True)
+    num_objs_pass_n_days = db.Column(db.Integer, nullable=True)
     num_objs_pass_eta = db.Column(db.Integer, nullable=True)
     num_stars_pass_eta = db.Column(db.Integer, nullable=True)
     num_objs_pass_rf = db.Column(db.Integer, nullable=True)
@@ -438,7 +439,7 @@ class Candidate(db.Model):
     eta_best = db.Column(db.Float)
     rf_score_best = db.Column(db.Float)
     eta_residual_best = db.Column(db.Float)
-    eta_threshold = db.Column(db.Float)
+    eta_threshold_best = db.Column(db.Float)
     t_E_best = db.Column(db.Float)
     t_0_best = db.Column(db.Float)
     f_0_best = db.Column(db.Float)
@@ -458,7 +459,7 @@ class Candidate(db.Model):
                  ingest_job_id, id,
                  filter_id_arr, eta_best,
                  rf_score_best, eta_residual_best,
-                 eta_threshold,
+                 eta_threshold_best,
                  t_E_best, t_0_best, f_0_best,
                  f_1_best, a_type_best,
                  chi_squared_flat_best, chi_squared_delta_best,
@@ -469,7 +470,7 @@ class Candidate(db.Model):
         self.eta_best = eta_best
         self.rf_score_best = rf_score_best
         self.eta_residual_best = eta_residual_best
-        self.eta_threshold = eta_threshold
+        self.eta_threshold_best = eta_threshold_best
         self.t_E_best = t_E_best
         self.t_0_best = t_0_best
         self.f_0_best = f_0_best

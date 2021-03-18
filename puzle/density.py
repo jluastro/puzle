@@ -8,7 +8,7 @@ import pickle
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 
-from puzle.utils import lightcurve_file_to_ra_dec, return_data_dir, return_DR3_dir
+from puzle.utils import lightcurve_file_to_ra_dec, return_data_dir, return_DR4_dir
 
 
 def file_len(fname):
@@ -27,8 +27,8 @@ def return_density_polygons_filename():
 def save_density_polygons():
     density_polygons = []
 
-    DR3_dir = return_DR3_dir()
-    objects_files = glob.glob(f'{DR3_dir}/field*objects')
+    DR4_dir = return_DR4_dir()
+    objects_files = glob.glob(f'{DR4_dir}/field*objects')
     for objects_file in objects_files:
         lightcurve_file = objects_file.replace('.objects', '.txt')
         ra0, ra1, dec0, dec1 = lightcurve_file_to_ra_dec(lightcurve_file)
