@@ -92,10 +92,12 @@ def convert_sources_dr3_to_dr4():
                 skipFlag = True
                 break
 
+            line_split = line.split(',')
+
             # looping over g, r and i
             for j in [1, 2, 3]:
-                object_id_dr3 = line.split(',')[j]
-                lightcurve_position_dr3 = line.split(',')[j+3]
+                object_id_dr3 = line_split[j]
+                lightcurve_position_idx = j + 3
 
                 # if the object ID doesn't exist, nothing to replace
                 if object_id_dr3 == 'None':
@@ -104,24 +106,27 @@ def convert_sources_dr3_to_dr4():
                 # there could be objects that are no longer in the field due to the shifted boundaries
                 # in this case, simply zero out the object with a None
                 try:
-                    lightcurve_position_dr4 = lightcurveFile.objects_map[int(object_id_dr3)]
-                    lightcurve_position_dr4 = str(lightcurve_position_dr4)
+                    lightcurve_position_dr4 = str(lightcurveFile.objects_map[int(object_id_dr3)])
                 except KeyError:
-                    source_id = line.split(',')[0]
+                    source_id = line_split[0]
                     print('---- source %s missing from DR4 lightcurve file' % source_id)
-                    line = line.replace(object_id_dr3, 'None')
-                    lightcurve_position_dr4 = 'None'
+                    line_split[j] = 'None'
+                    line_split[lightcurve_position_idx] = 'None'
                     num_missing += 1
+                    continue
 
                 # replace the DR3 lightcurve position with DR4
-                line = line.replace(lightcurve_position_dr3, lightcurve_position_dr4)
+                line_split[lightcurve_position_idx] = lightcurve_position_dr4
+
+            # join together new converted line
+            new_line = ','.join(line_split)
 
             # replace the DR3 lightcurve filename with DR4
-            line = line.replace(lightcurve_filename_dr3,
-                                os.path.basename(lightcurve_filename_dr4))
+            new_line = new_line.replace(lightcurve_filename_dr3,
+                                        os.path.basename(lightcurve_filename_dr4))
 
             # keep the line for DR4 source file
-            lines_dr4.append(line)
+            lines_dr4.append(new_line)
 
         if skipFlag:
             continue
