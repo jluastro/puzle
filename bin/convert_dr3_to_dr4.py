@@ -32,7 +32,7 @@ def fetch_unconverted_files_dr3(file_type):
         print('file_type must be either star or source')
         return
     # grab source files in the DR3 folder
-    source_files = []
+    files = []
     folders = glob.glob(f'{ulens_ztf_dir}/DR3/{file_type}s*')
     folders.sort()
     for folder in folders:
@@ -43,8 +43,8 @@ def fetch_unconverted_files_dr3(file_type):
             fi_base = os.path.basename(fi)
             # if the source file already exists in DR4, skip
             if not os.path.exists(f'{folder_dr4}/{fi_base}'):
-                source_files.append(fi)
-    return source_files
+                files.append(fi)
+    return files
 
 
 def construct_lightcurve_filenames_dr4_dict():
