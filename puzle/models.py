@@ -359,6 +359,8 @@ class StarProcessJob(db.Model):
     num_stars_pass_rf = db.Column(db.Integer, nullable=True)
     num_objs_pass_eta_residual = db.Column(db.Integer, nullable=True)
     num_stars_pass_eta_residual = db.Column(db.Integer, nullable=True)
+    epoch_edges = db.Column(db.JSON, nullable=True)
+    eta_thresholds = db.Column(db.JSON, nullable=True)
 
     def __init__(self, source_ingest_job_id):
         self.source_ingest_job_id = source_ingest_job_id

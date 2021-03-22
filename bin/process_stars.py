@@ -65,29 +65,6 @@ def reset_job(source_job_id):
     remove_db_id()  # release permission for this db connection
 
 
-def finish_job(source_job_id, job_stats):
-    insert_db_id()  # get permission to make a db connection
-    job = db.session.query(StarProcessJob).filter(
-        StarProcessJob.source_ingest_job_id == source_job_id).one()
-    job.finished = True
-    job.uploaded = True
-    job.datetime_finished = datetime.now()
-    job.num_stars = job_stats['num_stars']
-    job.num_sources = job_stats['num_sources']
-    job.num_objs = job_stats['num_objs']
-    job.num_objs_pass_n_days = job_stats['num_objs_pass_n_days']
-    job.num_objs_pass_eta = job_stats['num_objs_pass_eta']
-    job.num_stars_pass_eta = job_stats['num_stars_pass_eta']
-    job.num_objs_pass_rf = job_stats['num_objs_pass_rf']
-    job.num_stars_pass_rf = job_stats['num_stars_pass_rf']
-    job.num_objs_pass_eta_residual = job_stats['num_objs_pass_eta_residual']
-    job.num_stars_pass_eta_residual = job_stats['num_stars_pass_eta_residual']
-    job.num_epochs_edges = job_stats['num_epochs_edges']
-    db.session.commit()
-    db.session.close()
-    remove_db_id()  # release permission for this db connection
-
-
 def csv_line_to_star_and_sources(line):
     star_id = str(line.split(',')[0])
     ra = float(line.split(',')[1])
@@ -155,7 +132,7 @@ def construct_eta_dct(stars_and_sources, job_stats, n_days_min=20):
                     continue
                 num_objs_pass_n_days += 1
                 eta = calculate_eta(obj.lightcurve.mag)
-                key = (obj.fieldid, obj.filterid)
+                key = '%i_%i' % (obj.fieldid, obj.filterid)
                 idxs_dct[key].append((i, j, k))
                 eta_dct[key].append(eta)
                 n_epochs_dct[key].append(obj.nepochs)
@@ -170,7 +147,7 @@ def construct_eta_dct(stars_and_sources, job_stats, n_days_min=20):
 
 def construct_eta_idxs_dct(eta_dct, idxs_dct, n_epochs_dct, job_stats,
                            n_days_min=20, num_epochs_splits=3):
-    n_epochs_edges_dct = {}
+    epoch_edges_dct = {}
     eta_threshold_dct = defaultdict(list)
     eta_idxs_dct = defaultdict(list)
     num_objs_pass_eta = 0
@@ -192,10 +169,10 @@ def construct_eta_idxs_dct(eta_dct, idxs_dct, n_epochs_dct, job_stats,
             else:
                 break
 
-        n_epochs_edges_dct[key] = arr_bin_edges
+        epoch_edges_dct[key] = arr_bin_edges
 
         for split_idx in split_idx_arr:
-            eta_threshold = np.percentile(eta_arr[split_idx], 1)
+            eta_threshold = float(np.percentile(eta_arr[split_idx], 1))
             eta_threshold_dct[key].append(eta_threshold)
 
             eta_cond = np.where(eta_arr[split_idx] <= eta_threshold)[0]
@@ -207,7 +184,7 @@ def construct_eta_idxs_dct(eta_dct, idxs_dct, n_epochs_dct, job_stats,
 
     job_stats['num_objs_pass_eta'] = num_objs_pass_eta
     job_stats['num_stars_pass_eta'] = num_stars_pass_eta
-    job_stats['num_epochs_edges'] = n_epochs_edges_dct
+    job_stats['epoch_edges'] = epoch_edges_dct
 
     return eta_idxs_dct, eta_threshold_dct
 
@@ -249,7 +226,7 @@ def evenly_split_sample(arr, arr_min, arr_max, num_splits=3):
     # find the arr values at the edges
     arr_bin_edges = []
     for i in range(num_splits - 1):
-        arr_bin_edges.append(np.max(arr[idx_arr[i]]))
+        arr_bin_edges.append(int(np.max(arr[idx_arr[i]])))
 
     return idx_arr, arr_bin_edges
 
@@ -323,7 +300,6 @@ def extract_final_idxs(eta_residual_idxs_dct, eta_threshold_dct):
             for i, j, k in eta_residual_idx:
                 final_idxs.append((i, j, k, eta_threshold))
     return final_idxs
-
 
 
 def assemble_candidates(stars_and_sources, eta_residual_idxs_dct, eta_threshold_dct):
@@ -449,6 +425,7 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
     candidates, source_ids, best_fit_stats = assemble_candidates(stars_and_sources, eta_residual_idxs_dct,
                                                                  eta_threshold_dct)
 
+    job_stats['eta_thresholds'] = eta_threshold_dct
     return candidates, job_stats, source_ids, best_fit_stats
 
 
@@ -474,6 +451,30 @@ def upload_candidates(candidates, source_ids, best_fit_stats):
         source_db.fit_a_type = a_type
         source_db.fit_chi_squared_flat = chi_squared_flat
         source_db.fit_chi_squared_delta = chi_squared_delta
+    db.session.commit()
+    db.session.close()
+    remove_db_id()  # release permission for this db connection
+
+
+def finish_job(source_job_id, job_stats):
+    insert_db_id()  # get permission to make a db connection
+    job = db.session.query(StarProcessJob).filter(
+        StarProcessJob.source_ingest_job_id == source_job_id).one()
+    job.finished = True
+    job.uploaded = True
+    job.datetime_finished = datetime.now()
+    job.num_stars = job_stats['num_stars']
+    job.num_sources = job_stats['num_sources']
+    job.num_objs = job_stats['num_objs']
+    job.num_objs_pass_n_days = job_stats['num_objs_pass_n_days']
+    job.num_objs_pass_eta = job_stats['num_objs_pass_eta']
+    job.num_stars_pass_eta = job_stats['num_stars_pass_eta']
+    job.num_objs_pass_rf = job_stats['num_objs_pass_rf']
+    job.num_stars_pass_rf = job_stats['num_stars_pass_rf']
+    job.num_objs_pass_eta_residual = job_stats['num_objs_pass_eta_residual']
+    job.num_stars_pass_eta_residual = job_stats['num_stars_pass_eta_residual']
+    job.epoch_edges = job_stats['epoch_edges']
+    job.eta_thresholds = job_stats['eta_thresholds']
     db.session.commit()
     db.session.close()
     remove_db_id()  # release permission for this db connection
@@ -522,7 +523,8 @@ def process_stars(shutdown_time=10, single_job=False):
                          'num_stars_pass_rf': 0,
                          'num_objs_pass_eta_residual': 0,
                          'num_stars_pass_eta_residual': 0,
-                         'num_epochs_edges': {}}
+                         'epoch_edges': {},
+                         'eta_thresholds': {}}
 
         finish_job(source_job_id, job_stats)
         logger.info(f'Job {source_job_id}: Job complete')
