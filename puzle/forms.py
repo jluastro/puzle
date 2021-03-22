@@ -74,7 +74,7 @@ class EditSourceCommentForm(FlaskForm):
     submit = SubmitField('Submit')
 
 
-class SearchForm(FlaskForm):
+class RadialSearchForm(FlaskForm):
     ra = FloatField('ra (degrees)',
                     validators=[Optional(), NumberRange(min=0, max=360)])
     dec = FloatField('dec (degrees)',

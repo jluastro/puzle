@@ -11,7 +11,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from puzle.utils import return_figures_dir, return_DR3_dir
+from puzle.utils import return_figures_dir, return_DR4_dir
 
 
 def file_len(fname):
@@ -54,9 +54,9 @@ def return_low_field_ids():
 
 
 def generate_obj_snr_cuts(field_ids, glons, glats, N_samples=10000):
-    DR3_dir = return_DR3_dir()
+    DR4_dir = return_DR4_dir()
     for field_id, glon, glat in zip(field_ids, glons, glats):
-        filenames = glob.glob('%s/field%06d_*txt' % (DR3_dir, field_id))
+        filenames = glob.glob('%s/field%06d_*txt' % (DR4_dir, field_id))
         if len(filenames) != 1:
             continue
         filename = filenames[0]

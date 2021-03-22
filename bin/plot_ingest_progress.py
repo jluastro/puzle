@@ -8,7 +8,7 @@ import os
 import pickle
 import numpy as np
 from puzle.models import SourceIngestJob, StarIngestJob
-from puzle.utils import return_figures_dir, return_DR3_dir, return_data_dir
+from puzle.utils import return_figures_dir, return_DR4_dir, return_data_dir
 from puzle import db
 
 
@@ -55,7 +55,7 @@ def save_star_ingest_progress(ingest_progress):
 
 
 def plot_source_ingest_progress():
-    DR3_dir = return_DR3_dir()
+    DR4_dir = return_DR4_dir()
     jobs = db.session.query(SourceIngestJob).filter(SourceIngestJob.finished == True).all()
 
     source_ingest_progress = load_source_ingest_progress()
@@ -75,7 +75,7 @@ def plot_source_ingest_progress():
         else:
             ra = (job.ra_start + job.ra_end) / 2
             dec = (job.dec_start + job.dec_end) / 2
-            dir = '%s/sources_%s' % (DR3_dir, str(job_id)[:3])
+            dir = '%s/sources_%s' % (DR4_dir, str(job_id)[:3])
             fname = f'{dir}/sources.{job_id:06}.txt'
             N_sources = file_len(fname)
             source_ingest_progress[job_id] = (ra, dec, N_sources)
@@ -108,7 +108,7 @@ def plot_source_ingest_progress():
 
 
 def plot_star_ingest_progress():
-    DR3_dir = return_DR3_dir()
+    DR4_dir = return_DR4_dir()
     jobs = db.session.query(SourceIngestJob, StarIngestJob).\
         filter(SourceIngestJob.id == StarIngestJob.source_ingest_job_id).\
         filter(StarIngestJob.finished == True).all()
@@ -130,7 +130,7 @@ def plot_star_ingest_progress():
         else:
             ra = (job[0].ra_start + job[0].ra_end) / 2
             dec = (job[0].dec_start + job[0].dec_end) / 2
-            dir = '%s/stars_%s' % (DR3_dir, str(job_id)[:3])
+            dir = '%s/stars_%s' % (DR4_dir, str(job_id)[:3])
             fname = f'{dir}/stars.{job_id:06}.txt'
             N_stars = file_len(fname)
             star_ingest_progress[job_id] = (ra, dec, N_stars)

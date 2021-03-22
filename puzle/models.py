@@ -9,6 +9,7 @@ from time import time
 import jwt
 import os
 import requests
+from collections import defaultdict
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 from zort.source import Source as zort_source
@@ -33,7 +34,15 @@ user_source_association = db.Table(
 user_star_association = db.Table(
     'user_star_association',
     db.Column('user_id', db.Integer, db.ForeignKey('puzle.user.id')),
-    db.Column('star_id', db.BigInteger, db.ForeignKey('puzle.star.id')),
+    db.Column('star_id', db.String(128), db.ForeignKey('puzle.star.id')),
+    schema='puzle'
+)
+
+
+user_cand_association = db.Table(
+    'user_candidate_association',
+    db.Column('user_id', db.Integer, db.ForeignKey('puzle.user.id')),
+    db.Column('candidate_id', db.String(128), db.ForeignKey('puzle.candidate.id')),
     schema='puzle'
 )
 
@@ -53,6 +62,9 @@ class User(UserMixin, db.Model):
     stars = db.relationship('Star', secondary=user_star_association,
                             lazy='dynamic',
                             backref=db.backref('users', lazy='dynamic'))
+    candidates = db.relationship('Candidate', secondary=user_cand_association,
+                                 lazy='dynamic',
+                                 backref=db.backref('users', lazy='dynamic'))
 
     def __repr__(self):
         return f"User('{self.username}', '{self.email}')"
@@ -128,11 +140,24 @@ class Source(db.Model):
     lightcurve_filename = db.Column(db.String(128), index=True, nullable=False)
     comments = db.Column(db.String(1024))
     _ztf_ids = db.Column(db.String(256))
+    fit_filter = db.Column(db.String(128))
+    fit_t_0 = db.Column(db.Float)
+    fit_t_E = db.Column(db.Float)
+    fit_f_0 = db.Column(db.Float)
+    fit_f_1 = db.Column(db.Float)
+    fit_a_type = db.Column(db.String(128))
+    fit_chi_squared_flat = db.Column(db.Float)
+    fit_chi_squared_delta = db.Column(db.Float)
 
     def __init__(self, object_id_g, object_id_r, object_id_i,
                  lightcurve_position_g, lightcurve_position_r, lightcurve_position_i,
                  ra, dec, lightcurve_filename, ingest_job_id,
-                 id=None, comments=None, _ztf_ids=None):
+                 version='DR4', id=None, comments=None, _ztf_ids=None,
+                 fit_filter=None, fit_t_0=None,
+                 fit_t_E=None, fit_f_0=None,
+                 fit_f_1=None, fit_a_type=None,
+                 fit_chi_squared_flat=None,
+                 fit_chi_squared_delta=None):
         self.object_id_g = object_id_g
         self.object_id_r = object_id_r
         self.object_id_i = object_id_i
@@ -143,10 +168,19 @@ class Source(db.Model):
         self.dec = dec
         self.lightcurve_filename = lightcurve_filename
         self.ingest_job_id = ingest_job_id
+        self.version = version
         self.id = id
         self.comments = comments
         self.zort_source = self.load_zort_source()
         self._ztf_ids = _ztf_ids
+        self.fit_filter = fit_filter
+        self.fit_t_0 = fit_t_0
+        self.fit_t_E = fit_t_E
+        self.fit_f_0 = fit_f_0
+        self.fit_f_1 = fit_f_1
+        self.fit_a_type = fit_a_type
+        self.fit_chi_squared_flat = fit_chi_squared_flat
+        self.fit_chi_squared_delta = fit_chi_squared_delta
         
     def __repr__(self):
         return f'Source \n' \
@@ -161,19 +195,24 @@ class Source(db.Model):
         self.zort_source = self.load_zort_source()
 
     @hybrid_property
-    def glon(self):
-        coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
-        glon = coord.galactic.l.value
-        if glon > 180:
-            return glon - 360
-        else:
-            return glon
+    def glonlat(self):
+        try:
+            return self._glonlat
+        except AttributeError:
+            coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
+            glon, glat = coord.galactic.l.value, coord.galactic.b.value
+            if glon > 180:
+                glon -= 360
+            self._glonlat = (glon, glat)
+            return self._glonlat
 
-    @hybrid_property
+    @property
+    def glon(self):
+        return self.glonlat[0]
+
+    @property
     def glat(self):
-        coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
-        glat = coord.galactic.b.value
-        return glat
+        return self.glonlat[1]
 
     @property
     def ztf_ids(self):
@@ -194,8 +233,8 @@ class Source(db.Model):
     def load_zort_source(self):
         dir_path_puzle = os.path.dirname(os.path.dirname(
             os.path.realpath(__file__)))
-        dir_path_DR3 = f'{dir_path_puzle}/data/DR3'
-        fname = '%s/%s' % (dir_path_DR3, os.path.basename(self.lightcurve_filename))
+        dir_path = f'{dir_path_puzle}/data/DR4'
+        fname = '%s/%s' % (dir_path, os.path.basename(self.lightcurve_filename))
         source = zort_source(filename=fname,
                              lightcurve_position_g=self.lightcurve_position_g,
                              lightcurve_position_r=self.lightcurve_position_r,
@@ -209,7 +248,21 @@ class Source(db.Model):
 
         lightcurve_plot_filename = f'{folder}/lightcurve.png'
         if not os.path.exists(lightcurve_plot_filename):
-            self.zort_source.plot_lightcurves(filename=lightcurve_plot_filename)
+            if self.fit_t_0:
+                model_params = {
+                    't_0': self.fit_t_0,
+                    't_E': self.fit_t_E,
+                    'a_type': self.fit_a_type,
+                    'f_0': self.fit_f_0,
+                    'f_1': self.fit_f_1
+                }
+                model_color = self.fit_filter
+            else:
+                model_params = None
+                model_color = None
+            self.zort_source.plot_lightcurves(filename=lightcurve_plot_filename,
+                                              model_params=model_params,
+                                              model_color=model_color)
 
     def _fetch_mars_results(self):
         radius_deg = 2. / 3600.
@@ -287,6 +340,7 @@ class StarProcessJob(db.Model):
     __table_args__ = {'schema': 'puzle'}
 
     id = db.Column(db.BigInteger, primary_key=True, nullable=False)
+    priority = db.Column(db.Integer, nullable=True)
     started = db.Column(db.Boolean, nullable=False, server_default='f')
     finished = db.Column(db.Boolean, nullable=False, server_default='f')
     uploaded = db.Column(db.Boolean, nullable=False, server_default='f')
@@ -298,6 +352,7 @@ class StarProcessJob(db.Model):
     num_stars = db.Column(db.Integer, nullable=True)
     num_sources = db.Column(db.Integer, nullable=True)
     num_objs = db.Column(db.Integer, nullable=True)
+    num_objs_pass_n_days = db.Column(db.Integer, nullable=True)
     num_objs_pass_eta = db.Column(db.Integer, nullable=True)
     num_stars_pass_eta = db.Column(db.Integer, nullable=True)
     num_objs_pass_rf = db.Column(db.Integer, nullable=True)
@@ -341,13 +396,15 @@ class Star(db.Model):
 
     @hybrid_property
     def glonlat(self):
-        if self._glonlat is None:
+        try:
+            return self._glonlat
+        except AttributeError:
             coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
             glon, glat = coord.galactic.l.value, coord.galactic.b.value
             if glon > 180:
                 glon -= 360
             self._glonlat = (glon, glat)
-        return self._glonlat
+            return self._glonlat
 
     @property
     def glon(self):
@@ -378,30 +435,52 @@ class Candidate(db.Model):
     __table_args__ = {'schema': 'puzle'}
 
     id = db.Column(db.String(128), primary_key=True, nullable=False)
-    source_ids = db.Column(db.ARRAY(db.String(128)))
-    filter_ids = db.Column(db.ARRAY(db.Integer))
-    etas = db.Column(db.ARRAY(db.Float))
-    rf_scores = db.Column(db.ARRAY(db.Float))
-    eta_residuals = db.Column(db.ARRAY(db.Float))
-    eta_thresholds = db.Column(db.ARRAY(db.Float))
+    source_id_arr = db.Column(db.ARRAY(db.String(128)))
+    filter_id_arr = db.Column(db.ARRAY(db.Integer))
+    eta_best = db.Column(db.Float)
+    rf_score_best = db.Column(db.Float)
+    eta_residual_best = db.Column(db.Float)
+    eta_threshold_best = db.Column(db.Float)
+    t_E_best = db.Column(db.Float)
+    t_0_best = db.Column(db.Float)
+    f_0_best = db.Column(db.Float)
+    f_1_best = db.Column(db.Float)
+    a_type_best = db.Column(db.String(128))
+    chi_squared_flat_best = db.Column(db.Float)
+    chi_squared_delta_best = db.Column(db.Float)
+    idx_best = db.Column(db.Integer)
     ra = db.Column(db.Float, nullable=False)
     dec = db.Column(db.Float, nullable=False)
     ingest_job_id = db.Column(db.BigInteger, nullable=False)
     comments = db.Column(db.String(1024))
     _ztf_ids = db.Column(db.String(256))
+    num_objs_pass = db.Column(db.Integer)
 
-    def __init__(self, source_ids, ra, dec,
-                 ingest_job_id=None, id=None,
-                 comments=None, _ztf_ids=None,
-                 filter_ids=None, etas=None,
-                 rf_scores=None, eta_residuals=None,
-                 eta_thresholds=None):
-        self.source_ids = source_ids
-        self.filter_ids = filter_ids
-        self.etas = etas
-        self.rf_scores = rf_scores
-        self.eta_residuals = eta_residuals
-        self.eta_thresholds = eta_thresholds
+    def __init__(self, source_id_arr, ra, dec,
+                 ingest_job_id, id,
+                 filter_id_arr, eta_best,
+                 rf_score_best, eta_residual_best,
+                 eta_threshold_best,
+                 t_E_best, t_0_best, f_0_best,
+                 f_1_best, a_type_best,
+                 chi_squared_flat_best, chi_squared_delta_best,
+                 idx_best, num_objs_pass,
+                 comments=None, _ztf_ids=None,):
+        self.source_id_arr = source_id_arr
+        self.filter_id_arr = filter_id_arr
+        self.eta_best = eta_best
+        self.rf_score_best = rf_score_best
+        self.eta_residual_best = eta_residual_best
+        self.eta_threshold_best = eta_threshold_best
+        self.t_E_best = t_E_best
+        self.t_0_best = t_0_best
+        self.f_0_best = f_0_best
+        self.f_1_best = f_1_best
+        self.a_type_best = a_type_best
+        self.chi_squared_flat_best = chi_squared_flat_best
+        self.chi_squared_delta_best = chi_squared_delta_best
+        self.idx_best = idx_best
+        self.num_objs_pass = num_objs_pass
         self.ra = ra
         self.dec = dec
         self.ingest_job_id = ingest_job_id
@@ -411,21 +490,23 @@ class Candidate(db.Model):
         self._glonlat = None
 
     def __repr__(self):
-        str = 'Star \n'
+        str = 'Candidate \n'
         str += f'Ra/Dec: ({self.ra:.5f}, {self.dec:.5f}) \n'
-        for i, source_id in enumerate(self.source_ids, 1):
+        for i, source_id in enumerate(self.source_id_arr, 1):
             str += f'Source {i} ID: {source_id} \n'
         return str
 
     @hybrid_property
     def glonlat(self):
-        if self._glonlat is None:
+        try:
+            return self._glonlat
+        except AttributeError:
             coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
             glon, glat = coord.galactic.l.value, coord.galactic.b.value
             if glon > 180:
                 glon -= 360
             self._glonlat = (glon, glat)
-        return self._glonlat
+            return self._glonlat
 
     @property
     def glon(self):

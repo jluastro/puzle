@@ -7,8 +7,8 @@ import astropy.units as u
 from puzle import app, db
 from puzle.forms import LoginForm, RegistrationForm, \
     EditProfileForm, ResetPasswordRequestForm, ResetPasswordForm, \
-    EditSourceCommentForm, SearchForm, EmptyForm
-from puzle.models import User, Source
+    EditSourceCommentForm, RadialSearchForm, EmptyForm
+from puzle.models import User, Source, Candidate
 from puzle.email import send_password_reset_email
 
 
@@ -132,11 +132,12 @@ def reset_password(token):
 @app.route('/source/<sourceid>')
 @login_required
 def source(sourceid):
+    title = 'Source %s' % sourceid
     form = EmptyForm()
     source = Source.query.filter_by(id=sourceid).first_or_404()
     source.load_lightcurve_plot()
     return render_template('source.html', source=source,
-                           form=form)
+                           form=form, title=title)
 
 
 @app.route('/edit_source_comments/<sourceid>', methods=['GET', 'POST'])
@@ -163,36 +164,6 @@ def fetch_ztf_ids(sourceid):
     flash('%i ZTF IDs Found' % n_ids, 'success')
     db.session.commit()
     return redirect(url_for('source', sourceid=sourceid))
-
-
-@app.route('/search', methods=['GET', 'POST'])
-@login_required
-def search():
-    form = SearchForm()
-    if form.validate_on_submit():
-        if form.ra.data and form.dec.data:
-            ra, dec = form.ra.data, form.dec.data
-            flash('Searching (ra,dec) = (%.5f, %.5f)' % (ra, dec),
-                  'info')
-        elif form.glon.data and form.glat.data:
-            glon, glat = form.glon.data, form.glat.data
-            flash('Searching (glon, glat) = (%.5f, %.5f)' % (glon, glat),
-                  'info')
-            coord = SkyCoord(glon, glat,
-                             unit=u.degree, frame='galactic')
-            ra = coord.icrs.ra.value
-            dec = coord.icrs.dec.value
-        else:
-            flash('Either (ra, dec) or '
-                  '(glon, glat) '
-                  'must be entered.', 'danger')
-            return redirect(url_for('search'))
-
-        sources = db.session.query(Source).filter(
-            Source.cone_search(ra, dec, form.radius.data)).all()
-        sources.sort(key=lambda x: x.id)
-        return render_template('search.html', form=form, sources=sources)
-    return render_template('search.html', form=form)
 
 
 @app.route('/follow/<sourceid>', methods=['POST'])
@@ -239,4 +210,61 @@ def sources():
     prev_url = url_for('sources', page=sources.prev_num) \
         if sources.has_prev else None
     return render_template('sources.html', sources=sources,
-                           next_url=next_url, prev_url=prev_url)
+                           next_url=next_url, prev_url=prev_url,
+                           title='PUZLE sources')
+
+
+@app.route('/candidates', methods=['GET', 'POST'])
+@login_required
+def candidates():
+    page = request.args.get('page', 1, type=int)
+    cands = Candidate.query.\
+        order_by(Candidate.num_objs_pass.desc(), Candidate.chi_squared_delta_best.desc()).\
+        paginate(page, app.config['SOURCES_PER_PAGE'], False)
+    next_url = url_for('candidates', page=cands.next_num) \
+        if cands.has_next else None
+    prev_url = url_for('candidates', page=cands.prev_num) \
+        if cands.has_prev else None
+    return render_template('candidates.html', cands=cands,
+                           next_url=next_url, prev_url=prev_url,
+                           title='PUZLE candidates', zip=zip,
+                           paginate=True)
+
+
+@app.route('/radial_search', methods=['GET', 'POST'])
+@login_required
+def radial_search():
+    form = RadialSearchForm()
+    radius = form.radius.data
+    if form.validate_on_submit():
+        if form.ra.data and form.dec.data:
+            ra, dec = form.ra.data, form.dec.data
+            flash('Searching (ra, dec, radius) = (%.5f, %.5f, %.2f)' % (ra, dec, radius),
+                  'info')
+        elif form.glon.data and form.glat.data:
+            glon, glat = form.glon.data, form.glat.data
+            flash('Searching (glon, glat, radius) = (%.5f, %.5f, %.2f)' % (glon, glat, radius),
+                  'info')
+            coord = SkyCoord(glon, glat,
+                             unit=u.degree, frame='galactic')
+            ra = coord.icrs.ra.value
+            dec = coord.icrs.dec.value
+        else:
+            flash('Either (ra, dec) or '
+                  '(glon, glat) '
+                  'must be entered.', 'danger')
+            return redirect(url_for('radial_search'))
+
+        page = request.args.get('page', 1, type=int)
+        cands = db.session.query(Candidate).\
+            filter(Candidate.cone_search(ra, dec, radius)).\
+            paginate(page, app.config['SOURCES_PER_PAGE'], False)
+        next_url = url_for('candidates', page=cands.next_num) \
+            if cands.has_next else None
+        prev_url = url_for('candidates', page=cands.prev_num) \
+            if cands.has_prev else None
+        return render_template('candidates.html', cands=cands,
+                               next_url=next_url, prev_url=prev_url,
+                               title='PUZLE candidates', zip=zip,
+                               paginate=True)
+    return render_template('radial_search.html', form=form, title='PUZLE search')

@@ -9,6 +9,7 @@ from puzle.utils import execute
 
 logger = logging.getLogger(__name__)
 ulensdb_file_path = os.getenv('ULENS_DB_FILEPATH')
+logging.getLogger('filelock').setLevel(logging.WARNING)
 
 
 def identify_is_nersc():
@@ -19,10 +20,15 @@ def identify_is_nersc():
 
 
 def fetch_db_id():
-    from mpi4py import MPI
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
+    if 'SLURMD_NODENAME' in os.environ:
+        from mpi4py import MPI
+        comm = MPI.COMM_WORLD
+        rank = comm.rank
+    else:
+        rank = 0
     slurm_job_id = os.getenv('SLURM_JOB_ID')
+    if slurm_job_id is None:
+        return None
     db_id = '%s.%s' % (slurm_job_id, rank)
     return db_id
 
@@ -50,30 +56,36 @@ def remove_db_id():
     lock = FileLock(lock_path)
 
     my_db_id = fetch_db_id()
+    if my_db_id is None:
+        logger.debug(f'{my_db_id}: Skipping remove_db for local process')
+        return
 
-    logger.info(f'{my_db_id}: Attempting delete from {ulensdb_file_path}')
+    logger.debug(f'{my_db_id}: Attempting delete from {ulensdb_file_path}')
     with lock:
         db_ids = load_db_ids()
-        logger.info(f'{my_db_id}: db_ids loaded {db_ids}')
+        logger.debug(f'{my_db_id}: db_ids loaded {db_ids}')
         db_ids.remove(my_db_id)
 
         with open(ulensdb_file_path, 'w') as f:
             for db_id in list(db_ids):
                 f.write('%s\n' % db_id)
 
-    logger.info(f'{my_db_id}: Delete success')
+    logger.debug(f'{my_db_id}: Delete success')
 
 
-def insert_db_id(num_ids=50, retry_time=1):
+def insert_db_id(num_ids=50, retry_time=5):
     lock_path = ulensdb_file_path.replace('.txt', '.lock')
     lock = FileLock(lock_path)
 
     my_db_id = fetch_db_id()
+    if my_db_id is None:
+        logger.debug(f'{my_db_id}: Skipping insert_db for local process')
+        return
 
     successFlag = False
     while True:
         time.sleep(abs(np.random.normal(scale=.01 * retry_time)))
-        logger.info(f'{my_db_id}: Attempting insert to {ulensdb_file_path}')
+        logger.debug(f'{my_db_id}: Attempting insert to {ulensdb_file_path}')
         with lock:
             db_ids = load_db_ids()
             if len(db_ids) < num_ids:
@@ -86,8 +98,8 @@ def insert_db_id(num_ids=50, retry_time=1):
                 successFlag = True
 
         if successFlag:
-            logger.info(f'{my_db_id}: Insert success')
+            logger.debug(f'{my_db_id}: Insert success')
             return
         else:
-            logger.info(f'{my_db_id}: Insert fail, retry in {retry_time} seconds')
+            logger.debug(f'{my_db_id}: Insert fail, retry in {retry_time} seconds')
             time.sleep(retry_time)

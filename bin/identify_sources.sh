@@ -14,7 +14,7 @@ date
 echo "---------------------------"
 
 conda activate puzle
-cd /global/cfs/cdirs/uLens/ZTF/DR3
+cd /global/cfs/cdirs/uLens/ZTF/DR4
 srun -N 1 -n 32 python /global/homes/m/mmedford/puzle/bin/identify_sources.py
 
 echo "---------------------------"

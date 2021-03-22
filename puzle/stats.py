@@ -224,11 +224,12 @@ def calculate_lightcurve_stats(lightcurves):
     return eta_arr, J_arr, chi_arr
 
 
-def calculate_eta_on_residuals(t_obs_arr, mag_arr, magerr_arr):
+def calculate_eta_on_residuals(t_obs_arr, mag_arr, magerr_arr,
+                               return_fit_data=False):
     fit_data = fit_event(t_obs_arr, mag_arr, magerr_arr)
     if fit_data is None:
         return None
-    t0, t_eff, f0, f1, _, a_type = fit_data
+    t0, t_eff, f0, f1, _, _, a_type = fit_data
     flux_model_arr = return_flux_model(t_obs_arr, t0, t_eff, a_type, f0, f1)
 
     _, fluxerr_obs_arr = magnitudes_to_fluxes(mag_arr, magerr_arr)
@@ -236,7 +237,10 @@ def calculate_eta_on_residuals(t_obs_arr, mag_arr, magerr_arr):
 
     mag_residual_arr = mag_arr - mag_model_arr
     eta = calculate_eta(mag_residual_arr)
-    return eta
+    if return_fit_data:
+        return eta, fit_data
+    else:
+        return eta
 
 
 def _calculate_eta_arr(size, sigma=1,
@@ -265,6 +269,7 @@ def calculate_eta_thresholds(power_law_cutoff=120,
     m_high, b_high = np.polyfit(np.log10(size_arr[~cond]), eta_thresh_arr[~cond], deg=1)
 
     eta_thresholds = {}
+    size_arr = np.arange(size_min, size_max+1)
     for size in size_arr:
         if size < power_law_cutoff:
             m, b = m_low, b_low
@@ -275,7 +280,15 @@ def calculate_eta_thresholds(power_law_cutoff=120,
     fname = '%s/eta_thresholds.dct' % return_data_dir()
     pickle.dump(eta_thresholds, open(fname, 'wb'))
 
-    return eta_thresholds
+    eta_threshold_fits = {'power_law_cutoff': power_law_cutoff,
+                          'size_min': size_min,
+                          'size_max': size_max,
+                          'm_low': m_low,
+                          'b_low': b_low,
+                          'm_high': m_high,
+                          'b_high': b_high}
+
+    return eta_threshold_fits
 
 
 def load_eta_thresholds():
@@ -284,22 +297,22 @@ def load_eta_thresholds():
     return eta_thresholds
 
 
-def return_eta_threshold(size, size_min=20, size_max=2000):
+def return_eta_threshold(size):
     try:
         return ETA_THRESHOLDS[size]
     except KeyError:
         eta_threshold_fits = {'power_law_cutoff': 120,
                               'size_min': 20,
                               'size_max': 2000,
-                              'm_low': 0.6331620862843054,
-                              'b_low': 0.3033749508035188,
-                              'm_high': 0.24044347374962108,
-                              'b_high': 1.1310472412803172}
-        if size < size_min:
+                              'm_low': 0.6364915032656779,
+                              'b_low': 0.2947297887712072,
+                              'm_high': 0.24054218603097474,
+                              'b_high': 1.1305090550864132}
+        if size < eta_threshold_fits['size_min']:
             m = eta_threshold_fits['m_low']
             b = eta_threshold_fits['b_low']
             return np.log10(size) * m + b
-        elif size > size_max:
+        elif size > eta_threshold_fits['size_max']:
             m = eta_threshold_fits['m_high']
             b = eta_threshold_fits['b_high']
             return np.log10(size) * m + b

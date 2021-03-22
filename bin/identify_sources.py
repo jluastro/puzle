@@ -11,7 +11,7 @@ from sqlalchemy.sql.expression import func
 import logging
 
 from puzle.models import Source, SourceIngestJob
-from puzle.utils import fetch_job_enddate, return_DR3_dir, fetch_lightcurve_rcids
+from puzle.utils import fetch_job_enddate, return_DR4_dir, fetch_lightcurve_rcids
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle import db
 
@@ -84,14 +84,20 @@ def fetch_job():
     dec_start = job.dec_start
     dec_end = job.dec_end
 
-    from mpi4py import MPI
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
+    if 'SLURMD_NODENAME' in os.environ:
+        from mpi4py import MPI
+        comm = MPI.COMM_WORLD
+        rank = comm.rank
+        slurm_job_id = os.getenv('SLURM_JOB_ID')
+    else:
+        rank = 0
+        slurm_job_id = 0
     job.slurm_job_rank = rank
     job.started = True
-    job.slurm_job_id = os.getenv('SLURM_JOB_ID')
+    job.slurm_job_id = slurm_job_id
     job.datetime_started = datetime.now()
     db.session.commit()
+    db.session.close()
 
     remove_db_id()  # release permission for this db connection
     return job_id, ra_start, ra_end, dec_start, dec_end
@@ -103,6 +109,8 @@ def reset_job(job_id):
         SourceIngestJob.id == job_id).one()
     job.started = False
     db.session.commit()
+    db.session.close()
+
     remove_db_id()  # release permission for this db connection
 
 
@@ -113,6 +121,8 @@ def finish_job(job_id):
     job.finished = True
     job.datetime_finished = datetime.now()
     db.session.commit()
+    db.session.close()
+
     remove_db_id()  # release permission for this db connection
 
 
@@ -132,8 +142,8 @@ def source_to_csv_line(source, source_id):
 
 
 def export_sources(job_id, source_list):
-    DR3_dir = return_DR3_dir()
-    dir = '%s/sources_%s' % (DR3_dir, str(job_id)[:3])
+    DR4_dir = return_DR4_dir()
+    dir = '%s/sources_%s' % (DR4_dir, str(job_id)[:3])
 
     if not os.path.exists(dir):
         os.makedirs(dir)

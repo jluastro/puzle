@@ -39,7 +39,8 @@ def print_source_uploading_status():
 
     print('\nUploading sources...')
     print('%04d jobs - finished on db' % len(job_ids))
-    print('%04d jobs - uploaded on db' % len(job_ids_uploaded))
+    print('%04d jobs - uploaded on db (%.2f %%)' % (len(job_ids_uploaded),
+                                                    100 * float(len(job_ids_uploaded)) / len(job_ids)))
     print('%04d jobs - remaining to upload' % len(job_ids_remaining))
     print('%04d jobs --- on disk to upload' % len(job_ids_waiting_to_upload))
 
@@ -88,7 +89,8 @@ def print_star_uploading_status():
 
     print('\nUploading stars...')
     print('%04d jobs - finished on db' % len(job_ids))
-    print('%04d jobs - uploaded on db' % len(job_ids_uploaded))
+    print('%04d jobs - uploaded on db (%.2f %%)' % (len(job_ids_uploaded),
+                                                    100 * float(len(job_ids_uploaded)) / len(job_ids)))
     print('%04d jobs - remaining to upload' % len(job_ids_remaining))
     print('%04d jobs --- on disk to upload' % len(job_ids_waiting_to_upload))
 

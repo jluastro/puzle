@@ -21,6 +21,10 @@ def return_dir(folder):
     return dir
 
 
+def return_DR4_dir():
+    return return_dir('/data/DR4')
+
+
 def return_DR3_dir():
     return return_dir('/data/DR3')
 
@@ -115,7 +119,7 @@ def lightcurve_file_to_field_id(lightcurve_file):
 def find_nearest_lightcurve_file(l, b):
     coord = SkyCoord(l, b, frame='galactic', unit='degree')
     ra, dec = coord.icrs.ra.value, coord.icrs.dec.value
-    lightcurve_files = glob.glob('/global/cfs/cdirs/uLens/ZTF/DR3/*txt')
+    lightcurve_files = glob.glob('/global/cfs/cdirs/uLens/ZTF/DR4/*txt')
     dist_min = None
     nearest_lightcurve_file = None
     for lightcurve_file in lightcurve_files:
@@ -141,8 +145,8 @@ def find_nearest_lightcurve_file(l, b):
 
 
 def fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end):
-    DR3_dir = return_DR3_dir()
-    lightcurve_files = glob.glob(f'{DR3_dir}/field*txt')
+    DR4_dir = return_DR4_dir()
+    lightcurve_files = glob.glob(f'{DR4_dir}/field*txt')
     lightcurve_files.sort()
 
     lightcurve_rcids_arr = []
