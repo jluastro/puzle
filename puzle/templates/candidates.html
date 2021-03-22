@@ -49,8 +49,8 @@
                         <td></td>
                         <td></td>
                     </tr>
-                    <tr>
-                        {% for source_id, filter_id in zip(cand.source_id_arr, cand.filter_id_arr) %}
+                    {% for source_id, filter_id in zip(cand.source_id_arr, cand.filter_id_arr) %}
+                        <tr>
                             <td></td>
                             <td></td>
                             <td></td>
@@ -64,8 +64,8 @@
                             <td></td>
                             <td><a href="{{ url_for('source', sourceid=source_id) }}">{{ source_id }}</a></td>
                             <td>{{ "%i" % filter_id }}</td>
-                        {% endfor %}
-                    </tr>
+                        </tr>
+                    {% endfor %}
                 {% endfor %}
                 </table>
                 {% if paginate == true %}
