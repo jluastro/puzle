@@ -224,7 +224,8 @@ def calculate_lightcurve_stats(lightcurves):
     return eta_arr, J_arr, chi_arr
 
 
-def calculate_eta_on_residuals(t_obs_arr, mag_arr, magerr_arr):
+def calculate_eta_on_residuals(t_obs_arr, mag_arr, magerr_arr,
+                               return_fit_data=False):
     fit_data = fit_event(t_obs_arr, mag_arr, magerr_arr)
     if fit_data is None:
         return None
@@ -236,7 +237,10 @@ def calculate_eta_on_residuals(t_obs_arr, mag_arr, magerr_arr):
 
     mag_residual_arr = mag_arr - mag_model_arr
     eta = calculate_eta(mag_residual_arr)
-    return eta
+    if return_fit_data:
+        return eta, fit_data
+    else:
+        return eta
 
 
 def _calculate_eta_arr(size, sigma=1,

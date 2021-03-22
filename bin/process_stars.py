@@ -15,7 +15,6 @@ from puzle.utils import fetch_job_enddate, return_DR4_dir
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle.stats import calculate_eta, \
     calculate_eta_on_residuals, RF_THRESHOLD
-from puzle.fit import fit_event
 from puzle import catalog
 from puzle import db
 
@@ -83,6 +82,7 @@ def finish_job(source_job_id, job_stats):
     job.num_stars_pass_rf = job_stats['num_stars_pass_rf']
     job.num_objs_pass_eta_residual = job_stats['num_objs_pass_eta_residual']
     job.num_stars_pass_eta_residual = job_stats['num_stars_pass_eta_residual']
+    job.num_epochs_edges = job_stats['num_epochs_edges']
     db.session.commit()
     db.session.close()
     remove_db_id()  # release permission for this db connection
@@ -110,6 +110,10 @@ def fetch_stars_and_sources(source_job_id):
         return
 
     fname = f'{dir}/stars.{source_job_id:06}.txt'
+    if not os.path.exists(fname):
+        logging.error('Source file missing!')
+        return
+
     lines = open(fname, 'r').readlines()[1:]
 
     source_ids = []
@@ -132,41 +136,6 @@ def fetch_stars_and_sources(source_job_id):
     return list(star_to_source_dict.items())
 
 
-def evenly_split_sample(arr, arr_min, arr_max):
-    # generate PDF of sample with a histogram
-    bins = np.linspace(arr_min, arr_max, 10000)
-    counts, _, idxs = binned_statistic(arr, arr, 'count', bins=bins)
-
-    # transform PDF into CDF
-    cdf = np.cumsum(counts) / np.sum(counts)
-
-    # find bin idxs for equal sections of the cdf
-    bin_idx_low = set(np.where(cdf <= 0.33)[0])
-    bin_idx_mid = set(np.where((cdf > 0.33) * (cdf <= 0.67))[0])
-    # bin_idx_high = set(np.where(cdf > 0.67)[0])
-
-    # sort array into low, mid and high buckets
-    arr_low = []
-    arr_mid = []
-    arr_high = []
-    idx_low = []
-    idx_mid = []
-    idx_high = []
-    for i, a in enumerate(arr):
-        idx = idxs[i]
-        if idx in bin_idx_low:
-            arr_low.append(a)
-            idx_low.append(i)
-        elif idx in bin_idx_mid:
-            arr_mid.append(a)
-            idx_mid.append(i)
-        else:
-            arr_high.append(a)
-            idx_high.append(i)
-
-    return arr_low, arr_mid, arr_high, idx_low, idx_mid, idx_high
-
-
 def construct_eta_dct(stars_and_sources, job_stats, n_days_min=20):
     num_stars = 0
     num_sources = 0
@@ -174,6 +143,7 @@ def construct_eta_dct(stars_and_sources, job_stats, n_days_min=20):
     num_objs_pass_n_days = 0
     idxs_dct = defaultdict(list)
     eta_dct = defaultdict(list)
+    n_epochs_dct = defaultdict(list)
     for i, (star, sources) in enumerate(stars_and_sources):
         num_stars += 1
         for j, source in enumerate(sources):
@@ -188,105 +158,172 @@ def construct_eta_dct(stars_and_sources, job_stats, n_days_min=20):
                 key = (obj.fieldid, obj.filterid)
                 idxs_dct[key].append((i, j, k))
                 eta_dct[key].append(eta)
+                n_epochs_dct[key].append(obj.nepochs)
 
     job_stats['num_stars'] = num_stars
     job_stats['num_sources'] = num_sources
     job_stats['num_objs'] = num_objs
     job_stats['num_objs_pass_n_days'] = num_objs_pass_n_days
 
-    return eta_dct, idxs_dct
+    return eta_dct, idxs_dct, n_epochs_dct
 
 
-def construct_eta_idxs_dct(eta_dct, idxs_dct, job_stats):
-    eta_threshold_dct = {}
-    eta_idxs_dct = {}
+def construct_eta_idxs_dct(eta_dct, idxs_dct, n_epochs_dct, job_stats,
+                           n_days_min=20, num_epochs_splits=3):
+    n_epochs_edges_dct = {}
+    eta_threshold_dct = defaultdict(list)
+    eta_idxs_dct = defaultdict(list)
     num_objs_pass_eta = 0
     num_stars_pass_eta = 0
     for key, eta_arr in eta_dct.items():
         eta_arr = np.array(eta_arr)
-        idxs = np.array(idxs_dct[key])
+        n_epochs = np.array(n_epochs_dct[key])
+        stars_and_sources_idxs = np.array(idxs_dct[key])
 
-        # data = evenly_split_sample(eta_arr, 0.5, 2.5)
-        # eta_low_arr, eta_mid_arr, eta_high_arr, idx_low, idx_mid, idx_high = data
+        n_epochs_max = np.max(n_epochs)
+        for i in range(num_epochs_splits, 0, -1):
+            try:
+                split_idx_arr, arr_bin_edges = evenly_split_sample(n_epochs,
+                                                                   arr_min=n_days_min,
+                                                                   arr_max=n_epochs_max+1,
+                                                                   num_splits=i)
+            except ValueError as e:
+                pass
+            else:
+                break
 
-        eta_threshold = np.percentile(eta_arr, 1)
-        eta_threshold_dct[key] = eta_threshold
+        n_epochs_edges_dct[key] = arr_bin_edges
 
-        eta_cond = np.where(eta_arr <= eta_threshold)[0]
-        eta_idxs = idxs[eta_cond]
-        eta_idxs_dct[key] = idxs[eta_cond]
+        for split_idx in split_idx_arr:
+            eta_threshold = np.percentile(eta_arr[split_idx], 1)
+            eta_threshold_dct[key].append(eta_threshold)
 
-        num_objs_pass_eta += len(eta_idxs)
-        num_stars_pass_eta += len(set([idx[0] for idx in eta_idxs]))
+            eta_cond = np.where(eta_arr[split_idx] <= eta_threshold)[0]
+            eta_idxs = stars_and_sources_idxs[split_idx][eta_cond]
+            eta_idxs_dct[key].append(stars_and_sources_idxs[split_idx][eta_cond])
+
+            num_objs_pass_eta += len(eta_idxs)
+            num_stars_pass_eta += len(set([idx[0] for idx in eta_idxs]))
 
     job_stats['num_objs_pass_eta'] = num_objs_pass_eta
     job_stats['num_stars_pass_eta'] = num_stars_pass_eta
+    job_stats['num_epochs_edges'] = n_epochs_edges_dct
 
     return eta_idxs_dct, eta_threshold_dct
 
 
+def evenly_split_sample(arr, arr_min, arr_max, num_splits=3):
+    # generate PDF of sample with a histogram
+    bins = np.linspace(arr_min, arr_max, 10000)
+    counts, _, bin_idxs = binned_statistic(arr, arr, 'count', bins=bins)
+
+    # transform PDF into CDF
+    cdf = np.cumsum(counts) / np.sum(counts)
+
+    # find idxs for equal sections of the cdf
+    cdf_edges = np.linspace(0, 1, num_splits + 1)
+    cdf_idx_arr = []
+    for i in range(num_splits):
+        cdf_edge_low = cdf_edges[i]
+        cdf_edge_high = cdf_edges[i+1]
+        cdf_idx = set(np.where((cdf > cdf_edge_low) * (cdf <= cdf_edge_high))[0])
+        if len(cdf_idx) == 0:
+            raise ValueError('num_splits must be less than %i' % num_splits)
+        cdf_idx_arr.append(cdf_idx)
+
+    # instantiate empty arrays for idxs
+    idx_arr = [[] for _ in range(num_splits)]
+
+    # sort idxs into cdf buckets
+    # for each element in the array...
+    for i in range(len(arr)):
+        # grab a bin idx...
+        bin_idx = bin_idxs[i]
+        # then compare that idxs to all of the CDF bins
+        for j, cdf_idx in enumerate(cdf_idx_arr):
+            # if the bin idx is within this CDF bin, add and break
+            if bin_idx in cdf_idx:
+                idx_arr[j].append(i)
+                break
+
+    # find the arr values at the edges
+    arr_bin_edges = []
+    for i in range(num_splits - 1):
+        arr_bin_edges.append(np.max(arr[idx_arr[i]]))
+
+    return idx_arr, arr_bin_edges
+
+
 def construct_rf_idxs_dct(stars_and_sources, eta_idxs_dct, job_stats):
+    num_objs_pass_rf = 0
+    num_stars_pass_rf = 0
+
     insert_db_id()
     ulens_con = catalog.ulens_con()
     rf_idxs_dct = defaultdict(list)
-    rf_score_dct = defaultdict(list)
     for key, eta_idxs in eta_idxs_dct.items():
-        for (i, j, k) in eta_idxs:
-            _, sources = stars_and_sources[i]
-            source = sources[j]
-            obj = source.zort_source.objects[k]
-            rf_score = catalog.query_ps1_psc(obj.ra, obj.dec,
-                                             con=ulens_con)
-            if rf_score is None or rf_score.rf_score >= RF_THRESHOLD:
-                key = (obj.fieldid, obj.filterid)
-                rf_idxs_dct[key].append((i, j, k))
-                if rf_score is None:
-                    rf_score_dct[key].append(0)
-                else:
-                    rf_score_dct[key].append(rf_score)
+        for eta_idx in eta_idxs:
+            rf_idxs = []
+            for (i, j, k) in eta_idx:
+                _, sources = stars_and_sources[i]
+                source = sources[j]
+                obj = source.zort_source.objects[k]
+                rf_score = catalog.query_ps1_psc(obj.ra, obj.dec,
+                                                 con=ulens_con)
+                if rf_score is None or rf_score.rf_score >= RF_THRESHOLD:
+                    rf_idxs.append((i, j, k))
+            rf_idxs_dct[key].append(rf_idxs)
+
+            num_objs_pass_rf += len(rf_idxs)
+            num_stars_pass_rf += len(set([idx[0] for idx in rf_idxs]))
     ulens_con.close()
     remove_db_id()
-
-    num_objs_pass_rf = 0
-    num_stars_pass_rf = 0
-    for rf_idxs in rf_idxs_dct.values():
-        num_objs_pass_rf += len(rf_idxs)
-        num_stars_pass_rf += len(set([idx[0] for idx in rf_idxs]))
 
     job_stats['num_objs_pass_rf'] = num_objs_pass_rf
     job_stats['num_stars_pass_rf'] = num_stars_pass_rf
 
-    return rf_idxs_dct, rf_score_dct
+    return rf_idxs_dct
 
 
 def construct_eta_residual_idxs_dct(stars_and_sources, eta_threshold_dct, rf_idxs_dct, job_stats):
-    eta_residual_idxs_dct = defaultdict(list)
-    eta_residual_dct = defaultdict(list)
-    for key, rf_idxs in rf_idxs_dct.items():
-        eta_threshold = eta_threshold_dct[key]
-        for (i, j, k) in rf_idxs:
-            _, sources = stars_and_sources[i]
-            source = sources[j]
-            obj = source.zort_source.objects[k]
-            hmjd = obj.lightcurve.hmjd
-            mag = obj.lightcurve.mag
-            magerr = obj.lightcurve.magerr
-            eta_residual = calculate_eta_on_residuals(hmjd, mag, magerr)
-            key = (obj.fieldid, obj.filterid)
-            if eta_residual is not None and eta_residual > eta_threshold:
-                eta_residual_idxs_dct[key].append((i, j, k))
-                eta_residual_dct[key].append(eta_residual)
-
     num_objs_pass_eta_residual = 0
     num_stars_pass_eta_residual = 0
-    for eta_residual_idxs in eta_residual_idxs_dct.values():
-        num_objs_pass_eta_residual += len(eta_residual_idxs)
-        num_stars_pass_eta_residual += len(set([idx[0] for idx in eta_residual_idxs]))
+    eta_residual_idxs_dct = defaultdict(list)
+    for key in rf_idxs_dct.keys():
+        rf_idxs_arr = rf_idxs_dct[key]
+        eta_threshold_arr = eta_threshold_dct[key]
+        for rf_idxs, eta_threshold in zip(rf_idxs_arr, eta_threshold_arr):
+            eta_residual_idxs = []
+            for (i, j, k) in rf_idxs:
+                _, sources = stars_and_sources[i]
+                source = sources[j]
+                obj = source.zort_source.objects[k]
+                hmjd = obj.lightcurve.hmjd
+                mag = obj.lightcurve.mag
+                magerr = obj.lightcurve.magerr
+                eta_residual = calculate_eta_on_residuals(hmjd, mag, magerr)
+                if eta_residual is not None and eta_residual > eta_threshold:
+                    eta_residual_idxs.append((i, j, k))
+            eta_residual_idxs_dct[key].append(eta_residual_idxs)
+            num_objs_pass_eta_residual += len(eta_residual_idxs)
+            num_stars_pass_eta_residual += len(set([idx[0] for idx in eta_residual_idxs]))
 
     job_stats['num_objs_pass_eta_residual'] = num_objs_pass_eta_residual
     job_stats['num_stars_pass_eta_residual'] = num_stars_pass_eta_residual
 
-    return eta_residual_idxs_dct, eta_residual_dct
+    return eta_residual_idxs_dct
+
+
+def extract_final_idxs(eta_residual_idxs_dct, eta_threshold_dct):
+    final_idxs = []
+    for key in eta_residual_idxs_dct.keys():
+        eta_residual_idxs = eta_residual_idxs_dct[key]
+        eta_thresholds = eta_threshold_dct[key]
+        for eta_residual_idx, eta_threshold in zip(eta_residual_idxs, eta_thresholds):
+            for i, j, k in eta_residual_idx:
+                final_idxs.append((i, j, k, eta_threshold))
+    return final_idxs
+
 
 
 def assemble_candidates(stars_and_sources, eta_residual_idxs_dct, eta_threshold_dct):
@@ -295,81 +332,80 @@ def assemble_candidates(stars_and_sources, eta_residual_idxs_dct, eta_threshold_
     candidates = []
     source_ids = []
     best_fit_stats = []
-    for eta_residual_idxs in eta_residual_idxs_dct.values():
-        unique_star_idxs = list(set([i for i, _, _ in eta_residual_idxs]))
-        for star_idx in unique_star_idxs:
-            star, sources = stars_and_sources[star_idx]
-            source_obj_idxs = [(j, k) for i, j, k in eta_residual_idxs if i == star_idx]
-            num_objs_pass = len(source_obj_idxs)
 
-            n_days_arr = []
-            source_id_arr = []
-            filter_id_arr = []
-            for idx, (j, k) in enumerate(source_obj_idxs):
-                source = sources[j]
-                obj = source.zort_source.objects[k]
-                n_days = len(np.unique(np.floor(obj.lightcurve.hmjd)))
+    final_idxs = extract_final_idxs(eta_residual_idxs_dct, eta_threshold_dct)
+    unique_star_idxs = list(set([i for i, _, _, _ in final_idxs]))
+    for star_idx in unique_star_idxs:
+        star, sources = stars_and_sources[star_idx]
+        source_obj_idxs = [(j, k) for i, j, k, _ in final_idxs if i == star_idx]
+        eta_thresholds = [e for i, _, _, e in final_idxs if i == star_idx]
+        num_objs_pass = len(source_obj_idxs)
 
-                source_id_arr.append(source.id)
-                filter_id_arr.append(obj.filterid)
-                n_days_arr.append(n_days)
-
-            idx_best = int(np.argmax(n_days_arr))
-            j, k = source_obj_idxs[idx_best]
+        n_days_arr = []
+        source_id_arr = []
+        filter_id_arr = []
+        for idx, (j, k) in enumerate(source_obj_idxs):
             source = sources[j]
-            source_ids.append(source.id)
             obj = source.zort_source.objects[k]
+            n_days = len(np.unique(np.floor(obj.lightcurve.hmjd)))
 
-            key = (obj.fieldid, obj.filterid)
-            eta_threshold = eta_threshold_dct[key]
+            source_id_arr.append(source.id)
+            filter_id_arr.append(obj.filterid)
+            n_days_arr.append(n_days)
 
-            eta = calculate_eta(obj.lightcurve.mag)
-            rf_score_obj = catalog.query_ps1_psc(obj.ra, obj.dec,
-                                                 con=ulens_con)
-            if rf_score_obj is None:
-                rf_score = None
-            else:
-                rf_score = rf_score_obj.rf_score
-            hmjd = obj.lightcurve.hmjd
-            mag = obj.lightcurve.mag
-            magerr = obj.lightcurve.magerr
-            eta_residual = calculate_eta_on_residuals(hmjd, mag, magerr)
+        idx_best = int(np.argmax(n_days_arr))
+        eta_threshold_best = eta_thresholds[idx_best]
+        j, k = source_obj_idxs[idx_best]
+        source = sources[j]
+        source_ids.append(source.id)
+        obj = source.zort_source.objects[k]
 
-            fit_data = fit_event(hmjd, mag, magerr)
-            if fit_data:
-                t_0, t_E, f_0, f_1, chi_squared_delta, chi_squared_flat, a_type = fit_data
-            else:
-                t_0 = None
-                t_E = None
-                f_0 = None
-                f_1 = None
-                chi_squared_delta = None
-                chi_squared_flat = None
-                a_type = None
+        eta = calculate_eta(obj.lightcurve.mag)
+        rf_score_obj = catalog.query_ps1_psc(obj.ra, obj.dec,
+                                             con=ulens_con)
+        if rf_score_obj is None:
+            rf_score = None
+        else:
+            rf_score = rf_score_obj.rf_score
+        hmjd = obj.lightcurve.hmjd
+        mag = obj.lightcurve.mag
+        magerr = obj.lightcurve.magerr
+        eta_residual, fit_data = calculate_eta_on_residuals(hmjd, mag, magerr,
+                                                            return_fit_data=True)
+        if fit_data:
+            t_0, t_E, f_0, f_1, chi_squared_delta, chi_squared_flat, a_type = fit_data
+        else:
+            t_0 = None
+            t_E = None
+            f_0 = None
+            f_1 = None
+            chi_squared_delta = None
+            chi_squared_flat = None
+            a_type = None
 
-            cand = Candidate(id=star.id,
-                             source_id_arr=source_id_arr,
-                             filter_id_arr=filter_id_arr,
-                             ra=star.ra,
-                             dec=star.dec,
-                             ingest_job_id=star.ingest_job_id,
-                             eta_best=eta,
-                             rf_score_best=rf_score,
-                             eta_residual_best=eta_residual,
-                             eta_threshold_best=eta_threshold,
-                             t_E_best=t_E,
-                             t_0_best=t_0,
-                             f_0_best=f_0,
-                             f_1_best=f_1,
-                             a_type_best=a_type,
-                             chi_squared_flat_best=chi_squared_flat,
-                             chi_squared_delta_best=chi_squared_delta,
-                             idx_best=idx_best,
-                             num_objs_pass=num_objs_pass)
-            candidates.append(cand)
+        cand = Candidate(id=star.id,
+                         source_id_arr=source_id_arr,
+                         filter_id_arr=filter_id_arr,
+                         ra=star.ra,
+                         dec=star.dec,
+                         ingest_job_id=star.ingest_job_id,
+                         eta_best=eta,
+                         rf_score_best=rf_score,
+                         eta_residual_best=eta_residual,
+                         eta_threshold_best=eta_threshold_best,
+                         t_E_best=t_E,
+                         t_0_best=t_0,
+                         f_0_best=f_0,
+                         f_1_best=f_1,
+                         a_type_best=a_type,
+                         chi_squared_flat_best=chi_squared_flat,
+                         chi_squared_delta_best=chi_squared_delta,
+                         idx_best=idx_best,
+                         num_objs_pass=num_objs_pass)
+        candidates.append(cand)
 
-            fit_filter = obj.color
-            best_fit_stats.append((fit_filter, t_E, t_0, f_0, f_1, a_type, chi_squared_flat, chi_squared_delta))
+        fit_filter = obj.color
+        best_fit_stats.append((fit_filter, t_E, t_0, f_0, f_1, a_type, chi_squared_flat, chi_squared_delta))
 
     ulens_con.close()
     remove_db_id()
@@ -378,36 +414,40 @@ def assemble_candidates(stars_and_sources, eta_residual_idxs_dct, eta_threshold_
 
 
 def filter_stars_to_candidates(source_job_id, stars_and_sources,
-                               n_days_min=20):
+                               n_days_min=20, num_epochs_splits=3):
     job_stats = {}
     logger.info(f'Job {source_job_id}: Calculating eta')
-    eta_dct, idxs_dct = construct_eta_dct(stars_and_sources, job_stats,
-                                          n_days_min=n_days_min)
+    eta_dct, idxs_dct, n_epochs_dct = construct_eta_dct(stars_and_sources, job_stats,
+                                                        n_days_min=n_days_min)
     logger.info(f'Job {source_job_id}: '
                 f'{job_stats["num_stars"]} Stars | '
-                f'{job_stats["num_objs_pass_n_days"]} Stars Past Days Cuts | '
                 f'{job_stats["num_sources"]} Sources | '
-                f'{job_stats["num_objs"]} Objects')
+                f'{job_stats["num_objs"]} Objects | '
+                f'{job_stats["num_objs_pass_n_days"]} Objects Past Days Cuts')
 
-    eta_idxs_dct, eta_threshold_dct = construct_eta_idxs_dct(eta_dct, idxs_dct, job_stats)
+    eta_idxs_dct, eta_threshold_dct = construct_eta_idxs_dct(eta_dct, idxs_dct,
+                                                             n_epochs_dct, job_stats,
+                                                             n_days_min=n_days_min,
+                                                             num_epochs_splits=num_epochs_splits)
     logger.info(f'Job {source_job_id}: '
                 f'{job_stats["num_stars_pass_eta"]} stars pass eta cut | '
                 f'{job_stats["num_objs_pass_eta"]} objects pass eta cut')
 
-    rf_idxs_dct, rf_score_dct = construct_rf_idxs_dct(stars_and_sources, eta_idxs_dct, job_stats)
+    rf_idxs_dct = construct_rf_idxs_dct(stars_and_sources, eta_idxs_dct, job_stats)
     logger.info(f'Job {source_job_id}: '
                 f'{job_stats["num_stars_pass_rf"]} stars pass rf_score cut | '
                 f'{job_stats["num_objs_pass_rf"]} objects pass rf_score cut')
 
-    eta_residual_idxs_dct, eta_residual_dct = construct_eta_residual_idxs_dct(stars_and_sources,
-                                                                              eta_threshold_dct,
-                                                                              rf_idxs_dct, job_stats)
+    eta_residual_idxs_dct = construct_eta_residual_idxs_dct(stars_and_sources,
+                                                            eta_threshold_dct,
+                                                            rf_idxs_dct, job_stats)
     logger.info(f'Job {source_job_id}: '
                 f'{job_stats["num_stars_pass_eta_residual"]} source pass eta_residual cut | '
                 f'{job_stats["num_objs_pass_eta_residual"]} objects pass eta_residual cut')
 
     logger.info(f'Job {source_job_id}: Assembling candidates')
-    candidates, source_ids, best_fit_stats = assemble_candidates(stars_and_sources, eta_residual_idxs_dct, eta_threshold_dct)
+    candidates, source_ids, best_fit_stats = assemble_candidates(stars_and_sources, eta_residual_idxs_dct,
+                                                                 eta_threshold_dct)
 
     return candidates, job_stats, source_ids, best_fit_stats
 
@@ -481,7 +521,8 @@ def process_stars(shutdown_time=10, single_job=False):
                          'num_objs_pass_rf': 0,
                          'num_stars_pass_rf': 0,
                          'num_objs_pass_eta_residual': 0,
-                         'num_stars_pass_eta_residual': 0}
+                         'num_stars_pass_eta_residual': 0,
+                         'num_epochs_edges': {}}
 
         finish_job(source_job_id, job_stats)
         logger.info(f'Job {source_job_id}: Job complete')
