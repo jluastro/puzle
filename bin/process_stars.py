@@ -424,7 +424,7 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
     logger.info(f'Job {source_job_id}: Assembling candidates')
     candidates, source_ids, best_fit_stats = assemble_candidates(stars_and_sources, eta_residual_idxs_dct,
                                                                  eta_threshold_dct)
-
+    job_stats['num_candidates'] = len(candidates)
     job_stats['eta_thresholds'] = eta_threshold_dct
     return candidates, job_stats, source_ids, best_fit_stats
 
@@ -475,6 +475,7 @@ def finish_job(source_job_id, job_stats):
     job.num_stars_pass_eta_residual = job_stats['num_stars_pass_eta_residual']
     job.epoch_edges = job_stats['epoch_edges']
     job.eta_thresholds = job_stats['eta_thresholds']
+    job.num_candidates = job_stats['num_candidates']
     db.session.commit()
     db.session.close()
     remove_db_id()  # release permission for this db connection
@@ -524,7 +525,8 @@ def process_stars(shutdown_time=10, single_job=False):
                          'num_objs_pass_eta_residual': 0,
                          'num_stars_pass_eta_residual': 0,
                          'epoch_edges': {},
-                         'eta_thresholds': {}}
+                         'eta_thresholds': {},
+                         'num_candidates': 0}
 
         finish_job(source_job_id, job_stats)
         logger.info(f'Job {source_job_id}: Job complete')
