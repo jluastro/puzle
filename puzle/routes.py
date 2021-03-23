@@ -274,7 +274,7 @@ def radial_search():
             order_by_cond = Candidate.chi_squared_delta_best.desc()
         cands = Candidate.query.\
             filter(Candidate.cone_search(ra, dec, radius)).\
-            order_by(Candidate.num_objs_pass.decs(), order_by_cond).\
+            order_by(Candidate.num_objs_pass.desc(), order_by_cond).\
             paginate(page, app.config['SOURCES_PER_PAGE'], False)
         next_url = url_for('candidates', page=cands.next_num) \
             if cands.has_next else None
