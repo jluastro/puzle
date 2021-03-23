@@ -18,7 +18,7 @@
                     {% for source in sources.items %}
                         <p>
                         <hr>
-                        <img src="{{ url_for('static', filename='source/') }}{{ source.id }}/lightcurve.png" width="300"> <a href="{{ url_for('source', sourceid=source.id) }}">Source {{ source.id }}</a>
+                        <img src="{{ url_for('static', filename='source/') }}{{ source.id.split('_')[0] }}/{{ source.id }}_lightcurve.png"> <a href="{{ url_for('source', sourceid=source.id) }}">Source {{ source.id }}</a>
                         </p>
                     {% endfor %}
                 </tr>

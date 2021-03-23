@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, \
-    SubmitField, TextAreaField, FloatField
+    SubmitField, TextAreaField, FloatField, RadioField
 from wtforms.validators import ValidationError, DataRequired, \
     Email, EqualTo, Length, NumberRange, Optional
 from puzle.models import User
@@ -85,7 +85,43 @@ class RadialSearchForm(FlaskForm):
                       validators=[Optional(), NumberRange(min=-90, max=90)])
     radius = FloatField('radius (arcseconds)',
                         validators=[DataRequired()])
+    order_by = RadioField(choices=[('eta_best', 'Order results by eta ascending'),
+                                  ('chi_squared_delta_best', 'Order results by chi_squared_delta desc')],
+                          default='eta_best')
+    order_by_num_objs = BooleanField('Order by number of objects descending', default=True)
     submit = SubmitField('Search')
+
+
+class FilterSearchForm(FlaskForm):
+    num_objs_pass_min = FloatField('num_objs_pass min',
+                                   validators=[Optional(), NumberRange(min=1)])
+    num_objs_pass_max = FloatField('num_objs_pass max',
+                                   validators=[Optional(), NumberRange(min=1)])
+    t_E_best_min = FloatField('t_E_best min (days)',
+                              validators=[Optional(), NumberRange(min=0)])
+    t_E_best_max = FloatField('t_E_best max (days)',
+                              validators=[Optional(), NumberRange(min=0)])
+    chi_squared_delta_best_min = FloatField('chi_squared_delta_best min',
+                                            validators=[Optional(), NumberRange(min=0)])
+    chi_squared_delta_best_max = FloatField('chi_squared_delta_best max',
+                                            validators=[Optional(), NumberRange(min=0)])
+    rf_score_best_min = FloatField('rf_score_best min',
+                                   validators=[Optional(), NumberRange(min=0)])
+    rf_score_best_max = FloatField('rf_score_best max',
+                                   validators=[Optional(), NumberRange(min=0)])
+    order_by = RadioField(choices=[('eta_best', 'Order results by eta ascending'),
+                                  ('chi_squared_delta_best', 'Order results by chi_squared_delta desc')],
+                          default='eta_best')
+    order_by_num_objs = BooleanField('Order by number of objects descending', default=True)
+    submit = SubmitField('Search')
+
+
+class CandidateOrderForm(FlaskForm):
+    order_by = RadioField(choices=[('eta_best', 'Re-order candidates by eta ascending'),
+                                  ('chi_squared_delta_best', 'Re-order candidates by chi_squared_delta desc')],
+                          default='eta_best')
+    order_by_num_objs = BooleanField('Order by number of objects descending', default=True)
+    submit = SubmitField('Order By')
 
 
 class EmptyForm(FlaskForm):

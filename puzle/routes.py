@@ -7,7 +7,8 @@ import astropy.units as u
 from puzle import app, db
 from puzle.forms import LoginForm, RegistrationForm, \
     EditProfileForm, ResetPasswordRequestForm, ResetPasswordForm, \
-    EditSourceCommentForm, RadialSearchForm, EmptyForm
+    EditSourceCommentForm, RadialSearchForm, EmptyForm, \
+    FilterSearchForm, CandidateOrderForm
 from puzle.models import User, Source, Candidate
 from puzle.email import send_password_reset_email
 
@@ -217,32 +218,48 @@ def sources():
 @app.route('/candidates', methods=['GET', 'POST'])
 @login_required
 def candidates():
+    form = CandidateOrderForm()
+    if form.validate_on_submit():
+        if form.order_by.data == 'eta_best':
+            order_by_cond = Candidate.eta_best.asc()
+        elif form.order_by.data == 'chi_squared_delta_best':
+            order_by_cond = Candidate.chi_squared_delta_best.desc()
+    else:
+        order_by_cond = Candidate.eta_best.asc()
+
+    query = Candidate.query
+    if form.order_by_num_objs.data:
+        query = query.order_by(Candidate.num_objs_pass.desc(), order_by_cond)
+    else:
+        query = query.order_by(order_by_cond)
+
     page = request.args.get('page', 1, type=int)
-    cands = Candidate.query.\
-        order_by(Candidate.num_objs_pass.desc(), Candidate.chi_squared_delta_best.desc()).\
-        paginate(page, app.config['SOURCES_PER_PAGE'], False)
+    cands = query.paginate(page, app.config['SOURCES_PER_PAGE'], False)
     next_url = url_for('candidates', page=cands.next_num) \
         if cands.has_next else None
     prev_url = url_for('candidates', page=cands.prev_num) \
         if cands.has_prev else None
+
+    flash('Browse Candidate', 'info')
     return render_template('candidates.html', cands=cands,
                            next_url=next_url, prev_url=prev_url,
                            title='PUZLE candidates', zip=zip,
-                           paginate=True)
+                           paginate=True, form=form)
 
 
 @app.route('/radial_search', methods=['GET', 'POST'])
 @login_required
 def radial_search():
-    form = RadialSearchForm()
-    radius = form.radius.data
-    if form.validate_on_submit():
-        if form.ra.data and form.dec.data:
-            ra, dec = form.ra.data, form.dec.data
+    form_filter = RadialSearchForm()
+    form_cand = CandidateOrderForm()
+    radius = form_filter.radius.data
+    if form_filter.validate_on_submit():
+        if form_filter.ra.data and form_filter.dec.data:
+            ra, dec = form_filter.ra.data, form_filter.dec.data
             flash('Searching (ra, dec, radius) = (%.5f, %.5f, %.2f)' % (ra, dec, radius),
                   'info')
-        elif form.glon.data and form.glat.data:
-            glon, glat = form.glon.data, form.glat.data
+        elif form_filter.glon.data and form_filter.glat.data:
+            glon, glat = form_filter.glon.data, form_filter.glat.data
             flash('Searching (glon, glat, radius) = (%.5f, %.5f, %.2f)' % (glon, glat, radius),
                   'info')
             coord = SkyCoord(glon, glat,
@@ -255,16 +272,84 @@ def radial_search():
                   'must be entered.', 'danger')
             return redirect(url_for('radial_search'))
 
+        if form_filter.order_by.data == 'eta_best':
+            order_by_cond = Candidate.eta_best.asc()
+        elif form_filter.order_by.data == 'chi_squared_delta_best':
+            order_by_cond = Candidate.chi_squared_delta_best.desc()
+
+        query = Candidate.query.filter(Candidate.cone_search(ra, dec, radius))
+        if form_filter.order_by_num_objs.data:
+            query = query.order_by(Candidate.num_objs_pass.desc(), order_by_cond)
+        else:
+            query = query.order_by(order_by_cond)
+
         page = request.args.get('page', 1, type=int)
-        cands = db.session.query(Candidate).\
-            filter(Candidate.cone_search(ra, dec, radius)).\
-            paginate(page, app.config['SOURCES_PER_PAGE'], False)
+        cands = query.paginate(page, app.config['SOURCES_PER_PAGE'], False)
         next_url = url_for('candidates', page=cands.next_num) \
             if cands.has_next else None
         prev_url = url_for('candidates', page=cands.prev_num) \
             if cands.has_prev else None
+
+        flash('Filter Search Results', 'info')
         return render_template('candidates.html', cands=cands,
                                next_url=next_url, prev_url=prev_url,
-                               title='PUZLE candidates', zip=zip,
-                               paginate=True)
-    return render_template('radial_search.html', form=form, title='PUZLE search')
+                               title='Filter Search Results', zip=zip,
+                               paginate=True, form=form_cand)
+
+    return render_template('radial_search.html', form=form_filter,
+                           title='Radial Search')
+
+
+@app.route('/filter_search', methods=['GET', 'POST'])
+@login_required
+def filter_search():
+
+    def _append_query(query, field, val_min, val_max):
+        if val_min and val_max:
+            if val_min > val_max:
+                flash(f'{field} minimum must be less than {field} maximum', 'danger')
+                return None
+        if val_min:
+            query = query.filter(getattr(Candidate, field) >= val_min)
+        if val_max:
+            query = query.filter(getattr(Candidate, field) <= val_max)
+        return query
+
+    form_filter = FilterSearchForm()
+    form_cand = CandidateOrderForm()
+    if form_filter.validate_on_submit():
+        query = Candidate.query
+
+        for field in ['num_objs_pass', 't_E_best',
+                      'chi_squared_delta_best', 'rf_score_best']:
+            val_min = getattr(form_filter, f'{field}_min').data
+            val_max = getattr(form_filter, f'{field}_max').data
+            query = _append_query(query, field, val_min, val_max)
+            if query is None:
+                return redirect(url_for('filter_search'))
+
+        if form_filter.order_by.data == 'eta_best':
+            order_by_cond = Candidate.eta_best.asc()
+        elif form_filter.order_by.data == 'chi_squared_delta_best':
+            order_by_cond = Candidate.chi_squared_delta_best.desc()
+
+        if form_filter.order_by_num_objs.data:
+            query = query.order_by(Candidate.num_objs_pass.desc(), order_by_cond)
+        else:
+            query = query.order_by(order_by_cond)
+
+        page = request.args.get('page', 1, type=int)
+        cands = query.paginate(page, app.config['SOURCES_PER_PAGE'], False)
+        next_url = url_for('candidates', page=cands.next_num) \
+            if cands.has_next else None
+        prev_url = url_for('candidates', page=cands.prev_num) \
+            if cands.has_prev else None
+
+        flash('Filter Search Results', 'info')
+        return render_template('candidates.html', cands=cands,
+                               next_url=next_url, prev_url=prev_url,
+                               title='Filter Search Results', zip=zip,
+                               paginate=True, form=form_cand)
+
+    return render_template('filter_search.html', form=form_filter,
+                           title='Filter Search')

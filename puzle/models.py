@@ -242,11 +242,12 @@ class Source(db.Model):
         return source
 
     def load_lightcurve_plot(self):
-        folder = f'puzle/static/source/{self.id}'
+        job_id = self.id.split('_')[0]
+        folder = f'puzle/static/source/{job_id}'
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-        lightcurve_plot_filename = f'{folder}/lightcurve.png'
+        lightcurve_plot_filename = f'{folder}/{self.id}_lightcurve.png'
         if not os.path.exists(lightcurve_plot_filename):
             if self.fit_t_0:
                 model_params = {
