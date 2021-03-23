@@ -13,8 +13,8 @@ from collections import defaultdict
 from puzle.models import Source, StarIngestJob, Star, StarProcessJob, Candidate
 from puzle.utils import fetch_job_enddate, return_DR4_dir
 from puzle.ulensdb import insert_db_id, remove_db_id
-from puzle.stats import calculate_eta, \
-    calculate_eta_on_residuals, RF_THRESHOLD
+from puzle.stats import calculate_eta, calculate_eta_on_daily_avg, \
+    calculate_eta_on_residuals, RF_THRESHOLD, calculate_eta_on_daily_avg_residuals
 from puzle import catalog
 from puzle import db
 
@@ -121,6 +121,9 @@ def construct_eta_dct(stars_and_sources, job_stats, n_days_min=20):
     idxs_dct = defaultdict(list)
     eta_dct = defaultdict(list)
     n_epochs_dct = defaultdict(list)
+    eta_arr = []
+    eta_daily_avg_arr = []
+    obj_arr = []
     for i, (star, sources) in enumerate(stars_and_sources):
         num_stars += 1
         for j, source in enumerate(sources):
@@ -132,6 +135,12 @@ def construct_eta_dct(stars_and_sources, job_stats, n_days_min=20):
                     continue
                 num_objs_pass_n_days += 1
                 eta = calculate_eta(obj.lightcurve.mag)
+                eta_daily_avg = calculate_eta_on_daily_avg(obj.lightcurve.hmjd,
+                                                           obj.lightcurve.mag)
+                eta_arr.append(eta)
+                eta_daily_avg_arr.append(eta_daily_avg)
+                obj_arr.append(obj)
+
                 key = '%i_%i' % (obj.fieldid, obj.filterid)
                 idxs_dct[key].append((i, j, k))
                 eta_dct[key].append(eta)
@@ -164,7 +173,7 @@ def construct_eta_idxs_dct(eta_dct, idxs_dct, n_epochs_dct, job_stats,
                                                                    arr_min=n_days_min,
                                                                    arr_max=n_epochs_max+1,
                                                                    num_splits=i)
-            except ValueError as e:
+            except ValueError:
                 pass
             else:
                 break
@@ -238,6 +247,7 @@ def construct_rf_idxs_dct(stars_and_sources, eta_idxs_dct, job_stats):
     insert_db_id()
     ulens_con = catalog.ulens_con()
     rf_idxs_dct = defaultdict(list)
+    rf_score_arr = []
     for key, eta_idxs in eta_idxs_dct.items():
         for eta_idx in eta_idxs:
             rf_idxs = []
@@ -249,6 +259,10 @@ def construct_rf_idxs_dct(stars_and_sources, eta_idxs_dct, job_stats):
                                                  con=ulens_con)
                 if rf_score is None or rf_score.rf_score >= RF_THRESHOLD:
                     rf_idxs.append((i, j, k))
+                if rf_score is None:
+                    rf_score_arr.append(0)
+                else:
+                    rf_score_arr.append(rf_score.rf_score)
             rf_idxs_dct[key].append(rf_idxs)
 
             num_objs_pass_rf += len(rf_idxs)
@@ -278,7 +292,7 @@ def construct_eta_residual_idxs_dct(stars_and_sources, eta_threshold_dct, rf_idx
                 hmjd = obj.lightcurve.hmjd
                 mag = obj.lightcurve.mag
                 magerr = obj.lightcurve.magerr
-                eta_residual = calculate_eta_on_residuals(hmjd, mag, magerr)
+                eta_residual = calculate_eta_on_daily_avg_residuals(hmjd, mag, magerr)
                 if eta_residual is not None and eta_residual > eta_threshold:
                     eta_residual_idxs.append((i, j, k))
             eta_residual_idxs_dct[key].append(eta_residual_idxs)
@@ -336,7 +350,7 @@ def assemble_candidates(stars_and_sources, eta_residual_idxs_dct, eta_threshold_
         source_ids.append(source.id)
         obj = source.zort_source.objects[k]
 
-        eta = calculate_eta(obj.lightcurve.mag)
+        eta = calculate_eta_on_daily_avg(obj.lightcurve.mag)
         rf_score_obj = catalog.query_ps1_psc(obj.ra, obj.dec,
                                              con=ulens_con)
         if rf_score_obj is None:
@@ -346,8 +360,8 @@ def assemble_candidates(stars_and_sources, eta_residual_idxs_dct, eta_threshold_
         hmjd = obj.lightcurve.hmjd
         mag = obj.lightcurve.mag
         magerr = obj.lightcurve.magerr
-        eta_residual, fit_data = calculate_eta_on_residuals(hmjd, mag, magerr,
-                                                            return_fit_data=True)
+        eta_residual, fit_data = calculate_eta_on_daily_avg_residuals(hmjd, mag, magerr,
+                                                                      return_fit_data=True)
         if fit_data:
             t_0, t_E, f_0, f_1, chi_squared_delta, chi_squared_flat, a_type = fit_data
         else:

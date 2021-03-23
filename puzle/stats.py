@@ -195,6 +195,37 @@ def calculate_eta(mag):
     return eta
 
 
+def average_xy_on_round_x(x, y):
+    # assumes that x is ordered
+    x_round = np.round(x)
+    x_avg = []
+    y_avg = []
+    for i in range(len(x)):
+        if i == 0 or len(x_window) == 0:
+            x_window = [x[i]]
+            y_window = [y[i]]
+        elif x_round[i] == x_prev:
+            x_window.append(x[i])
+            y_window.append(y[i])
+        else:
+            x_avg.append(np.mean(x_window))
+            y_avg.append(np.mean(y_window))
+            x_window = [x[i]]
+            y_window = [y[i]]
+
+        x_prev = x_round[i]
+
+    x_avg.append(np.mean(x_window))
+    y_avg.append(np.mean(y_window))
+
+    return np.array(x_avg), np.array(y_avg)
+
+
+def calculate_eta_on_daily_avg(hmjd, mag):
+    _, mag_round = average_xy_on_round_x(hmjd, mag)
+    return calculate_eta(mag_round)
+
+
 def calculate_J(mag, magerr):
     n = len(mag)
     mag_mean = np.mean(mag)
@@ -241,6 +272,14 @@ def calculate_eta_on_residuals(t_obs_arr, mag_arr, magerr_arr,
         return eta, fit_data
     else:
         return eta
+
+
+def calculate_eta_on_daily_avg_residuals(t_obs_arr, mag_arr, magerr_arr,
+                                         return_fit_data=False):
+    t_avg, mag_avg = average_xy_on_round_x(t_obs_arr, mag_arr)
+    _, magerr_avg = average_xy_on_round_x(t_obs_arr, magerr_arr)
+    return calculate_eta_on_residuals(t_avg, mag_avg, magerr_avg,
+                                      return_fit_data=return_fit_data)
 
 
 def _calculate_eta_arr(size, sigma=1,
