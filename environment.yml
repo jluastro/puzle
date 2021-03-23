@@ -21,9 +21,10 @@ dependencies:
   - astropy
   - requests
   - ipython
+  - matplotlib
   - pip
   - pip:
-      - zort
       - filelock
       - python-dotenv
+      - shapely
 prefix: /Users/michael/miniconda3/envs/puzle

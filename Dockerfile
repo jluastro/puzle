@@ -33,6 +33,9 @@ RUN mkdir /home/puzle/logs &&\
 ENV XDG_CACHE_HOME /home/puzle/astropy_cache
 ENV XDG_CONFIG_HOME /home/puzle/astropy_config
 
+RUN cd /home && git clone https://github.com/MichaelMedford/zort.git && cd /home/zort && git checkout 6455cd192
+ENV PYTHONPATH /home/zort:$PYTHONPATH
+
 ENV MPLCONFIGDIR /tmp/
 ENV FLASK_APP puzleapp.py
 USER puzle
