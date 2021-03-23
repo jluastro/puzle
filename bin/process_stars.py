@@ -256,14 +256,13 @@ def construct_rf_idxs_dct(stars_and_sources, eta_idxs_dct, job_stats, obj_data):
                 obj = source.zort_source.objects[k]
                 rf_score = catalog.query_ps1_psc(obj.ra, obj.dec,
                                                  con=ulens_con)
-                if rf_score is None or rf_score.rf_score >= RF_THRESHOLD:
+                if rf_score is None:
+                    rf_idxs.append((i, j, k))
+                elif rf_score.rf_score >= RF_THRESHOLD:
+                    obj_key = (i, j, k)
+                    obj_data[obj_key] = obj_data[obj_key]._replace(rf_score=rf_score.rf_score)
                     rf_idxs.append((i, j, k))
 
-                obj_key = (i, j, k)
-                if rf_score is None:
-                    obj_data[obj_key] = obj_data[obj_key]._replace(rf_score=0)
-                else:
-                    obj_data[obj_key] = obj_data[obj_key]._replace(rf_score=rf_score.rf_score)
             rf_idxs_dct[key].append(rf_idxs)
 
             num_objs_pass_rf += len(rf_idxs)
