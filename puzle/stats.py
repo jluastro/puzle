@@ -259,7 +259,10 @@ def calculate_eta_on_residuals(t_obs_arr, mag_arr, magerr_arr,
                                return_fit_data=False):
     fit_data = fit_event(t_obs_arr, mag_arr, magerr_arr)
     if fit_data is None:
-        return None
+        if return_fit_data:
+            return None, None
+        else:
+            return None
     t0, t_eff, f0, f1, _, _, a_type = fit_data
     flux_model_arr = return_flux_model(t_obs_arr, t0, t_eff, a_type, f0, f1)
 
