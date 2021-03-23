@@ -219,7 +219,7 @@ def sources():
 def candidates():
     page = request.args.get('page', 1, type=int)
     cands = Candidate.query.\
-        order_by(Candidate.num_objs_pass.desc(), Candidate.chi_squared_delta_best.desc()).\
+        order_by(Candidate.num_objs_pass.desc(), Candidate.eta_best.asc()).\
         paginate(page, app.config['SOURCES_PER_PAGE'], False)
     next_url = url_for('candidates', page=cands.next_num) \
         if cands.has_next else None
