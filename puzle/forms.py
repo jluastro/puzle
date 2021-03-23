@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, \
-    SubmitField, TextAreaField, FloatField
+    SubmitField, TextAreaField, FloatField, RadioField
 from wtforms.validators import ValidationError, DataRequired, \
     Email, EqualTo, Length, NumberRange, Optional
 from puzle.models import User
@@ -85,6 +85,9 @@ class RadialSearchForm(FlaskForm):
                       validators=[Optional(), NumberRange(min=-90, max=90)])
     radius = FloatField('radius (arcseconds)',
                         validators=[DataRequired()])
+    order_by = RadioField(choices=[('eta_best', 'Order results by eta ascending'),
+                                  ('chi_squared_delta_best', 'Order results by chi_squared_delta desc')],
+                          default='eta_best')
     submit = SubmitField('Search')
 
 
@@ -105,7 +108,17 @@ class FilterSearchForm(FlaskForm):
                                    validators=[Optional(), NumberRange(min=0)])
     rf_score_best_max = FloatField('rf_score_best max',
                                    validators=[Optional(), NumberRange(min=0)])
+    order_by = RadioField(choices=[('eta_best', 'Order results by eta ascending'),
+                                  ('chi_squared_delta_best', 'Order results by chi_squared_delta desc')],
+                          default='eta_best')
     submit = SubmitField('Search')
+
+
+class CandidateOrderForm(FlaskForm):
+    order_by = RadioField(choices=[('eta_best', 'Re-order candidates by eta ascending'),
+                                  ('chi_squared_delta_best', 'Re-order candidates by chi_squared_delta desc')],
+                          default='eta_best')
+    submit = SubmitField('Order By')
 
 
 class EmptyForm(FlaskForm):

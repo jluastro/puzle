@@ -7,7 +7,8 @@ import astropy.units as u
 from puzle import app, db
 from puzle.forms import LoginForm, RegistrationForm, \
     EditProfileForm, ResetPasswordRequestForm, ResetPasswordForm, \
-    EditSourceCommentForm, RadialSearchForm, EmptyForm, FilterSearchForm
+    EditSourceCommentForm, RadialSearchForm, EmptyForm, \
+    FilterSearchForm, CandidateOrderForm
 from puzle.models import User, Source, Candidate
 from puzle.email import send_password_reset_email
 
@@ -217,9 +218,14 @@ def sources():
 @app.route('/candidates', methods=['GET', 'POST'])
 @login_required
 def candidates():
+    form = CandidateOrderForm()
+    if form.order_by.data == 'eta_best':
+        order_by_cond = Candidate.eta_best.asc()
+    elif form.order_by.data == 'chi_squared_delta_best':
+        order_by_cond = Candidate.chi_squared_delta_best.desc()
     page = request.args.get('page', 1, type=int)
     cands = Candidate.query.\
-        order_by(Candidate.num_objs_pass.desc(), Candidate.eta_best.asc()).\
+        order_by(Candidate.num_objs_pass.desc(), order_by_cond).\
         paginate(page, app.config['SOURCES_PER_PAGE'], False)
     next_url = url_for('candidates', page=cands.next_num) \
         if cands.has_next else None
@@ -228,7 +234,7 @@ def candidates():
     return render_template('candidates.html', cands=cands,
                            next_url=next_url, prev_url=prev_url,
                            title='PUZLE candidates', zip=zip,
-                           paginate=True)
+                           paginate=True, form=form)
 
 
 @app.route('/radial_search', methods=['GET', 'POST'])
@@ -256,8 +262,14 @@ def radial_search():
             return redirect(url_for('radial_search'))
 
         page = request.args.get('page', 1, type=int)
-        cands = db.session.query(Candidate).\
+
+        if form.order_by.data == 'eta_best':
+            order_by_cond = Candidate.eta_best.asc()
+        elif form.order_by.data == 'chi_squared_delta_best':
+            order_by_cond = Candidate.chi_squared_delta_best.desc()
+        cands = Candidate.query.\
             filter(Candidate.cone_search(ra, dec, radius)).\
+            order_by(Candidate.num_objs_pass.decs(), order_by_cond).\
             paginate(page, app.config['SOURCES_PER_PAGE'], False)
         next_url = url_for('candidates', page=cands.next_num) \
             if cands.has_next else None
@@ -287,7 +299,7 @@ def filter_search():
 
     form = FilterSearchForm()
     if form.validate_on_submit():
-        query = db.session.query(Candidate)
+        query = Candidate.query
 
         for field in ['num_objs_pass', 't_E_best',
                       'chi_squared_delta_best', 'rf_score_best']:
@@ -297,15 +309,21 @@ def filter_search():
             if query is None:
                 return redirect(url_for('filter_search'))
 
-        print(query)
+        if form.order_by.data == 'eta_best':
+            order_by_cond = Candidate.eta_best.asc()
+        elif form.order_by.data == 'chi_squared_delta_best':
+            order_by_cond = Candidate.chi_squared_delta_best.desc()
+
         page = request.args.get('page', 1, type=int)
-        cands = query.paginate(page, app.config['SOURCES_PER_PAGE'], False)
+        cands = query.order_by(Candidate.num_objs_pass.desc(), order_by_cond).\
+            paginate(page, app.config['SOURCES_PER_PAGE'], False)
         next_url = url_for('candidates', page=cands.next_num) \
             if cands.has_next else None
         prev_url = url_for('candidates', page=cands.prev_num) \
             if cands.has_prev else None
+        form_cand = CandidateOrderForm()
         return render_template('candidates.html', cands=cands,
                                next_url=next_url, prev_url=prev_url,
                                title='PUZLE candidates', zip=zip,
-                               paginate=True)
+                               paginate=True, form=form_cand)
     return render_template('filter_search.html', form=form, title='PUZLE search')
