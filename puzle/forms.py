@@ -88,5 +88,25 @@ class RadialSearchForm(FlaskForm):
     submit = SubmitField('Search')
 
 
+class FilterSearchForm(FlaskForm):
+    num_objs_pass_min = FloatField('num_objs_pass min',
+                                   validators=[Optional(), NumberRange(min=1)])
+    num_objs_pass_max = FloatField('num_objs_pass max',
+                                   validators=[Optional(), NumberRange(min=1)])
+    t_E_best_min = FloatField('t_E_best min (days)',
+                              validators=[Optional(), NumberRange(min=0)])
+    t_E_best_max = FloatField('t_E_best max (days)',
+                              validators=[Optional(), NumberRange(min=0)])
+    chi_squared_delta_best_min = FloatField('chi_squared_delta_best min',
+                                            validators=[Optional(), NumberRange(min=0)])
+    chi_squared_delta_best_max = FloatField('chi_squared_delta_best max',
+                                            validators=[Optional(), NumberRange(min=0)])
+    rf_score_best_min = FloatField('rf_score_best min',
+                                   validators=[Optional(), NumberRange(min=0)])
+    rf_score_best_max = FloatField('rf_score_best max',
+                                   validators=[Optional(), NumberRange(min=0)])
+    submit = SubmitField('Search')
+
+
 class EmptyForm(FlaskForm):
     submit = SubmitField('Submit')

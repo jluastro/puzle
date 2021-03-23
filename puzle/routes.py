@@ -7,7 +7,7 @@ import astropy.units as u
 from puzle import app, db
 from puzle.forms import LoginForm, RegistrationForm, \
     EditProfileForm, ResetPasswordRequestForm, ResetPasswordForm, \
-    EditSourceCommentForm, RadialSearchForm, EmptyForm
+    EditSourceCommentForm, RadialSearchForm, EmptyForm, FilterSearchForm
 from puzle.models import User, Source, Candidate
 from puzle.email import send_password_reset_email
 
@@ -268,3 +268,44 @@ def radial_search():
                                title='PUZLE candidates', zip=zip,
                                paginate=True)
     return render_template('radial_search.html', form=form, title='PUZLE search')
+
+
+@app.route('/filter_search', methods=['GET', 'POST'])
+@login_required
+def filter_search():
+
+    def _append_query(query, field, val_min, val_max):
+        if val_min and val_max:
+            if val_min > val_max:
+                flash(f'{field} minimum must be less than {field} maximum', 'danger')
+                return None
+        if val_min:
+            query = query.filter(getattr(Candidate, field) >= val_min)
+        if val_max:
+            query = query.filter(getattr(Candidate, field) <= val_max)
+        return query
+
+    form = FilterSearchForm()
+    if form.validate_on_submit():
+        query = db.session.query(Candidate)
+
+        for field in ['num_objs_pass', 't_E_best',
+                      'chi_squared_delta_best', 'rf_score_best']:
+            val_min = getattr(form, f'{field}_min').data
+            val_max = getattr(form, f'{field}_max').data
+            query = _append_query(query, field, val_min, val_max)
+            if query is None:
+                return redirect(url_for('filter_search'))
+
+        print(query)
+        page = request.args.get('page', 1, type=int)
+        cands = query.paginate(page, app.config['SOURCES_PER_PAGE'], False)
+        next_url = url_for('candidates', page=cands.next_num) \
+            if cands.has_next else None
+        prev_url = url_for('candidates', page=cands.prev_num) \
+            if cands.has_prev else None
+        return render_template('candidates.html', cands=cands,
+                               next_url=next_url, prev_url=prev_url,
+                               title='PUZLE candidates', zip=zip,
+                               paginate=True)
+    return render_template('filter_search.html', form=form, title='PUZLE search')
