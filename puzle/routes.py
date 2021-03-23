@@ -219,10 +219,13 @@ def sources():
 @login_required
 def candidates():
     form = CandidateOrderForm()
-    if form.order_by.data == 'eta_best':
+    if form.validate_on_submit():
+        if form.order_by.data == 'eta_best':
+            order_by_cond = Candidate.eta_best.asc()
+        elif form.order_by.data == 'chi_squared_delta_best':
+            order_by_cond = Candidate.chi_squared_delta_best.desc()
+    else:
         order_by_cond = Candidate.eta_best.asc()
-    elif form.order_by.data == 'chi_squared_delta_best':
-        order_by_cond = Candidate.chi_squared_delta_best.desc()
     page = request.args.get('page', 1, type=int)
     cands = Candidate.query.\
         order_by(Candidate.num_objs_pass.desc(), order_by_cond).\
@@ -231,6 +234,8 @@ def candidates():
         if cands.has_next else None
     prev_url = url_for('candidates', page=cands.prev_num) \
         if cands.has_prev else None
+
+    flash('Browse Candidate', 'info')
     return render_template('candidates.html', cands=cands,
                            next_url=next_url, prev_url=prev_url,
                            title='PUZLE candidates', zip=zip,
@@ -275,11 +280,15 @@ def radial_search():
             if cands.has_next else None
         prev_url = url_for('candidates', page=cands.prev_num) \
             if cands.has_prev else None
+
+        flash('Radial Search Results', 'info')
         return render_template('candidates.html', cands=cands,
                                next_url=next_url, prev_url=prev_url,
-                               title='PUZLE candidates', zip=zip,
+                               title='Radial Search Results', zip=zip,
                                paginate=True)
-    return render_template('radial_search.html', form=form, title='PUZLE search')
+
+    return render_template('radial_search.html', form=form,
+                           title='Radial Search')
 
 
 @app.route('/filter_search', methods=['GET', 'POST'])
@@ -297,21 +306,22 @@ def filter_search():
             query = query.filter(getattr(Candidate, field) <= val_max)
         return query
 
-    form = FilterSearchForm()
-    if form.validate_on_submit():
+    form_filter = FilterSearchForm()
+    form_cand = CandidateOrderForm()
+    if form_filter.validate_on_submit():
         query = Candidate.query
 
         for field in ['num_objs_pass', 't_E_best',
                       'chi_squared_delta_best', 'rf_score_best']:
-            val_min = getattr(form, f'{field}_min').data
-            val_max = getattr(form, f'{field}_max').data
+            val_min = getattr(form_filter, f'{field}_min').data
+            val_max = getattr(form_filter, f'{field}_max').data
             query = _append_query(query, field, val_min, val_max)
             if query is None:
                 return redirect(url_for('filter_search'))
 
-        if form.order_by.data == 'eta_best':
+        if form_filter.order_by.data == 'eta_best':
             order_by_cond = Candidate.eta_best.asc()
-        elif form.order_by.data == 'chi_squared_delta_best':
+        elif form_filter.order_by.data == 'chi_squared_delta_best':
             order_by_cond = Candidate.chi_squared_delta_best.desc()
 
         page = request.args.get('page', 1, type=int)
@@ -321,9 +331,12 @@ def filter_search():
             if cands.has_next else None
         prev_url = url_for('candidates', page=cands.prev_num) \
             if cands.has_prev else None
-        form_cand = CandidateOrderForm()
+
+        flash('Filter Search Results', 'info')
         return render_template('candidates.html', cands=cands,
                                next_url=next_url, prev_url=prev_url,
-                               title='PUZLE candidates', zip=zip,
+                               title='Filter Search Results', zip=zip,
                                paginate=True, form=form_cand)
-    return render_template('filter_search.html', form=form, title='PUZLE search')
+
+    return render_template('filter_search.html', form=form_filter,
+                           title='Filter Search')
