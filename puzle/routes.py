@@ -321,7 +321,8 @@ def filter_search():
         query = Candidate.query
 
         for field in ['num_objs_pass', 't_E_best',
-                      'chi_squared_delta_best', 'rf_score_best']:
+                      'chi_squared_delta_best', 'rf_score_best',
+                      'eta_best']:
             val_min = getattr(form_filter, f'{field}_min').data
             val_max = getattr(form_filter, f'{field}_max').data
             query = _append_query(query, field, val_min, val_max)

@@ -106,9 +106,13 @@ class FilterSearchForm(FlaskForm):
     chi_squared_delta_best_max = FloatField('chi_squared_delta_best max',
                                             validators=[Optional(), NumberRange(min=0)])
     rf_score_best_min = FloatField('rf_score_best min',
-                                   validators=[Optional(), NumberRange(min=0)])
+                                   validators=[Optional(), NumberRange(min=0, max=1)])
     rf_score_best_max = FloatField('rf_score_best max',
-                                   validators=[Optional(), NumberRange(min=0)])
+                                   validators=[Optional(), NumberRange(min=0, max=1)])
+    eta_best_min = FloatField('eta_best min',
+                              validators=[Optional(), NumberRange(min=0)])
+    eta_best_max = FloatField('eta_best max',
+                              validators=[Optional(), NumberRange(min=0)])
     order_by = RadioField(choices=[('eta_best', 'Order results by eta ascending'),
                                   ('chi_squared_delta_best', 'Order results by chi_squared_delta desc')],
                           default='eta_best')
