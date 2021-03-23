@@ -246,6 +246,7 @@ def candidates():
 @login_required
 def radial_search():
     form = RadialSearchForm()
+    form_cand = CandidateOrderForm()
     radius = form.radius.data
     if form.validate_on_submit():
         if form.ra.data and form.dec.data:
@@ -281,11 +282,11 @@ def radial_search():
         prev_url = url_for('candidates', page=cands.prev_num) \
             if cands.has_prev else None
 
-        flash('Radial Search Results', 'info')
+        flash('Filter Search Results', 'info')
         return render_template('candidates.html', cands=cands,
                                next_url=next_url, prev_url=prev_url,
-                               title='Radial Search Results', zip=zip,
-                               paginate=True)
+                               title='Filter Search Results', zip=zip,
+                               paginate=True, form=form_cand)
 
     return render_template('radial_search.html', form=form,
                            title='Radial Search')
