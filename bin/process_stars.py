@@ -112,7 +112,11 @@ def fetch_stars_and_sources(source_job_id):
         star = source_to_star_dict[source_db.id]
         star_to_source_dict[star].append(source_db)
 
-    return list(star_to_source_dict.items())
+    stars_and_sources = {}
+    for star, sources in star_to_source_dict.items():
+        stars_and_sources[star.id] = (star, sources)
+
+    return stars_and_sources
 
 
 def construct_eta_dct(stars_and_sources, job_stats, obj_data, n_days_min=20):
@@ -123,7 +127,7 @@ def construct_eta_dct(stars_and_sources, job_stats, obj_data, n_days_min=20):
     idxs_dct = defaultdict(list)
     eta_dct = defaultdict(list)
     n_epochs_dct = defaultdict(list)
-    for i, (star, sources) in enumerate(stars_and_sources):
+    for star_id, (star, sources) in stars_and_sources.items():
         num_stars += 1
         for j, source in enumerate(sources):
             num_sources += 1
@@ -137,11 +141,11 @@ def construct_eta_dct(stars_and_sources, job_stats, obj_data, n_days_min=20):
                                                  obj.lightcurve.mag)
 
                 key = '%i_%i' % (obj.fieldid, obj.filterid)
-                idxs_dct[key].append((i, j, k))
+                idxs_dct[key].append((star_id, j, k))
                 eta_dct[key].append(eta)
                 n_epochs_dct[key].append(obj.nepochs)
 
-                obj_key = (i, j, k)
+                obj_key = (star_id, j, k)
                 objectData = ObjectData(eta=eta, eta_residual=None,
                                         rf_score=None, fit_data=None,
                                         eta_threshold_low=None,
@@ -167,7 +171,7 @@ def construct_eta_idxs_dct(eta_dct, idxs_dct, n_epochs_dct, job_stats, obj_data,
     for key, eta_arr in eta_dct.items():
         eta_arr = np.array(eta_arr)
         n_epochs = np.array(n_epochs_dct[key])
-        stars_and_sources_idxs = np.array(idxs_dct[key])
+        stars_and_sources_idxs = idxs_dct[key]
 
         n_epochs_max = np.max(n_epochs)
         for i in range(num_epochs_splits, 0, -1):
@@ -191,8 +195,9 @@ def construct_eta_idxs_dct(eta_dct, idxs_dct, n_epochs_dct, job_stats, obj_data,
             eta_threshold_high_dct[key].append(eta_threshold_high)
 
             eta_cond = np.where(eta_arr[split_idx] <= eta_threshold_low)[0]
-            eta_idxs = stars_and_sources_idxs[split_idx][eta_cond]
-            eta_idxs_dct[key].append(stars_and_sources_idxs[split_idx][eta_cond])
+            eta_idxs_split = [stars_and_sources_idxs[idx] for idx in split_idx]
+            eta_idxs = [eta_idxs_split[idx] for idx in eta_cond]
+            eta_idxs_dct[key].append(eta_idxs)
 
             for i, j, k in eta_idxs:
                 obj_key = (i, j, k)
@@ -338,24 +343,33 @@ def assemble_candidates(stars_and_sources, eta_residual_idxs_dct, obj_data):
     final_idxs = extract_final_idxs(eta_residual_idxs_dct)
     unique_star_idxs = list(set([i for i, _, _ in final_idxs]))
     for star_idx in unique_star_idxs:
+        # extract the passing indices
+        source_obj_idxs_pass = [(j, k) for i, j, k in final_idxs if i == star_idx]
+        num_objs_pass = len(source_obj_idxs_pass)
+
+        # extract all indices, and note which ones are passing
         star, sources = stars_and_sources[star_idx]
-        source_obj_idxs = [(j, k) for i, j, k in final_idxs if i == star_idx]
-        num_objs_pass = len(source_obj_idxs)
-
-        n_days_arr = []
         source_id_arr = []
-        filter_id_arr = []
-        for idx, (j, k) in enumerate(source_obj_idxs):
-            source = sources[j]
-            obj = source.zort_source.objects[k]
-            n_days = len(np.unique(np.floor(obj.lightcurve.hmjd)))
-
-            source_id_arr.append(source.id)
-            filter_id_arr.append(obj.filterid)
-            n_days_arr.append(n_days)
+        color_arr = []
+        pass_arr = []
+        n_days_arr = []
+        source_obj_idxs_tot = []
+        for j, source in enumerate(sources):
+            for k, obj in enumerate(source.zort_source.objects):
+                source_id_arr.append(source.id)
+                color_arr.append(obj.color)
+                source_obj_idxs_tot.append((j, k))
+                if (j, k) in source_obj_idxs_pass:
+                    n_days = len(np.unique(np.floor(obj.lightcurve.hmjd)))
+                    n_days_arr.append(n_days)
+                    pass_arr.append(True)
+                else:
+                    pass_arr.append(False)
+                    n_days_arr.append(0)
+        num_objs_tot = len(source_obj_idxs_tot)
 
         idx_best = int(np.argmax(n_days_arr))
-        j, k = source_obj_idxs[idx_best]
+        j, k = source_obj_idxs_tot[idx_best]
         source = sources[j]
         source_ids.append(source.id)
         obj = source.zort_source.objects[k]
@@ -370,20 +384,14 @@ def assemble_candidates(stars_and_sources, eta_residual_idxs_dct, obj_data):
         eta_threshold_low = objectData.eta_threshold_low
         eta_threshold_high = objectData.eta_threshold_high
 
-        if fit_data:
-            t_0, t_E, f_0, f_1, chi_squared_delta, chi_squared_flat, a_type = fit_data
-        else:
-            t_0 = None
-            t_E = None
-            f_0 = None
-            f_1 = None
-            chi_squared_delta = None
-            chi_squared_flat = None
-            a_type = None
+        # if fit_data is None, then this should not be a valid "best" object!
+        assert fit_data is not None
+        t_0, t_E, f_0, f_1, chi_squared_delta, chi_squared_flat, a_type = fit_data
 
         cand = Candidate(id=star.id,
                          source_id_arr=source_id_arr,
-                         filter_id_arr=filter_id_arr,
+                         color_arr=color_arr,
+                         pass_arr=pass_arr,
                          ra=star.ra,
                          dec=star.dec,
                          ingest_job_id=star.ingest_job_id,
@@ -400,7 +408,8 @@ def assemble_candidates(stars_and_sources, eta_residual_idxs_dct, obj_data):
                          chi_squared_flat_best=chi_squared_flat,
                          chi_squared_delta_best=chi_squared_delta,
                          idx_best=idx_best,
-                         num_objs_pass=num_objs_pass)
+                         num_objs_pass=num_objs_pass,
+                         num_objs_tot=num_objs_tot)
         candidates.append(cand)
 
         fit_filter = obj.color

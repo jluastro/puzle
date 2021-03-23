@@ -250,20 +250,16 @@ class Source(db.Model):
         lightcurve_plot_filename = f'{folder}/{self.id}_lightcurve.png'
         if not os.path.exists(lightcurve_plot_filename):
             if self.fit_t_0:
-                model_params = {
-                    't_0': self.fit_t_0,
-                    't_E': self.fit_t_E,
-                    'a_type': self.fit_a_type,
-                    'f_0': self.fit_f_0,
-                    'f_1': self.fit_f_1
-                }
-                model_color = self.fit_filter
+                model_params = {self.fit_filter: {'t_0': self.fit_t_0,
+                                                  't_E': self.fit_t_E,
+                                                  'a_type': self.fit_a_type,
+                                                  'f_0': self.fit_f_0,
+                                                  'f_1': self.fit_f_1}
+                                }
             else:
                 model_params = None
-                model_color = None
             self.zort_source.plot_lightcurves(filename=lightcurve_plot_filename,
-                                              model_params=model_params,
-                                              model_color=model_color)
+                                              model_params=model_params)
 
     def _fetch_mars_results(self):
         radius_deg = 2. / 3600.
@@ -441,7 +437,8 @@ class Candidate(db.Model):
 
     id = db.Column(db.String(128), primary_key=True, nullable=False)
     source_id_arr = db.Column(db.ARRAY(db.String(128)))
-    filter_id_arr = db.Column(db.ARRAY(db.Integer))
+    color_arr = db.Column(db.ARRAY(db.String(8)))
+    pass_arr = db.Column(db.ARRAY(db.Boolean))
     eta_best = db.Column(db.Float)
     rf_score_best = db.Column(db.Float)
     eta_residual_best = db.Column(db.Float)
@@ -461,19 +458,21 @@ class Candidate(db.Model):
     comments = db.Column(db.String(1024))
     _ztf_ids = db.Column(db.String(256))
     num_objs_pass = db.Column(db.Integer)
+    num_objs_tot = db.Column(db.Integer)
 
     def __init__(self, source_id_arr, ra, dec,
                  ingest_job_id, id,
-                 filter_id_arr, eta_best,
+                 color_arr, pass_arr, eta_best,
                  rf_score_best, eta_residual_best,
                  eta_threshold_low_best, eta_threshold_high_best,
                  t_E_best, t_0_best, f_0_best,
                  f_1_best, a_type_best,
                  chi_squared_flat_best, chi_squared_delta_best,
-                 idx_best, num_objs_pass,
+                 idx_best, num_objs_pass, num_objs_tot,
                  comments=None, _ztf_ids=None,):
         self.source_id_arr = source_id_arr
-        self.filter_id_arr = filter_id_arr
+        self.color_arr = color_arr
+        self.pass_arr = pass_arr
         self.eta_best = eta_best
         self.rf_score_best = rf_score_best
         self.eta_residual_best = eta_residual_best
@@ -488,6 +487,7 @@ class Candidate(db.Model):
         self.chi_squared_delta_best = chi_squared_delta_best
         self.idx_best = idx_best
         self.num_objs_pass = num_objs_pass
+        self.num_objs_tot = num_objs_tot
         self.ra = ra
         self.dec = dec
         self.ingest_job_id = ingest_job_id
