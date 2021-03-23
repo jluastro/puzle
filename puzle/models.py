@@ -361,7 +361,8 @@ class StarProcessJob(db.Model):
     num_objs_pass_eta_residual = db.Column(db.Integer, nullable=True)
     num_stars_pass_eta_residual = db.Column(db.Integer, nullable=True)
     epoch_edges = db.Column(db.JSON, nullable=True)
-    eta_thresholds = db.Column(db.JSON, nullable=True)
+    eta_thresholds_low = db.Column(db.JSON, nullable=True)
+    eta_thresholds_high = db.Column(db.JSON, nullable=True)
     num_candidates = db.Column(db.Integer, nullable=True)
 
     def __init__(self, source_ingest_job_id):
@@ -444,7 +445,8 @@ class Candidate(db.Model):
     eta_best = db.Column(db.Float)
     rf_score_best = db.Column(db.Float)
     eta_residual_best = db.Column(db.Float)
-    eta_threshold_best = db.Column(db.Float)
+    eta_threshold_low_best = db.Column(db.Float)
+    eta_threshold_high_best = db.Column(db.Float)
     t_E_best = db.Column(db.Float)
     t_0_best = db.Column(db.Float)
     f_0_best = db.Column(db.Float)
@@ -464,7 +466,7 @@ class Candidate(db.Model):
                  ingest_job_id, id,
                  filter_id_arr, eta_best,
                  rf_score_best, eta_residual_best,
-                 eta_threshold_best,
+                 eta_threshold_low_best, eta_threshold_high_best,
                  t_E_best, t_0_best, f_0_best,
                  f_1_best, a_type_best,
                  chi_squared_flat_best, chi_squared_delta_best,
@@ -475,7 +477,8 @@ class Candidate(db.Model):
         self.eta_best = eta_best
         self.rf_score_best = rf_score_best
         self.eta_residual_best = eta_residual_best
-        self.eta_threshold_best = eta_threshold_best
+        self.eta_threshold_low_best = eta_threshold_low_best
+        self.eta_threshold_high_best = eta_threshold_high_best
         self.t_E_best = t_E_best
         self.t_0_best = t_0_best
         self.f_0_best = f_0_best
