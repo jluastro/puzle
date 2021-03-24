@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, \
-    SubmitField, TextAreaField, FloatField, RadioField
+    SubmitField, TextAreaField, FloatField, RadioField, IntegerField
 from wtforms.validators import ValidationError, DataRequired, \
     Email, EqualTo, Length, NumberRange, Optional
 from puzle.models import User
@@ -93,9 +93,9 @@ class RadialSearchForm(FlaskForm):
 
 
 class FilterSearchForm(FlaskForm):
-    num_objs_pass_min = FloatField('num_objs_pass min',
+    num_objs_pass_min = IntegerField('num_objs_pass min',
                                    validators=[Optional(), NumberRange(min=1)])
-    num_objs_pass_max = FloatField('num_objs_pass max',
+    num_objs_pass_max = IntegerField('num_objs_pass max',
                                    validators=[Optional(), NumberRange(min=1)])
     t_E_best_min = FloatField('t_E_best min (days)',
                               validators=[Optional(), NumberRange(min=0)])

@@ -1,4 +1,4 @@
-from flask import render_template, flash, redirect, url_for, request
+from flask import render_template, flash, redirect, url_for, request, session
 from flask_login import current_user, login_user, logout_user, login_required
 from werkzeug.urls import url_parse
 from datetime import datetime
@@ -299,23 +299,10 @@ def sources():
 @app.route('/candidates', methods=['GET', 'POST'])
 @login_required
 def candidates():
-    form = CandidateOrderForm()
-    if form.validate_on_submit():
-        if form.order_by.data == 'eta_best':
-            order_by_cond = Candidate.eta_best.asc()
-        elif form.order_by.data == 'chi_squared_delta_best':
-            order_by_cond = Candidate.chi_squared_delta_best.desc()
-    else:
-        order_by_cond = Candidate.eta_best.asc()
-
-    query = Candidate.query
-    if form.order_by_num_objs.data:
-        query = query.order_by(Candidate.num_objs_pass.desc(), order_by_cond)
-    else:
-        query = query.order_by(order_by_cond)
-
+    form = EmptyForm()
     page = request.args.get('page', 1, type=int)
-    cands = query.paginate(page, app.config['ITEMS_PER_PAGE'], False)
+    cands = Candidate.query.order_by(Candidate.eta_best.asc()).\
+        paginate(page, app.config['ITEMS_PER_PAGE'], False)
     next_url = url_for('candidates', page=cands.next_num) \
         if cands.has_next else None
     prev_url = url_for('candidates', page=cands.prev_num) \
@@ -326,7 +313,6 @@ def candidates():
         for source in sources:
             source.load_lightcurve_plot()
 
-    flash('Browse Candidate', 'info')
     return render_template('candidates.html', cands=cands,
                            next_url=next_url, prev_url=prev_url,
                            title='PUZLE candidates', zip=zip,
@@ -401,42 +387,77 @@ def filter_search():
             query = query.filter(getattr(Candidate, field) <= val_max)
         return query
 
+    query_fields = ['num_objs_pass', 't_E_best',
+                    'chi_squared_delta_best', 'rf_score_best',
+                    'eta_best']
+
     form_filter = FilterSearchForm()
-    form_cand = CandidateOrderForm()
     if form_filter.validate_on_submit():
-        query = Candidate.query
-
-        for field in ['num_objs_pass', 't_E_best',
-                      'chi_squared_delta_best', 'rf_score_best',
-                      'eta_best']:
+        for field in query_fields:
             val_min = getattr(form_filter, f'{field}_min').data
+            session[f'{field}_min'] = val_min
             val_max = getattr(form_filter, f'{field}_max').data
-            query = _append_query(query, field, val_min, val_max)
-            if query is None:
-                return redirect(url_for('filter_search'))
+            session[f'{field}_max'] = val_max
 
-        if form_filter.order_by.data == 'eta_best':
-            order_by_cond = Candidate.eta_best.asc()
-        elif form_filter.order_by.data == 'chi_squared_delta_best':
-            order_by_cond = Candidate.chi_squared_delta_best.desc()
+        flash('Filter Search Results', 'info')
+        # if form_filter.order_by.data == 'eta_best':
+        #     order_by_cond = Candidate.eta_best.asc()
+        # elif form_filter.order_by.data == 'chi_squared_delta_best':
+        #     order_by_cond = Candidate.chi_squared_delta_best.desc()
+        #
+        # if form_filter.order_by_num_objs.data:
+        #     query = query.order_by(Candidate.num_objs_pass.desc(), order_by_cond)
+        # else:
+        #     query = query.order_by(order_by_cond)
+    else:
+        for field in query_fields:
+            for minmax in ['min', 'max']:
+                key = f'{field}_{minmax}'
+                if f'{field}_{minmax}' in session:
+                    getattr(form_filter, key).data = session[key]
+                else:
+                    session[key] = None
 
-        if form_filter.order_by_num_objs.data:
-            query = query.order_by(Candidate.num_objs_pass.desc(), order_by_cond)
-        else:
-            query = query.order_by(order_by_cond)
+    query = Candidate.query
+    current_query = False
+    for field in query_fields:
+        val_min = session[f'{field}_min']
+        val_max = session[f'{field}_max']
+        query = _append_query(query, field, val_min, val_max)
+        if val_min is not None or val_max is not None:
+            current_query = True
 
+    if current_query:
         page = request.args.get('page', 1, type=int)
         cands = query.paginate(page, app.config['ITEMS_PER_PAGE'], False)
         next_url = url_for('candidates', page=cands.next_num) \
             if cands.has_next else None
         prev_url = url_for('candidates', page=cands.prev_num) \
             if cands.has_prev else None
+        paginate = True
+    else:
+        cands = None
+        next_url = None
+        prev_url = None
+        paginate = None
 
-        flash('Filter Search Results', 'info')
-        return render_template('candidates.html', cands=cands,
-                               next_url=next_url, prev_url=prev_url,
-                               title='Filter Search Results', zip=zip,
-                               paginate=True, form=form_cand)
+    return render_template('filter_search.html', cands=cands,
+                           next_url=next_url, prev_url=prev_url,
+                           title='Filter Search Results', zip=zip,
+                           paginate=paginate, form=form_filter)
 
-    return render_template('filter_search.html', form=form_filter,
-                           title='Filter Search')
+
+@app.route('/reset_filter_search', methods=['GET'])
+@login_required
+def reset_filter_search():
+    query_fields = ['num_objs_pass', 't_E_best',
+                    'chi_squared_delta_best', 'rf_score_best',
+                    'eta_best']
+
+    for field in query_fields:
+        for minmax in ['min', 'max']:
+            try:
+                del session[f'{field}_{minmax}']
+            except KeyError:
+                pass
+    return redirect(url_for('filter_search'))
