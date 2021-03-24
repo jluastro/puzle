@@ -71,12 +71,12 @@ def register():
 def user(username):
     user = User.query.filter_by(username=username).first_or_404()
     page = request.args.get('page', 1, type=int)
-    sources = user.followed_sources().paginate(page, app.config['SOURCES_PER_PAGE'], False)
-    next_url = url_for('user', username=username, page=sources.next_num) \
-        if sources.has_next else None
-    prev_url = url_for('user', username=username, page=sources.prev_num) \
-        if sources.has_prev else None
-    return render_template('user.html', user=user, sources=sources,
+    cands = user.followed_candidates().paginate(page, app.config['SOURCES_PER_PAGE'], False)
+    next_url = url_for('user', username=username, page=cands.next_num) \
+        if cands.has_next else None
+    prev_url = url_for('user', username=username, page=cands.prev_num) \
+        if cands.has_prev else None
+    return render_template('user.html', user=user, cands=cands,
                            next_url=next_url, prev_url=prev_url)
 
 
@@ -147,11 +147,12 @@ def candidate(candid):
     title = 'Candidate %s' % candid
     form = EmptyForm()
     cand = Candidate.query.filter_by(id=candid).first_or_404()
+    best_source_id = cand.return_best_source_id()
     sources = Source.query.filter(Source.id.in_(cand.source_id_arr)).all()
     for source in sources:
         source.load_lightcurve_plot()
-    return render_template('candidate.html', cand=cand,
-                           sources=sources,
+    return render_template('candidate.html', cand=cand, sources=sources,
+                           best_source_id=best_source_id,
                            form=form, title=title, zip=zip)
 
 

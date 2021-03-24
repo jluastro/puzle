@@ -124,6 +124,14 @@
                         <td><a href="{{ url_for('source', sourceid=source.id) }}">{{ source.id }}</a></td>
                     </tr>
                     <tr>
+                        <th>Is Best</th>
+                        {% if source.id == best_source_id %}
+                            <td>True</td>
+                        {% else %}
+                            <td>False</td>
+                        {% endif %}
+                    </tr>
+                    <tr>
                         <th>Fit Filter</th>
                         {% if source.fit_filter is string %}
                             <td>{{ "%s" % source.fit_filter }}</td>

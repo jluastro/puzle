@@ -119,7 +119,7 @@ class User(UserMixin, db.Model):
 
     def followed_candidates(self):
         return Candidate.query.join(user_cand_association,
-            (user_cand_association.c.cand_id == Candidate.id)).\
+            (user_cand_association.c.candidate_id == Candidate.id)).\
             filter(user_cand_association.c.user_id == self.id).\
             order_by(Candidate.id.asc())
 
@@ -568,3 +568,10 @@ class Candidate(db.Model):
         for source_id, color, pass_id, idx in zip(self.source_id_arr, self.color_arr, self.pass_arr, range(self.num_objs_tot)):
             source_dct[source_id].append((color, pass_id, idx))
         return source_dct
+
+    def return_best_source_id(self):
+        best_source_id = None
+        for i, (source_id, color) in enumerate(zip(self.source_id_arr, self.color_arr)):
+            if i == self.idx_best:
+                best_source_id = source_id
+        return best_source_id
