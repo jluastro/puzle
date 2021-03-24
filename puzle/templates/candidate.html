@@ -144,7 +144,7 @@
                         {% if source.fit_t_0 is float %}
                             <td>{{ "%.2f" % source.fit_t_0 }}</td>
                         {% else %}
-                            <td>{{ "None" }}</td>
+                            <td></td>
                         {% endif %}
                     </tr>
                     <tr>
@@ -152,7 +152,7 @@
                         {% if source.fit_t_E is float %}
                             <td>{{ "%.2f" % source.fit_t_E }}</td>
                         {% else %}
-                            <td>{{ "None" }}</td>
+                            <td></td>
                         {% endif %}
                     </tr>
                     <tr>
@@ -160,7 +160,7 @@
                         {% if source.fit_chi_squared_flat is float %}
                             <td>{{ "%.2f" % source.fit_chi_squared_flat }}</td>
                         {% else %}
-                            <td>{{ "None" }}</td>
+                            <td></td>
                         {% endif %}
                     </tr>
                     <tr>
@@ -168,9 +168,27 @@
                         {% if source.fit_chi_squared_delta is float %}
                             <td>{{ "%.2f" % source.fit_chi_squared_delta }}</td>
                         {% else %}
-                            <td>{{ "None" }}</td>
+                            <td></td>
                         {% endif %}
                     </tr>
+                    {% if source.zort_source.object_g %}
+                        <tr>
+                            <th>N<sub>epochs,g</sub></th><td>{{ source.zort_source.object_g.nepochs }}</td>
+                            <th>ID<sub>g</sub></th><td>{{ source.zort_source.object_g.object_id }}</td>
+                        </tr>
+                    {% endif %}
+                   {% if source.zort_source.object_r %}
+                        <tr>
+                            <th>N<sub>epochs,r</sub></th><td>{{ source.zort_source.object_r.nepochs }}</td>
+                            <th>ID<sub>r</sub></th><td>{{ source.zort_source.object_r.object_id }}</td>
+                        </tr>
+                    {% endif %}
+                   {% if source.zort_source.object_i %}
+                        <tr>
+                            <th>N<sub>epochs,i</sub></th><td>{{ source.zort_source.object_i.nepochs }}</td>
+                            <th>ID<sub>i</sub></th><td>{{ source.zort_source.object_i.object_id }}</td>
+                        </tr>
+                    {% endif %}
                     </table>
                 </td>
                 <td>
