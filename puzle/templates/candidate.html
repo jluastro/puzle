@@ -70,14 +70,14 @@
                     <p></p>
                     {% if current_user.is_following_candidate(cand) %}
                      <p>
-                         <form action="{{ url_for('unfollow_candidate', candid=cand.id) }}" method="post">
+                         <form action="{{ url_for('unfollow_candidate', candid=cand.id, whichpage="cand") }}" method="post">
                              {{ form.hidden_tag() }}
                              {{ form.submit(value='Unfollow') }}
                          </form>
                      </p>
                      {% else %}
                      <p>
-                         <form action="{{ url_for('follow_candidate', candid=cand.id) }}" method="post">
+                         <form action="{{ url_for('follow_candidate', candid=cand.id, whichpage="cand") }}" method="post">
                              {{ form.hidden_tag() }}
                              {{ form.submit(value='Follow') }}
                          </form>

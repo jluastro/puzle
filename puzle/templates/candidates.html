@@ -18,6 +18,8 @@
         <td>
             <h3>Candidates | {{ cands.items|length }} results</h3>
             <table width="100%">
+            {% for cand in cands.items %}
+                <tr><td colspan="16"><hr></td></tr>
                 <tr>
                     <th>Cand ID</th>
                     <th>Glon</th>
@@ -36,7 +38,6 @@
                     <th>Color</th>
                     <th>Pass</th>
                 </tr>
-            {% for cand in cands.items %}
                 <tr>
                     <td><a href="{{ url_for('candidate', candid=cand.id) }}">{{ "%s" % cand.id}}</a></td>
                     <td>{{ "%.5f" % cand.glon }}</td>
@@ -67,8 +68,23 @@
                     <td></td>
                 </tr>
                 {% for source_id, color, pass in zip(cand.source_id_arr, cand.color_arr, cand.pass_arr) %}
-                    <tr>
+                        {% if loop.index == 1 %}
+                        <td>
+                            {% if current_user.is_following_candidate(cand) %}
+                                 <form action="{{ url_for('unfollow_candidate', candid=cand.id, whichpage="same") }}" method="post">
+                                     {{ form.hidden_tag() }}
+                                     {{ form.submit(value='Unfollow') }}
+                                 </form>
+                            {% else %}
+                            <form action="{{ url_for('follow_candidate', candid=cand.id, whichpage="same") }}" method="post">
+                                {{ form.hidden_tag() }}
+                                {{ form.submit(value='Follow') }}
+                            </form>
+                            {% endif %}
+                        </td>
+                        {% else %}
                         <td></td>
+                        {% endif %}
                         <td></td>
                         <td></td>
                         <td></td>
@@ -86,6 +102,7 @@
                         <td>{{ "%r" % pass }}</td>
                     </tr>
                 {% endfor %}
+
                 <tr>
                     <td colspan="16">
                     {% for source_id in cand.unique_source_id_arr %}

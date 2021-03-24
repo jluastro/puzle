@@ -223,23 +223,6 @@ def follow_source(sourceid):
         return redirect(url_for('source', sourceid=sourceid))
 
 
-@app.route('/follow_candidate/<candid>', methods=['POST'])
-@login_required
-def follow_candidate(candid):
-    form = EmptyForm()
-    if form.validate_on_submit():
-        cand = Candidate.query.filter_by(id=candid).first()
-        if user is None:
-            flash('Candidate {} not found.'.format(cand.id), 'danger')
-            return redirect(url_for('candidate', candid=candid))
-        current_user.follow_candidate(cand)
-        db.session.commit()
-        flash('You are following Candidate {}'.format(cand.id), 'success')
-        return redirect(url_for('candidate', candid=candid))
-    else:
-        return redirect(url_for('candidate', candid=candid))
-
-
 @app.route('/unfollow_source/<sourceid>', methods=['POST'])
 @login_required
 def unfollow_source(sourceid):
@@ -255,11 +238,32 @@ def unfollow_source(sourceid):
         return redirect(url_for('source', sourceid=sourceid))
     else:
         return redirect(url_for('source', sourceid=sourceid))
-    
-    
-@app.route('/unfollow_candidate/<candid>', methods=['POST'])
+
+
+@app.route('/follow_candidate/<candid>_<whichpage>', methods=['POST'])
 @login_required
-def unfollow_candidate(candid):
+def follow_candidate(candid, whichpage):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        cand = Candidate.query.filter_by(id=candid).first()
+        if user is None:
+            flash('Candidate {} not found.'.format(cand.id), 'danger')
+            return redirect(url_for('candidate', candid=candid))
+        current_user.follow_candidate(cand)
+        db.session.commit()
+        flash('You are following Candidate {}'.format(cand.id), 'success')
+        print(whichpage)
+        if whichpage == "same":
+            return redirect(request.referrer)
+        elif whichpage == "cand":
+            return redirect(url_for('candidate', candid=candid))
+    else:
+        return redirect(url_for('candidate', candid=candid))
+
+
+@app.route('/unfollow_candidate/<candid>_<whichpage>', methods=['POST'])
+@login_required
+def unfollow_candidate(candid, whichpage):
     form = EmptyForm()
     if form.validate_on_submit():
         cand = Candidate.query.filter_by(id=candid).first()
@@ -269,7 +273,11 @@ def unfollow_candidate(candid):
         current_user.unfollow_candidate(cand)
         db.session.commit()
         flash('You are not following Source {}'.format(cand.id), 'success')
-        return redirect(url_for('candidate', candid=candid))
+        print(whichpage)
+        if whichpage == "same":
+            return redirect(request.referrer)
+        elif whichpage == "cand":
+            return redirect(url_for('candidate', candid=candid))
     else:
         return redirect(url_for('candidate', candid=candid))
 
