@@ -60,10 +60,11 @@
                 <td>{{ cand.best_source_id }}</td>
                 </tr>
                 <tr>
+                <td colspan="11">
                 {% for source_id in cand.unique_source_id_arr %}
-                <td><img width="200" src="{{ url_for('static', filename='source/') }}{{ source_id.split('_')[0] }}/{{ source_id }}_lightcurve.png">
+                <img width="200" src="{{ url_for('static', filename='source/') }}{{ source_id.split('_')[0] }}/{{ source_id }}_lightcurve.png">
                 {% endfor %}
-                </tr>
+                </td>
             {% endfor %}
         </tr>
     </table>

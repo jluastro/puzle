@@ -313,6 +313,11 @@ def candidates():
     prev_url = url_for('candidates', page=cands.prev_num) \
         if cands.has_prev else None
 
+    for cand in cands.items:
+        sources = Source.query.filter(Source.id.in_(cand.source_id_arr)).all()
+        for source in sources:
+            source.load_lightcurve_plot()
+
     flash('Browse Candidate', 'info')
     return render_template('candidates.html', cands=cands,
                            next_url=next_url, prev_url=prev_url,

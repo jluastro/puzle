@@ -87,9 +87,11 @@
                     </tr>
                 {% endfor %}
                 <tr>
-                {% for source_id in cand.unique_source_id_arr %}
-                    <td><img width="200" src="{{ url_for('static', filename='source/') }}{{ source_id.split('_')[0] }}/{{ source_id }}_lightcurve.png">
-                {% endfor %}
+                    <td colspan="16">
+                    {% for source_id in cand.unique_source_id_arr %}
+                    <img width="200" src="{{ url_for('static', filename='source/') }}{{ source_id.split('_')[0] }}/{{ source_id }}_lightcurve.png">
+                    {% endfor %}
+                    </td>
                 </tr>
             {% endfor %}
             </table>
