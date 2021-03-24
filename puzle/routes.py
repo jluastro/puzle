@@ -71,7 +71,7 @@ def register():
 def user(username):
     user = User.query.filter_by(username=username).first_or_404()
     page = request.args.get('page', 1, type=int)
-    cands = user.followed_candidates().paginate(page, app.config['SOURCES_PER_PAGE'], False)
+    cands = user.followed_candidates().paginate(page, app.config['ITEMS_PER_PAGE'], False)
     next_url = url_for('user', username=username, page=cands.next_num) \
         if cands.has_next else None
     prev_url = url_for('user', username=username, page=cands.prev_num) \
@@ -147,12 +147,10 @@ def candidate(candid):
     title = 'Candidate %s' % candid
     form = EmptyForm()
     cand = Candidate.query.filter_by(id=candid).first_or_404()
-    best_source_id = cand.return_best_source_id()
     sources = Source.query.filter(Source.id.in_(cand.source_id_arr)).all()
     for source in sources:
         source.load_lightcurve_plot()
     return render_template('candidate.html', cand=cand, sources=sources,
-                           best_source_id=best_source_id,
                            form=form, title=title, zip=zip)
 
 
@@ -280,7 +278,7 @@ def unfollow_candidate(candid):
 @login_required
 def sources():
     page = request.args.get('page', 1, type=int)
-    sources = Source.query.order_by(Source.id.asc()).paginate(page, app.config['SOURCES_PER_PAGE'], False)
+    sources = Source.query.order_by(Source.id.asc()).paginate(page, app.config['ITEMS_PER_PAGE'], False)
     next_url = url_for('sources', page=sources.next_num) \
         if sources.has_next else None
     prev_url = url_for('sources', page=sources.prev_num) \
@@ -309,7 +307,7 @@ def candidates():
         query = query.order_by(order_by_cond)
 
     page = request.args.get('page', 1, type=int)
-    cands = query.paginate(page, app.config['SOURCES_PER_PAGE'], False)
+    cands = query.paginate(page, app.config['ITEMS_PER_PAGE'], False)
     next_url = url_for('candidates', page=cands.next_num) \
         if cands.has_next else None
     prev_url = url_for('candidates', page=cands.prev_num) \
@@ -359,7 +357,7 @@ def radial_search():
             query = query.order_by(order_by_cond)
 
         page = request.args.get('page', 1, type=int)
-        cands = query.paginate(page, app.config['SOURCES_PER_PAGE'], False)
+        cands = query.paginate(page, app.config['ITEMS_PER_PAGE'], False)
         next_url = url_for('candidates', page=cands.next_num) \
             if cands.has_next else None
         prev_url = url_for('candidates', page=cands.prev_num) \
@@ -415,7 +413,7 @@ def filter_search():
             query = query.order_by(order_by_cond)
 
         page = request.args.get('page', 1, type=int)
-        cands = query.paginate(page, app.config['SOURCES_PER_PAGE'], False)
+        cands = query.paginate(page, app.config['ITEMS_PER_PAGE'], False)
         next_url = url_for('candidates', page=cands.next_num) \
             if cands.has_next else None
         prev_url = url_for('candidates', page=cands.prev_num) \

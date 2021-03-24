@@ -569,9 +569,14 @@ class Candidate(db.Model):
             source_dct[source_id].append((color, pass_id, idx))
         return source_dct
 
-    def return_best_source_id(self):
+    @property
+    def best_source_id(self):
         best_source_id = None
         for i, (source_id, color) in enumerate(zip(self.source_id_arr, self.color_arr)):
             if i == self.idx_best:
                 best_source_id = source_id
         return best_source_id
+
+    @property
+    def unique_source_id_arr(self):
+        return list(set(self.source_id_arr))
