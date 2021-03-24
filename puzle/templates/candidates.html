@@ -38,7 +38,7 @@
                 </tr>
             {% for cand in cands.items %}
                 <tr>
-                    <td>{{ "%s" % cand.id}}</td>
+                    <td><a href="{{ url_for('candidate', candid=cand.id) }}">{{ "%s" % cand.id}}</a></td>
                     <td>{{ "%.5f" % cand.glon }}</td>
                     <td>{{ "%.5f" % cand.glat }}</td>
                     <td>{{ "%i" % cand.num_objs_pass }}</td>

@@ -538,3 +538,10 @@ class Candidate(db.Model):
     def cone_search(self, ra, dec, radius=2):
         radius_deg = radius / 3600.
         return func.q3c_radial_query(text('ra'), text('dec'), ra, dec, radius_deg)
+
+    @hybrid_method
+    def return_source_dct(self):
+        source_dct = defaultdict(list)
+        for source_id, color, pass_id, idx in zip(self.source_id_arr, self.color_arr, self.pass_arr, range(self.num_objs_tot)):
+            source_dct[source_id].append((color, pass_id, idx))
+        return source_dct

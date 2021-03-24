@@ -141,6 +141,20 @@ def source(sourceid):
                            form=form, title=title)
 
 
+@app.route('/candidate/<candid>')
+@login_required
+def candidate(candid):
+    title = 'Candidate %s' % candid
+    form = EmptyForm()
+    cand = Candidate.query.filter_by(id=candid).first_or_404()
+    sources = Source.query.filter(Source.id.in_(cand.source_id_arr)).all()
+    for source in sources:
+        source.load_lightcurve_plot()
+    return render_template('candidate.html', cand=cand,
+                           sources=sources,
+                           form=form, title=title, zip=zip)
+
+
 @app.route('/edit_source_comments/<sourceid>', methods=['GET', 'POST'])
 @login_required
 def edit_source_comments(sourceid):
