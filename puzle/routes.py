@@ -399,16 +399,11 @@ def filter_search():
             val_max = getattr(form_filter, f'{field}_max').data
             session[f'{field}_max'] = val_max
 
+        session['order_by'] = form_filter.order_by.data
+        session['order_by_num_objs'] = form_filter.order_by_num_objs.data
+
+
         flash('Filter Search Results', 'info')
-        # if form_filter.order_by.data == 'eta_best':
-        #     order_by_cond = Candidate.eta_best.asc()
-        # elif form_filter.order_by.data == 'chi_squared_delta_best':
-        #     order_by_cond = Candidate.chi_squared_delta_best.desc()
-        #
-        # if form_filter.order_by_num_objs.data:
-        #     query = query.order_by(Candidate.num_objs_pass.desc(), order_by_cond)
-        # else:
-        #     query = query.order_by(order_by_cond)
     else:
         for field in query_fields:
             for minmax in ['min', 'max']:
@@ -417,6 +412,11 @@ def filter_search():
                     getattr(form_filter, key).data = session[key]
                 else:
                     session[key] = None
+        for order_by_type in ['order_by', 'order_by_num_objs']:
+            if order_by_type in session:
+                getattr(form_filter, order_by_type).data = session[order_by_type]
+            else:
+                session[order_by_type] = None
 
     query = Candidate.query
     current_query = False
@@ -428,6 +428,16 @@ def filter_search():
             current_query = True
 
     if current_query:
+        if session['order_by'] == 'eta_best':
+            order_by_cond = Candidate.eta_best.asc()
+        elif session['order_by'] == 'chi_squared_delta_best':
+            order_by_cond = Candidate.chi_squared_delta_best.desc()
+
+        if session['order_by_num_objs']:
+            query = query.order_by(Candidate.num_objs_pass.desc(), order_by_cond)
+        else:
+            query = query.order_by(order_by_cond)
+
         page = request.args.get('page', 1, type=int)
         cands = query.paginate(page, app.config['ITEMS_PER_PAGE'], False)
         next_url = url_for('candidates', page=cands.next_num) \
