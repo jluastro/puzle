@@ -7,7 +7,7 @@ import astropy.units as u
 from puzle import app, db
 from puzle.forms import LoginForm, RegistrationForm, \
     EditProfileForm, ResetPasswordRequestForm, ResetPasswordForm, \
-    EditSourceCommentForm, RadialSearchForm, EmptyForm, \
+    EditCommentForm, RadialSearchForm, EmptyForm, \
     FilterSearchForm, CandidateOrderForm
 from puzle.models import User, Source, Candidate
 from puzle.email import send_password_reset_email
@@ -159,7 +159,7 @@ def candidate(candid):
 @login_required
 def edit_source_comments(sourceid):
     source = Source.query.filter_by(id=sourceid).first_or_404()
-    form = EditSourceCommentForm()
+    form = EditCommentForm()
     if form.validate_on_submit():
         source.comments = form.comments.data
         db.session.commit()
@@ -171,9 +171,25 @@ def edit_source_comments(sourceid):
                            form=form)
 
 
-@app.route('/fetch_ztf_ids/<sourceid>', methods=['POST'])
+@app.route('/edit_candidate_comments/<candid>', methods=['GET', 'POST'])
 @login_required
-def fetch_ztf_ids(sourceid):
+def edit_candidate_comments(candid):
+    cand = Candidate.query.filter_by(id=candid).first_or_404()
+    form = EditCommentForm()
+    if form.validate_on_submit():
+        cand.comments = form.comments.data
+        db.session.commit()
+        flash('Your changes have been saved.', 'success')
+        return redirect(url_for('candidate', candid=candid))
+    elif request.method == 'GET':
+        form.comments.data = cand.comments
+    return render_template('edit_candidate_comments.html',
+                           form=form)
+
+
+@app.route('/fetch_source_ztf_ids/<sourceid>', methods=['POST'])
+@login_required
+def fetch_source_ztf_ids(sourceid):
     source = Source.query.filter_by(id=sourceid).first_or_404()
     n_ids = source.fetch_ztf_ids()
     flash('%i ZTF IDs Found' % n_ids, 'success')
@@ -181,9 +197,19 @@ def fetch_ztf_ids(sourceid):
     return redirect(url_for('source', sourceid=sourceid))
 
 
-@app.route('/follow/<sourceid>', methods=['POST'])
+@app.route('/fetch_candidate_ztf_ids/<candid>', methods=['POST'])
 @login_required
-def follow(sourceid):
+def fetch_candidate_ztf_ids(candid):
+    cand = Candidate.query.filter_by(id=candid).first_or_404()
+    n_ids = cand.fetch_ztf_ids()
+    flash('%i ZTF IDs Found' % n_ids, 'success')
+    db.session.commit()
+    return redirect(url_for('candidate', candid=candid))
+
+
+@app.route('/follow_source/<sourceid>', methods=['POST'])
+@login_required
+def follow_source(sourceid):
     form = EmptyForm()
     if form.validate_on_submit():
         source = Source.query.filter_by(id=sourceid).first()
@@ -198,9 +224,26 @@ def follow(sourceid):
         return redirect(url_for('source', sourceid=sourceid))
 
 
-@app.route('/unfollow/<sourceid>', methods=['POST'])
+@app.route('/follow_candidate/<candid>', methods=['POST'])
 @login_required
-def unfollow(sourceid):
+def follow_candidate(candid):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        cand = Candidate.query.filter_by(id=candid).first()
+        if user is None:
+            flash('Candidate {} not found.'.format(cand.id), 'danger')
+            return redirect(url_for('candidate', candid=candid))
+        current_user.follow_candidate(cand)
+        db.session.commit()
+        flash('You are following Candidate {}'.format(cand.id), 'success')
+        return redirect(url_for('candidate', candid=candid))
+    else:
+        return redirect(url_for('candidate', candid=candid))
+
+
+@app.route('/unfollow_source/<sourceid>', methods=['POST'])
+@login_required
+def unfollow_source(sourceid):
     form = EmptyForm()
     if form.validate_on_submit():
         source = Source.query.filter_by(id=sourceid).first()
@@ -213,6 +256,23 @@ def unfollow(sourceid):
         return redirect(url_for('source', sourceid=sourceid))
     else:
         return redirect(url_for('source', sourceid=sourceid))
+    
+    
+@app.route('/unfollow_candidate/<candid>', methods=['POST'])
+@login_required
+def unfollow_candidate(candid):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        cand = Candidate.query.filter_by(id=candid).first()
+        if user is None:
+            flash('Source {} not found.'.format(cand.id), 'danger')
+            return redirect(url_for('candidate', candidateid=candid))
+        current_user.unfollow_candidate(cand)
+        db.session.commit()
+        flash('You are not following Source {}'.format(cand.id), 'success')
+        return redirect(url_for('candidate', candid=candid))
+    else:
+        return redirect(url_for('candidate', candid=candid))
 
 
 @app.route('/sources', methods=['GET', 'POST'])

@@ -106,22 +106,22 @@ class User(UserMixin, db.Model):
             filter(user_source_association.c.user_id == self.id).\
             order_by(Source.id.asc())
     
-    def follow_star(self, star):
-        if not self.is_following_star(star):
-            self.stars.append(star)
+    def follow_candidate(self, cand):
+        if not self.is_following_candidate(cand):
+            self.candidates.append(cand)
 
-    def unfollow_star(self, star):
-        if self.is_following_star(star):
-            self.stars.remove(star)
+    def unfollow_candidate(self, cand):
+        if self.is_following_candidate(cand):
+            self.candidates.remove(cand)
 
-    def is_following_star(self, star):
-        return star in self.stars.all()
+    def is_following_candidate(self, cand):
+        return cand in self.candidates.all()
 
-    def followed_stars(self):
-        return Star.query.join(user_star_association,
-            (user_star_association.c.star_id == Star.id)).\
-            filter(user_star_association.c.user_id == self.id).\
-            order_by(Star.id.asc())
+    def followed_candidates(self):
+        return Candidate.query.join(user_cand_association,
+            (user_cand_association.c.cand_id == Candidate.id)).\
+            filter(user_cand_association.c.user_id == self.id).\
+            order_by(Candidate.id.asc())
 
 
 class Source(db.Model):
@@ -538,6 +538,29 @@ class Candidate(db.Model):
     def cone_search(self, ra, dec, radius=2):
         radius_deg = radius / 3600.
         return func.q3c_radial_query(text('ra'), text('dec'), ra, dec, radius_deg)
+
+    def _fetch_mars_results(self):
+        radius_deg = 2. / 3600.
+        cone = '%f,%f,%f' % (self.ra, self.dec, radius_deg)
+        query = {"queries": [{"cone": cone}]}
+        results = requests.post('https://mars.lco.global/', json=query).json()
+        if results['total'] == 0:
+            return None
+        else:
+            return results
+
+    def fetch_ztf_ids(self):
+        results = self._fetch_mars_results()
+        if results is None:
+            return 0
+        ztf_ids = [str(r['objectId']) for r in
+                   results['results'][0]['results']]
+        ztf_ids = list(set(ztf_ids))
+        self.ztf_ids = None
+        for ztf_id in ztf_ids:
+            self.ztf_ids = ztf_id
+
+        return len(ztf_ids)
 
     @hybrid_method
     def return_source_dct(self):

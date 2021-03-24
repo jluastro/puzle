@@ -18,283 +18,158 @@
     <table class="table table-hover" width="auto">
         <col style="width:45%">
        	<col style="width:55%">
-    <table width="100%">
-        <tr>
-            <h1>Candidate {{ cand.id }}</h1>
-            <h4>Glon Glat &nbsp; &nbsp;{{ "%.5f" % cand.glon }} , {{ "%.5f" % cand.glat }}</h4>
-            <h4>RA Dec &nbsp; &nbsp; &nbsp; {{ "%.5f" % cand.ra }} , {{ "%.5f" % cand.dec }}</h4>
-        </tr>
-        <tr>
-            <th>n<sub>objs,pass</sub></th>
-            <th>n<sub>objs,tot</sub></th>
-            <th>t<sub>E</sub></th>
-            <th>&#916;&#967;<super>2</super></th>
-            <th>&#951;</th>
-            <th>&#951;<sub>thresh,low</sub></th>
-            <th>&#951;<sub>residual</sub></th>
-            <th>&#951;<sub>thresh,high</sub></th>
-            <th>RB</th>
-        </tr>
-        <tr>
-            <td>{{ "%i" % cand.num_objs_pass }}</td>
-            <td>{{ "%i" % cand.num_objs_tot }}</td>
-            {% if cand.t_E_best is float %}
-                <td>{{ "%.2f" %  cand.t_E_best }}</td>
-            {%  else %}
-                <td>{{ "None" }}</td>
-            {% endif %}
-            {% if cand.chi_squared_delta_best is float %}
-                <td>{{ "%.2f" %  cand.chi_squared_delta_best }}</td>
-            {%  else %}
-                <td>{{ "None" }}</td>
-            {% endif %}
-            <td>{{ "%.2f" % cand.eta_best }}</td>
-            <td>{{ "%.2f" % cand.eta_threshold_low_best }}</td>
-            <td>{{ "%.2f" % cand.eta_residual_best }}</td>
-            <td>{{ "%.2f" % cand.eta_threshold_high_best }}</td>
-            {% if cand.rf_score is float %}
-                <td>{{ "%.2f" % cand.rf_score }}</td>
-            {%  else %}
-                <td>{{ "None" }}</td>
-            {% endif %}
-        </tr>
-    </table>
+        <table width="100%">
+            <tr>
+                <h1>Candidate {{ cand.id }}</h1>
+                <h4>Glon Glat &nbsp; &nbsp;{{ "%.5f" % cand.glon }} , {{ "%.5f" % cand.glat }}</h4>
+                <h4>RA Dec &nbsp; &nbsp; &nbsp; {{ "%.5f" % cand.ra }} , {{ "%.5f" % cand.dec }}</h4>
+            </tr>
+            <tr>
+                <th>n<sub>objs,pass</sub></th>
+                <th>n<sub>objs,tot</sub></th>
+                <th>t<sub>E</sub></th>
+                <th>&#916;&#967;<super>2</super></th>
+                <th>&#951;</th>
+                <th>&#951;<sub>thresh,low</sub></th>
+                <th>&#951;<sub>residual</sub></th>
+                <th>&#951;<sub>thresh,high</sub></th>
+                <th>RB</th>
+            </tr>
+            <tr>
+                <td>{{ "%i" % cand.num_objs_pass }}</td>
+                <td>{{ "%i" % cand.num_objs_tot }}</td>
+                {% if cand.t_E_best is float %}
+                    <td>{{ "%.2f" %  cand.t_E_best }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+                {% if cand.chi_squared_delta_best is float %}
+                    <td>{{ "%.2f" %  cand.chi_squared_delta_best }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+                <td>{{ "%.2f" % cand.eta_best }}</td>
+                <td>{{ "%.2f" % cand.eta_threshold_low_best }}</td>
+                <td>{{ "%.2f" % cand.eta_residual_best }}</td>
+                <td>{{ "%.2f" % cand.eta_threshold_high_best }}</td>
+                {% if cand.rf_score is float %}
+                    <td>{{ "%.2f" % cand.rf_score }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+            </tr>
+            <tr class="blank_row"></tr>
+            <td>
+                <td><p><b>ZTF IDs</b></p></td>
+                <td colspan="4">
+                    <form action="/fetch_candidate_ztf_ids/{{ cand.id }}" method="post">
+                        <button name="ztf_ids" type="submit">Fetch ZTF IDs</button>
+                    </form>
+                </td>
+                <td>
+                    <p></p>
+                    {% if current_user.is_following_candidate(cand) %}
+                     <p>
+                         <form action="{{ url_for('unfollow_candidate', candid=cand.id) }}" method="post">
+                             {{ form.hidden_tag() }}
+                             {{ form.submit(value='Unfollow') }}
+                         </form>
+                     </p>
+                     {% else %}
+                     <p>
+                         <form action="{{ url_for('follow_candidate', candid=cand.id) }}" method="post">
+                             {{ form.hidden_tag() }}
+                             {{ form.submit(value='Follow') }}
+                         </form>
+                     </p>
+                     {% endif %}
+                    <p align="right">Followed by</p>
+                    {% for user in cand.users %}
+                        <p align="right"><a href="{{ url_for('user', username=user.username) }}">{{ user.username }}</a></p>
+                    {% endfor %}
+                </td>
+            </tr>
+            <tr align="left">
+                <td colspace="2">
+                    {% for ztf_id in cand.ztf_ids %}
+                    <p><a href="https://lasair.roe.ac.uk/object/{{ ztf_id }}/" target="_blank">{{ ztf_id }}</a></p>
+                    {% endfor %}
+                </td>
+            </tr>
+            <tr class="blank_row"></tr>
+            <tr>
+                <th>Comments</th>
+            </tr>
+            <tr>
+                <td colspan="5">
+                    <p>{{ cand.comments }}</p>
+                </td>
+            </tr>
+            <tr>
+                <td colspace="5">
+                    <p><a href="{{ url_for('edit_candidate_comments', candid=cand.id) }}">Edit comments</a></p>
+                </td>
+            </tr>
+        </table>
     <hr>
-    <table class="table table-hover" width="auto">
-        <col style="width:45%">
-       	<col style="width:55%">
-        {% for source in sources %}
-        <tr>
-            <td>
-                <table width="100%">
-                <tr>
-                    <th>Source  ID</th>
-                    <td><a href="{{ url_for('source', sourceid=source.id) }}">{{ source.id }}</a></td>
-                </tr>
-                <tr>
-                    <th>Fit Filter</th>
-                    {% if source.fit_filter is string %}
-                        <td>{{ "%s" % source.fit_filter }}</td>
-                    {% else %}
-                        <td>{{ "None" }}</td>
-                    {% endif %}
-                </tr>
-                <tr>
-                    <th>t<sub>0</sub></th>
-                    {% if source.fit_t_0 is float %}
-                        <td>{{ "%.2f" % source.fit_t_0 }}</td>
-                    {% else %}
-                        <td>{{ "None" }}</td>
-                    {% endif %}
-                </tr>
-                <tr>
-                    <th>t<sub>E</sub></th>
-                    {% if source.fit_t_E is float %}
-                        <td>{{ "%.2f" % source.fit_t_E }}</td>
-                    {% else %}
-                        <td>{{ "None" }}</td>
-                    {% endif %}
-                </tr>
-                <tr>
-                    <th>Chi Squared Flat</th>
-                    {% if source.fit_chi_squared_flat is float %}
-                        <td>{{ "%.2f" % source.fit_chi_squared_flat }}</td>
-                    {% else %}
-                        <td>{{ "None" }}</td>
-                    {% endif %}
-                </tr>
-                <tr>
-                   <th>Chi Squared Delta</th>
-                    {% if source.fit_chi_squared_delta is float %}
-                        <td>{{ "%.2f" % source.fit_chi_squared_delta }}</td>
-                    {% else %}
-                        <td>{{ "None" }}</td>
-                    {% endif %}
-                </tr>
-                </table>
-            </td>
-            <td>
-                <img src="{{ url_for('static', filename='source/') }}{{ source.id.split('_')[0] }}/{{ source.id }}_lightcurve.png">
-            </td>
-        </tr>
-        {% endfor %}
-{#                {% if source.zort_source.object_g %}#}
-{#                    <h4>Field {{ source.zort_source.object_g.fieldid }} &nbsp; | &nbsp; RCID {{ source.zort_source.object_g.rcid }}</h4>#}
-{#                {% elif source.zort_source.object_id_r %}#}
-{#                    <h4>Field {{ source.zort_source.object_r.fieldid }} &nbsp; | &nbsp; RCID {{ source.zort_source.object_r.rcid }}</h4>#}
-{#                {% else %}#}
-{#                    <h4>Field {{ source.zort_source.object_i.fieldid }} &nbsp; | &nbsp; RCID {{ source.zort_source.object_i.rcid }}</h4>#}
-{#                {% endif %}#}
-{#                <h4>Glon Glat &nbsp; &nbsp;{{ "%.5f" % source.glon }} , {{ "%.5f" % source.glat }}</h4>#}
-{#                <h4>RA Dec &nbsp; &nbsp; &nbsp; {{ "%.5f" % source.ra }} , {{ "%.5f" % source.dec }}</h4>#}
-{#                <table width="100%">#}
-{#                    <tr>#}
-{#                        <th>Filter</th>#}
-{#                        <th>Nepochs</th>#}
-{#                        <th>Object ID</th>#}
-{#                        <th>Glon</th>#}
-{#                        <th>Glat</th>#}
-{#                    </tr>#}
-{#                {% if source.zort_source.object_g %}#}
-{#                    <tr>#}
-{#                        <td>g-band</td>#}
-{#                        <td>{{ source.zort_source.object_g.nepochs }}</td>#}
-{#                        <td>{{ source.zort_source.object_g.object_id }}</td>#}
-{#                        <td>{{ "%.5f" % source.zort_source.object_g.glon }}</td>#}
-{#                        <td>{{ "%.5f" % source.zort_source.object_g.glat }}</td>#}
-{#                    </tr>#}
-{#                {% endif %}#}
-{#                {% if source.zort_source.object_r %}#}
-{#                    <tr>#}
-{#                        <td>r-band</td>#}
-{#                        <td>{{ source.zort_source.object_r.nepochs }}</td>#}
-{#                        <td>{{ source.zort_source.object_r.object_id }}</td>#}
-{#                        <td>{{ "%.5f" % source.zort_source.object_r.glon }}</td>#}
-{#                        <td>{{ "%.5f" % source.zort_source.object_r.glat }}</td>#}
-{#                    </tr>#}
-{#                {% endif %}#}
-{#                {% if source.zort_source.object_i %}#}
-{#                    <tr>#}
-{#                        <td>i-band</td>#}
-{#                        <td>{{ source.zort_source.object_i.nepochs }}</td>#}
-{#                        <td>{{ source.zort_source.object_i.object_id }}</td>#}
-{#                        <td>{{ "%.5f" % source.zort_source.object_i.glon }}</td>#}
-{#                        <td>{{ "%.5f" % source.zort_source.object_i.glat }}</td>#}
-{#                    </tr>#}
-{#                {% endif %}#}
-{#                <tr class="blank_row"></tr>#}
-{#                <tr>#}
-{#                    <th>Fit Filter</th>#}
-{#                    {% if source.fit_filter is string %}#}
-{#                        <td>{{ "%s" % source.fit_filter }}</td>#}
-{#                    {% else %}#}
-{#                        <td>{{ "None" }}</td>#}
-{#                    {% endif %}#}
-{#                </tr>#}
-{#                <tr>#}
-{#                    <th>t<sub>0</sub></th>#}
-{#                    {% if source.fit_t_0 is float %}#}
-{#                        <td>{{ "%.2f" % source.fit_t_0 }}</td>#}
-{#                    {% else %}#}
-{#                        <td>{{ "None" }}</td>#}
-{#                    {% endif %}#}
-{#                </tr>#}
-{#                <tr>#}
-{#                    <th>t<sub>E</sub></th>#}
-{#                    {% if source.fit_t_E is float %}#}
-{#                        <td>{{ "%.2f" % source.fit_t_E }}</td>#}
-{#                    {% else %}#}
-{#                        <td>{{ "None" }}</td>#}
-{#                    {% endif %}#}
-{#                </tr>#}
-{#                <tr>#}
-{#                    <th>Chi Squared Flat</th>#}
-{#                    {% if source.fit_chi_squared_flat is float %}#}
-{#                        <td>{{ "%.2f" % source.fit_chi_squared_flat }}</td>#}
-{#                    {% else %}#}
-{#                        <td>{{ "None" }}</td>#}
-{#                    {% endif %}#}
-{#                </tr>#}
-{#                <tr>#}
-{#                   <th>Chi Squared Delta</th>#}
-{#                    {% if source.fit_chi_squared_delta is float %}#}
-{#                        <td>{{ "%.2f" % source.fit_chi_squared_delta }}</td>#}
-{#                    {% else %}#}
-{#                        <td>{{ "None" }}</td>#}
-{#                    {% endif %}#}
-{#                </tr>#}
-{#                <tr class="blank_row"></tr>#}
-{#                <tr>#}
-{#                    <td><p><b>ZTF IDs</b></p></td>#}
-{#                    <td colspan="4">#}
-{#                        <form action="/fetch_ztf_ids/{{ source.id }}" method="post">#}
-{#                            <button name="ztf_ids" type="submit">Fetch ZTF IDs</button>#}
-{#                        </form>#}
-{#                    </td>#}
-{#                </tr>#}
-{#                <tr class="blank_row"></tr>#}
-{#                <tr>#}
-{#                    <td>#}
-{#                        {% for ztf_id in source.ztf_ids %}#}
-{#                        <p><a href="https://lasair.roe.ac.uk/object/{{ ztf_id }}/" target="_blank">{{ ztf_id }}</a></p>#}
-{#                        {% endfor %}#}
-{#                    </td>#}
-{#                </tr>#}
-{#                <tr class="blank_row"></tr>#}
-{#                <tr>#}
-{#                    <th>Comments</th>#}
-{#                </tr>#}
-{#                <tr>#}
-{#                    <td colspan="5">#}
-{#                        <p>{{ source.comments }}</p>#}
-{#                    </td>#}
-{#                </tr>#}
-{#                <tr>#}
-{#                    <td colspace="5">#}
-{#                        <p><a href="{{ url_for('edit_source_comments', sourceid=source.id) }}">Edit comments</a></p>#}
-{#                    </td>#}
-{#                </tr>#}
-{#            </table>#}
-{#            </td>#}
-{#            <td>#}
-{#                <img src="{{ url_for('static', filename='source/') }}{{ source.id.split('_')[0] }}/{{ source.id }}_lightcurve.png">#}
-{#                <p></p>#}
-{#                {% if current_user.is_following_source(source) %}#}
-{#                 <p>#}
-{#                     <form action="{{ url_for('unfollow', sourceid=source.id) }}" method="post">#}
-{#                         {{ form.hidden_tag() }}#}
-{#                         {{ form.submit(value='Unfollow') }}#}
-{#                     </form>#}
-{#                 </p>#}
-{#                 {% else %}#}
-{#                 <p>#}
-{#                     <form action="{{ url_for('follow', sourceid=source.id) }}" method="post">#}
-{#                         {{ form.hidden_tag() }}#}
-{#                         {{ form.submit(value='Follow') }}#}
-{#                     </form>#}
-{#                 </p>#}
-{#                 {% endif %}#}
-{#                <p align="right">Followed by</p>#}
-{#                {% for user in source.users %}#}
-{#                    <p align="right"><a href="{{ url_for('user', username=user.username) }}">{{ user.username }}</a></p>#}
-{#                {% endfor %}#}
-            </td>
-        </tr>
-    </table>
-{#    <h3> Sources </h3>#}
-{#    <table class="table table-hover" width="auto">#}
-{#        <col style="width:45%">#}
-{#       	<col style="width:55%">#}
-{#        {% for source_id, cand_info in cand_source_dct.items() %}#}
-{#            <tr>#}
-{#                <th> Source ID</th>#}
-{#                <th> Source ID</th>#}
-{#                <td>ID: {{ source_id }} <br>#}
-{#                    {% for cand in cand_info  %}#}
-{#                        color: {{ cand[0] }} <br>#}
-{#                        pass: {{ cand[1] }} <br>#}
-{#                        idx: {{ cand[2] }} <br>#}
-{#                    {% endfor %}#}
-{#                </td>#}
-{#                <td><img src="{{ url_for('static', filename='source/') }}{{ source_id.split('_')[0] }}/{{ source_id }}_lightcurve.png"></td>#}
-{#            </tr>#}
-{#        {% endfor %}#}
-{#    <tr>#}
-{#        {% for source_id, source_info in cand_source_dct.items() %}#}
-{#            <div text-indent:50px;>{{ source_id }}</div>#}
-{#            {% for i in range(source_info|length) %}#}
-{#                <td>{{ source_info['color'][i] }}</td>#}
-{#            {% endfor %}#}
-{#        {% if source_info['idx'] == cand.idx_best %}#}
-{#        <tr style="background-color:rgba(76, 175, 80, 0.6)">#}
-{#        {% else %}#}
-{#        <tr>#}
-{#        {% endif %}#}
-{#            <td><a href="{{ url_for('source', sourceid=source_id) }}">{{ source_id }}</a></td>#}
-{#            <td>{{ "%s" % color }}</td>#}
-{#            <td>{{ "%r" % pass }}</td>#}
-{#        </tr>#}
-{#        {% endfor %}#}
-{#    </table>#}
+        <table class="table table-hover" width="auto">
+            <col style="width:45%">
+            <col style="width:55%">
+            {% for source in sources %}
+            <tr>
+                <td>
+                    <table width="100%">
+                    <tr>
+                        <th>Source  ID</th>
+                        <td><a href="{{ url_for('source', sourceid=source.id) }}">{{ source.id }}</a></td>
+                    </tr>
+                    <tr>
+                        <th>Fit Filter</th>
+                        {% if source.fit_filter is string %}
+                            <td>{{ "%s" % source.fit_filter }}</td>
+                        {% else %}
+                            <td>{{ "None" }}</td>
+                        {% endif %}
+                    </tr>
+                    <tr>
+                        <th>t<sub>0</sub></th>
+                        {% if source.fit_t_0 is float %}
+                            <td>{{ "%.2f" % source.fit_t_0 }}</td>
+                        {% else %}
+                            <td>{{ "None" }}</td>
+                        {% endif %}
+                    </tr>
+                    <tr>
+                        <th>t<sub>E</sub></th>
+                        {% if source.fit_t_E is float %}
+                            <td>{{ "%.2f" % source.fit_t_E }}</td>
+                        {% else %}
+                            <td>{{ "None" }}</td>
+                        {% endif %}
+                    </tr>
+                    <tr>
+                        <th>Chi Squared Flat</th>
+                        {% if source.fit_chi_squared_flat is float %}
+                            <td>{{ "%.2f" % source.fit_chi_squared_flat }}</td>
+                        {% else %}
+                            <td>{{ "None" }}</td>
+                        {% endif %}
+                    </tr>
+                    <tr>
+                       <th>Chi Squared Delta</th>
+                        {% if source.fit_chi_squared_delta is float %}
+                            <td>{{ "%.2f" % source.fit_chi_squared_delta }}</td>
+                        {% else %}
+                            <td>{{ "None" }}</td>
+                        {% endif %}
+                    </tr>
+                    </table>
+                </td>
+                <td>
+                    <img src="{{ url_for('static', filename='source/') }}{{ source.id.split('_')[0] }}/{{ source.id }}_lightcurve.png">
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
     </table>
 {% endblock %}

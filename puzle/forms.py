@@ -68,7 +68,7 @@ class ResetPasswordForm(FlaskForm):
     submit = SubmitField('Request Password Reset')
 
 
-class EditSourceCommentForm(FlaskForm):
+class EditCommentForm(FlaskForm):
     comments = TextAreaField('Comments',
                              validators=[Length(min=0, max=1024)])
     submit = SubmitField('Submit')
