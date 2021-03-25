@@ -59,40 +59,56 @@
                 {% endif %}
             </tr>
             <tr class="blank_row"></tr>
-            <td>
-                <td><p><b>ZTF IDs</b></p></td>
-                <td colspan="4">
+            <tr>
+                <td colspan="3"><b>ZTF IDs</b></td>
+                <td colspan="3"><b>OGLE Target</b></td>
+                <td colspan="3"><b>Follow Status</b></td>
+            </tr>
+            <tr>
+                <td colspan="3">
                     <form action="/fetch_candidate_ztf_ids/{{ cand.id }}" method="post">
                         <button name="ztf_ids" type="submit">Fetch ZTF IDs</button>
                     </form>
                 </td>
-                <td>
-                    <p></p>
+                <td colspan="3">
+                    <form action="/fetch_candidate_ogle_target/{{ cand.id }}" method="post">
+                        <button name="OGLE_target" type="submit">Fetch OGLE Target</button>
+                    </form>
+                </td>
+                <td colspan="3">
                     {% if current_user.is_following_candidate(cand) %}
-                     <p>
                          <form action="{{ url_for('unfollow_candidate', candid=cand.id, whichpage="cand") }}" method="post">
                              {{ form.hidden_tag() }}
                              {{ form.submit(value='Unfollow') }}
-                         </form>
-                     </p>
+                     </form>
                      {% else %}
-                     <p>
                          <form action="{{ url_for('follow_candidate', candid=cand.id, whichpage="cand") }}" method="post">
                              {{ form.hidden_tag() }}
                              {{ form.submit(value='Follow') }}
                          </form>
-                     </p>
                      {% endif %}
-                    <p align="right">Followed by</p>
-                    {% for user in cand.users %}
-                        <p align="right"><a href="{{ url_for('user', username=user.username) }}">{{ user.username }}</a></p>
-                    {% endfor %}
                 </td>
             </tr>
-            <tr align="left">
-                <td colspace="2">
-                    {% for ztf_id in cand.ztf_ids %}
-                    <p><a href="https://lasair.roe.ac.uk/object/{{ ztf_id }}/" target="_blank">{{ ztf_id }}</a></p>
+            <tr>
+                <td colspan="3">
+                    {% if ztf_id %}
+                        {% for ztf_id in cand.ztf_ids %}
+                            <p><a href="https://lasair.roe.ac.uk/object/{{ ztf_id }}/" target="_blank">{{ ztf_id }}</a></p>
+                        {% endfor %}
+                    {% else %}
+                        None
+                    {% endif %}
+                </td>
+                <td colspan="3">
+                    {% if cand.ogle_target %}
+                        <p><a href="http://ogle.astrouw.edu.pl/ogle4/ews/{{ cand.ogle_target.split('-')[0] }}/blg-{{ cand.ogle_target.split('-')[2] }}.html" target="_blank">{{ cand.ogle_target }}</a></p>
+                    {% else %}
+                        None
+                    {% endif %}
+                </td>
+                <td colspan="3">
+                    {% for user in cand.users %}
+                        <p><a href="{{ url_for('user', username=user.username) }}">{{ user.username }}</a></p>
                     {% endfor %}
                 </td>
             </tr>

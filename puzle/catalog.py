@@ -6,6 +6,10 @@ catalog.py
 import os
 import psycopg2
 from collections import namedtuple
+from astropy.coordinates import SkyCoord
+from astropy import units as u
+import requests
+import numpy as np
 
 
 def ulens_con():
@@ -116,3 +120,39 @@ def query_ps1_psc(ra, dec, radius=2, con=None):
     else:
         rf = None
     return rf
+
+
+def fetch_ogle_targets():
+    target_ids = []
+    ra_arr = []
+    dec_arr = []
+    for year in ['2017', '2018', '2019']:
+        URL = f'http://ogle.astrouw.edu.pl/ogle4/ews/{year}/ews.html'
+        html_lines = requests.get(URL).content.decode().split('\n')
+
+        target_idxs = [i for i, line in enumerate(html_lines) if 'TARGET="event"' in line and 'XX' not in line]
+        target_ids.extend([html_lines[i].split('>')[-2].replace('</A', '') for i in target_idxs])
+        ra_arr.extend([html_lines[i+2].replace('<TD>', '') for i in target_idxs])
+        dec_arr.extend([html_lines[i+3].replace('<TD>', '') for i in target_idxs])
+
+    target_coords = SkyCoord(ra_arr, dec_arr, frame='icrs', unit=u.degree)
+
+    return {'target_ids': target_ids, 'target_coords': target_coords}
+
+
+OGLE_TARGETS = fetch_ogle_targets()
+
+
+def fetch_ogle_target(ra_cand, dec_cand, radius=5):
+    target_ids = OGLE_TARGETS['target_ids']
+    target_coords = OGLE_TARGETS['target_coords']
+
+    candidate_coord = SkyCoord(ra_cand, dec_cand, frame='icrs', unit=u.degree)
+
+    separation = target_coords.separation(candidate_coord).value
+    if np.min(separation) < (radius / 3600.):
+        target_id = target_ids[np.argmin(separation)]
+    else:
+        target_id = None
+
+    return target_id

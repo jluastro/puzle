@@ -17,6 +17,7 @@ from zort.source import Source as zort_source
 from puzle import app
 from puzle import db
 from puzle import login
+from puzle.catalog import fetch_ogle_target
 
 
 @login.user_loader
@@ -459,6 +460,7 @@ class Candidate(db.Model):
     _ztf_ids = db.Column(db.String(256))
     num_objs_pass = db.Column(db.Integer)
     num_objs_tot = db.Column(db.Integer)
+    ogle_target = db.Column(db.String(128))
 
     def __init__(self, source_id_arr, ra, dec,
                  ingest_job_id, id,
@@ -469,7 +471,7 @@ class Candidate(db.Model):
                  f_1_best, a_type_best,
                  chi_squared_flat_best, chi_squared_delta_best,
                  idx_best, num_objs_pass, num_objs_tot,
-                 comments=None, _ztf_ids=None,):
+                 comments=None, _ztf_ids=None, ogle_target=None):
         self.source_id_arr = source_id_arr
         self.color_arr = color_arr
         self.pass_arr = pass_arr
@@ -495,6 +497,7 @@ class Candidate(db.Model):
         self.comments = comments
         self._ztf_ids = _ztf_ids
         self._glonlat = None
+        self.ogle_target = ogle_target
 
     def __repr__(self):
         str = 'Candidate \n'
@@ -580,3 +583,7 @@ class Candidate(db.Model):
     @property
     def unique_source_id_arr(self):
         return list(set(self.source_id_arr))
+
+    def fetch_ogle_target(self):
+        self.ogle_target = fetch_ogle_target(self.ra, self.dec)
+        return self.ogle_target

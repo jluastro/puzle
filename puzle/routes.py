@@ -206,6 +206,19 @@ def fetch_candidate_ztf_ids(candid):
     return redirect(url_for('candidate', candid=candid))
 
 
+@app.route('/fetch_candidate_ogle_target/<candid>', methods=['POST'])
+@login_required
+def fetch_candidate_ogle_target(candid):
+    cand = Candidate.query.filter_by(id=candid).first_or_404()
+    ogle_target = cand.fetch_ogle_target()
+    if ogle_target:
+        flash('OGLE Target Found', 'success')
+    else:
+        flash('No OGLE Target Found', 'success')
+    db.session.commit()
+    return redirect(url_for('candidate', candid=candid))
+
+
 @app.route('/follow_source/<sourceid>', methods=['POST'])
 @login_required
 def follow_source(sourceid):
