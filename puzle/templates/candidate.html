@@ -91,7 +91,7 @@
             </tr>
             <tr>
                 <td colspan="3">
-                    {% if ztf_id %}
+                    {% if cand.ztf_ids|length > 0 %}
                         {% for ztf_id in cand.ztf_ids %}
                             <p><a href="https://lasair.roe.ac.uk/object/{{ ztf_id }}/" target="_blank">{{ ztf_id }}</a></p>
                         {% endfor %}
