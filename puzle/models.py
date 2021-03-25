@@ -149,6 +149,7 @@ class Source(db.Model):
     fit_a_type = db.Column(db.String(128))
     fit_chi_squared_flat = db.Column(db.Float)
     fit_chi_squared_delta = db.Column(db.Float)
+    cand_id = db.Column(db.String(128))
 
     def __init__(self, object_id_g, object_id_r, object_id_i,
                  lightcurve_position_g, lightcurve_position_r, lightcurve_position_i,
@@ -158,7 +159,7 @@ class Source(db.Model):
                  fit_t_E=None, fit_f_0=None,
                  fit_f_1=None, fit_a_type=None,
                  fit_chi_squared_flat=None,
-                 fit_chi_squared_delta=None):
+                 fit_chi_squared_delta=None, cand_id=None):
         self.object_id_g = object_id_g
         self.object_id_r = object_id_r
         self.object_id_i = object_id_i
@@ -182,6 +183,7 @@ class Source(db.Model):
         self.fit_a_type = fit_a_type
         self.fit_chi_squared_flat = fit_chi_squared_flat
         self.fit_chi_squared_delta = fit_chi_squared_delta
+        self.cand_id = cand_id
         
     def __repr__(self):
         return f'Source \n' \

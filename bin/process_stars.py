@@ -337,8 +337,9 @@ def extract_final_idxs(eta_residual_idxs_dct):
 
 def assemble_candidates(stars_and_sources, eta_residual_idxs_dct, obj_data):
     candidates = []
+    source_id_to_cand_id_dct = {}
     source_ids = []
-    best_fit_stats = []
+    fit_stats_best = []
 
     final_idxs = extract_final_idxs(eta_residual_idxs_dct)
     unique_star_idxs = list(set([i for i, _, _ in final_idxs]))
@@ -357,6 +358,7 @@ def assemble_candidates(stars_and_sources, eta_residual_idxs_dct, obj_data):
         for j, source in enumerate(sources):
             for k, obj in enumerate(source.zort_source.objects):
                 source_id_arr.append(source.id)
+                source_id_to_cand_id_dct[source.id] = star.id
                 color_arr.append(obj.color)
                 source_obj_idxs_tot.append((j, k))
                 if (j, k) in source_obj_idxs_pass:
@@ -385,8 +387,11 @@ def assemble_candidates(stars_and_sources, eta_residual_idxs_dct, obj_data):
         eta_threshold_high = objectData.eta_threshold_high
 
         # if fit_data is None, then this should not be a valid "best" object!
-        assert fit_data is not None
-        t_0, t_E, f_0, f_1, chi_squared_delta, chi_squared_flat, a_type = fit_data
+        # assert fit_data is not None
+        if fit_data is not None:
+            t_0, t_E, f_0, f_1, chi_squared_delta, chi_squared_flat, a_type = fit_data
+        else:
+            t_0, t_E, f_0, f_1, chi_squared_delta, chi_squared_flat, a_type = None, None, None, None, None, None, None
 
         cand = Candidate(id=star.id,
                          source_id_arr=source_id_arr,
@@ -413,9 +418,9 @@ def assemble_candidates(stars_and_sources, eta_residual_idxs_dct, obj_data):
         candidates.append(cand)
 
         fit_filter = obj.color
-        best_fit_stats.append((fit_filter, t_E, t_0, f_0, f_1, a_type, chi_squared_flat, chi_squared_delta))
+        fit_stats_best.append((fit_filter, t_E, t_0, f_0, f_1, a_type, chi_squared_flat, chi_squared_delta))
 
-    return candidates, source_ids, best_fit_stats
+    return candidates, source_ids, fit_stats_best, source_id_to_cand_id_dct
 
 
 def filter_stars_to_candidates(source_job_id, stars_and_sources,
@@ -451,29 +456,30 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
                 f'{job_stats["num_objs_pass_eta_residual"]} objects pass eta_residual cut')
 
     logger.info(f'Job {source_job_id}: Assembling candidates')
-    candidates, source_ids, best_fit_stats = assemble_candidates(stars_and_sources,
-                                                                 eta_residual_idxs_dct,
-                                                                 obj_data)
+    candidates, source_ids, fit_stats_best, source_id_to_cand_id_dct = assemble_candidates(
+        stars_and_sources, eta_residual_idxs_dct, obj_data)
     job_stats['num_candidates'] = len(candidates)
     job_stats['eta_thresholds_low'] = eta_threshold_low_dct
     job_stats['eta_thresholds_high'] = eta_threshold_high_dct
-    return candidates, job_stats, source_ids, best_fit_stats
+    return candidates, job_stats, source_ids, fit_stats_best, source_id_to_cand_id_dct
 
 
-def upload_candidates(candidates, source_ids, best_fit_stats):
+def upload_candidates(candidates, source_ids, fit_stats_best, source_id_to_cand_id_dct):
     insert_db_id()  # get permission to make a db connection
     for cand in candidates:
         db.session.add(cand)
 
     # grab sources from db and hash them in dictionary
-    source_dbs = db.session.query(Source).filter(Source.id.in_(source_ids)).all()
+    source_ids_tot = list(source_id_to_cand_id_dct.keys())
+    source_dbs = db.session.query(Source).filter(Source.id.in_(source_ids_tot)).all()
     source_db_dct = {}
     for source_db in source_dbs:
         source_db_dct[source_db.id] = source_db
+        source_db.cand_id = source_id_to_cand_id_dct[source_db.id]
 
-    for source_id, best_fit_stat in zip(source_ids, best_fit_stats):
+    for source_id, fit_stat in zip(source_ids, fit_stats_best):
         source_db = source_db_dct[source_id]
-        fit_filter, t_E, t_0, f_0, f_1, a_type, chi_squared_flat, chi_squared_delta = best_fit_stat
+        fit_filter, t_E, t_0, f_0, f_1, a_type, chi_squared_flat, chi_squared_delta = fit_stat
         source_db.fit_filter = fit_filter
         source_db.fit_t_0 = t_0
         source_db.fit_t_E = t_E
@@ -537,12 +543,12 @@ def process_stars(shutdown_time=10, single_job=False):
         num_stars = len(stars_and_sources)
         if num_stars > 0:
             logger.info(f'Job {source_job_id}: Processing {num_stars} stars')
-            candidates, job_stats, source_ids, best_fit_stats = filter_stars_to_candidates(
+            candidates, job_stats, source_ids, fit_stats_best, source_id_to_cand_id_dct = filter_stars_to_candidates(
                 source_job_id, stars_and_sources)
             num_candidates = len(candidates)
             logger.info(f'Job {source_job_id}: Uploading {num_candidates} candidates')
             if num_candidates > 0:
-                upload_candidates(candidates, source_ids, best_fit_stats)
+                upload_candidates(candidates, source_ids, fit_stats_best, source_id_to_cand_id_dct)
             logger.info(f'Job {source_job_id}: Processing complete')
         else:
             logger.info(f'Job {source_job_id}: No stars, skipping process')
