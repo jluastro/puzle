@@ -403,6 +403,11 @@ def radial_search():
         prev_url = url_for('candidates', page=cands.prev_num) \
             if cands.has_prev else None
         paginate = True
+
+        for cand in cands.items:
+            sources = Source.query.filter(Source.id.in_(cand.source_id_arr)).all()
+            for source in sources:
+                source.load_lightcurve_plot()
     else:
         cands = None
         next_url = None
@@ -499,6 +504,11 @@ def filter_search():
         prev_url = url_for('candidates', page=cands.prev_num) \
             if cands.has_prev else None
         paginate = True
+
+        for cand in cands.items:
+            sources = Source.query.filter(Source.id.in_(cand.source_id_arr)).all()
+            for source in sources:
+                source.load_lightcurve_plot()
     else:
         cands = None
         next_url = None
