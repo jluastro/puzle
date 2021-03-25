@@ -136,8 +136,29 @@
                 <td>
                     <table width="100%">
                     <tr>
-                        <th>Source  ID</th>
-                        <td><a href="{{ url_for('source', sourceid=source.id) }}">{{ source.id }}</a></td>
+                        <th>Source ID</th>
+{#                        <td><a href="{{ url_for('source', sourceid=source.id) }}">{{ source.id }}</a></td>#}
+                        <td>{{ source.id }}</td>
+                    </tr>
+                    <tr>
+                        <th>Field</th>
+                    {% if source.zort_source.object_g %}
+                        <td>{{ source.zort_source.object_g.fieldid }}</td>
+                    {% elif source.zort_source.object_id_r %}
+                        <td>{{ source.zort_source.object_r.fieldid }}</td>
+                    {% else %}
+                        <td>{{ source.zort_source.object_i.fieldid }}</td>
+                    {% endif %}
+                    </tr>
+                    <tr>
+                        <th>RCID</th>
+                    {% if source.zort_source.object_g %}
+                        <td>{{ source.zort_source.object_g.rcid }}</td>
+                    {% elif source.zort_source.object_id_r %}
+                        <td>{{ source.zort_source.object_r.rcid }}</td>
+                    {% else %}
+                        <td>{{ source.zort_source.object_i.rcid }}</td>
+                    {% endif %}
                     </tr>
                     <tr>
                         <th>Is Best</th>
