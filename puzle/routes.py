@@ -80,6 +80,13 @@ def user(username):
                            next_url=next_url, prev_url=prev_url)
 
 
+@app.route('/users', methods=['GET'])
+@login_required
+def users():
+    users = User.query.all()
+    return render_template('users.html', users=users)
+
+
 @app.route('/edit_profile', methods=['GET', 'POST'])
 @login_required
 def edit_profile():
