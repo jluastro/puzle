@@ -47,8 +47,8 @@
                 <td>{{ "%.2f" % cand.eta_threshold_low_best }}</td>
                 <td>{{ "%.2f" % cand.eta_residual_best }}</td>
                 <td>{{ "%.2f" % cand.eta_threshold_high_best }}</td>
-                {% if cand.rf_score is float %}
-                    <td>{{ "%.2f" % cand.rf_score }}</td>
+                {% if cand.rf_score_best is float %}
+                    <td>{{ "%.2f" % cand.rf_score_best }}</td>
                 {%  else %}
                     <td>{{ "None" }}</td>
                 {% endif %}
