@@ -322,17 +322,18 @@ def candidates():
 @app.route('/radial_search', methods=['GET', 'POST'])
 @login_required
 def radial_search():
-    form_filter = RadialSearchForm()
-    form_cand = CandidateOrderForm()
-    radius = form_filter.radius.data
-    if form_filter.validate_on_submit():
-        if form_filter.ra.data and form_filter.dec.data:
-            ra, dec = form_filter.ra.data, form_filter.dec.data
-            flash('Searching (ra, dec, radius) = (%.5f, %.5f, %.2f)' % (ra, dec, radius),
+    form_radial = RadialSearchForm()
+    glon, glat = None, None
+    if form_radial.validate_on_submit():
+        radius = form_radial.radius.data
+
+        if form_radial.ra.data and form_radial.dec.data:
+            ra, dec = form_radial.ra.data, form_radial.dec.data
+            flash('Results for (ra, dec, radius) = (%.5f, %.5f, %.2f)' % (ra, dec, radius),
                   'info')
-        elif form_filter.glon.data and form_filter.glat.data:
-            glon, glat = form_filter.glon.data, form_filter.glat.data
-            flash('Searching (glon, glat, radius) = (%.5f, %.5f, %.2f)' % (glon, glat, radius),
+        elif form_radial.glon.data and form_radial.glat.data:
+            glon, glat = form_radial.glon.data, form_radial.glat.data
+            flash('Results for (glon, glat, radius) = (%.5f, %.5f, %.2f)' % (glon, glat, radius),
                   'info')
             coord = SkyCoord(glon, glat,
                              unit=u.degree, frame='galactic')
@@ -344,13 +345,33 @@ def radial_search():
                   'must be entered.', 'danger')
             return redirect(url_for('radial_search'))
 
-        if form_filter.order_by.data == 'eta_best':
+        session['radius'] = radius
+        session['ra'] = ra
+        session['dec'] = dec
+        if glon:
+            session['glon'] = glon
+            session['glat'] = glat
+        session['order_by'] = form_radial.order_by.data
+        session['order_by_num_objs'] = form_radial.order_by_num_objs.data
+
+    else:
+        for key in ['ra', 'dec', 'glon', 'glat', 'radius']:
+            if key in session:
+                getattr(form_radial, key).data = session[key]
+            else:
+                session[key] = None
+
+    if session['ra']:
+        ra = session['ra']
+        dec = session['dec']
+        radius = session['radius']
+        query = Candidate.query.filter(Candidate.cone_search(ra, dec, radius))
+        if session['order_by'] == 'eta_best':
             order_by_cond = Candidate.eta_best.asc()
-        elif form_filter.order_by.data == 'chi_squared_delta_best':
+        elif session['order_by'] == 'chi_squared_delta_best':
             order_by_cond = Candidate.chi_squared_delta_best.desc()
 
-        query = Candidate.query.filter(Candidate.cone_search(ra, dec, radius))
-        if form_filter.order_by_num_objs.data:
+        if session['order_by_num_objs']:
             query = query.order_by(Candidate.num_objs_pass.desc(), order_by_cond)
         else:
             query = query.order_by(order_by_cond)
@@ -361,15 +382,28 @@ def radial_search():
             if cands.has_next else None
         prev_url = url_for('candidates', page=cands.prev_num) \
             if cands.has_prev else None
+        paginate = True
+    else:
+        cands = None
+        next_url = None
+        prev_url = None
+        paginate = None
 
-        flash('Filter Search Results', 'info')
-        return render_template('candidates.html', cands=cands,
-                               next_url=next_url, prev_url=prev_url,
-                               title='Filter Search Results', zip=zip,
-                               paginate=True, form=form_cand)
+    return render_template('radial_search.html', cands=cands,
+                           next_url=next_url, prev_url=prev_url,
+                           title='Radial Search Results', zip=zip,
+                           paginate=paginate, form=form_radial)
 
-    return render_template('radial_search.html', form=form_filter,
-                           title='Radial Search')
+
+@app.route('/reset_radial_search', methods=['GET'])
+@login_required
+def reset_radial_search():
+    for key in ['ra', 'dec', 'glon', 'glat', 'radius']:
+        try:
+            del session[key]
+        except KeyError:
+            pass
+    return redirect(url_for('radial_search'))
 
 
 @app.route('/filter_search', methods=['GET', 'POST'])
