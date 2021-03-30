@@ -236,7 +236,3 @@ def query_ps1_psc_on_disk(ra, dec, radius=2):
                       dec_stack=dec_ps1_psc,
                       rf_score=rf_score)
     return rf
-
-
-if __name__ == '__main__':
-    generate_ps1_psc_maps()
