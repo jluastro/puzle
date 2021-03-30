@@ -4,12 +4,16 @@ catalog.py
 """
 
 import os
+import glob
+import h5py
+import pickle
 import psycopg2
 from collections import namedtuple
 from astropy.coordinates import SkyCoord
 from astropy import units as u
 import requests
 import numpy as np
+from scipy.spatial import cKDTree
 
 
 def ulens_con():
@@ -156,3 +160,82 @@ def fetch_ogle_target(ra_cand, dec_cand, radius=5):
         target_id = None
 
     return target_id
+
+
+def generate_ps1_psc_maps():
+    ps1_psc_dir = '/global/cfs/cdirs/uLens/PS1_PSC'
+    ps1_psc_filenames = glob.glob(f'{ps1_psc_dir}/*.h5')
+    ps1_psc_filenames.sort()
+
+    if 'SLURMD_NODENAME' in os.environ:
+        from mpi4py import MPI
+        comm = MPI.COMM_WORLD
+        rank = comm.rank
+        size = comm.size
+    else:
+        rank = 0
+        size = 0
+
+    my_filenames = np.array_split(ps1_psc_filenames, size)[rank]
+
+    for ps1_psc_filename in my_filenames:
+        radec = h5py.File(ps1_psc_filename, 'r')['class_table']['block0_values'][:, :2]
+        rf_scores = h5py.File(ps1_psc_filename, 'r')['class_table']['block0_values'][:, 2]
+        kdtree = cKDTree(radec)
+
+        map_filename = ps1_psc_filename.replace('.h5', '.map')
+        with open(map_filename, 'wb') as fileObj:
+            pickle.dump((kdtree, rf_scores), fileObj)
+
+
+def return_ps1_psc(dec):
+    dec_sign = np.sign(dec)
+    if dec_sign == 1:
+        dec_file = dec
+        dec_prefix = ''
+    elif dec_sign == -1:
+        dec_file = np.abs(dec) + 1 / 3.
+        dec_prefix = 'neg'
+    else:
+        dec_file = 0
+        dec_prefix = ''
+
+    dec_floor_str = np.floor(dec_file).astype(int).astype(str)
+    dec_third = np.mod(dec_file, 1) / (1 / 3.)
+
+    if dec_third < 1:
+        dec_ext_str = '0'
+    elif dec_third < 2:
+        dec_ext_str = '33'
+    elif dec_third < 3:
+        dec_ext_str = '66'
+    else:
+        raise Exception
+
+    ps1_psc_fname = f'/global/cfs/cdirs/uLens/PS1_PSC/' \
+                    f'dec_{dec_prefix}{dec_floor_str}_{dec_ext_str}_classifications.map'
+    ps1_psc_kdtree, rf_scores = pickle.load(open(ps1_psc_fname, 'rb'))
+    return ps1_psc_kdtree, rf_scores
+
+
+def query_ps1_psc_on_disk(ra, dec, radius=2):
+    ps1_psc_kdtree, rf_scores = return_ps1_psc(dec)
+    radius_deg = radius / 3600.
+    idx_arr = ps1_psc_kdtree.query_ball_point((ra, dec), radius_deg)
+
+    if len(idx_arr) == 0:
+        rf = None
+    else:
+        idx = idx_arr[0]
+        rf_score = rf_scores[idx]
+        ra_ps1_psc, dec_ps1_psc = ps1_psc_kdtree.data[idx]
+        rf_tuple = namedtuple('rf',
+                              'ra_stack dec_stack rf_score')
+        rf = rf_tuple(ra_stack=ra_ps1_psc,
+                      dec_stack=dec_ps1_psc,
+                      rf_score=rf_score)
+    return rf
+
+
+if __name__ == '__main__':
+    generate_ps1_psc_maps()
