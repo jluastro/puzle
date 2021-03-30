@@ -174,7 +174,7 @@ def generate_ps1_psc_maps():
         size = comm.size
     else:
         rank = 0
-        size = 0
+        size = 1
 
     my_filenames = np.array_split(ps1_psc_filenames, size)[rank]
 
