@@ -178,7 +178,8 @@ def generate_ps1_psc_maps():
 
     my_filenames = np.array_split(ps1_psc_filenames, size)[rank]
 
-    for ps1_psc_filename in my_filenames:
+    for i, ps1_psc_filename in enumerate(my_filenames):
+        print(rank, ps1_psc_filename, i, len(my_filenames))
         radec = h5py.File(ps1_psc_filename, 'r')['class_table']['block0_values'][:, :2]
         rf_scores = h5py.File(ps1_psc_filename, 'r')['class_table']['block0_values'][:, 2]
         kdtree = cKDTree(radec)
