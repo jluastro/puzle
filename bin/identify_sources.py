@@ -154,7 +154,7 @@ def export_sources(job_id, source_list):
     if os.path.exists(fname):
         os.remove(fname)
 
-    source_map = {}
+    sources_map = {}
     with open(fname, 'w') as f:
         header = 'id,'
         header += 'object_id_g,'
@@ -180,13 +180,13 @@ def export_sources(job_id, source_list):
                 line = f'{source_line}\n'
                 f.write(line)
 
-                source_map_key = '%s_%s' % (source.ingest_job_id, source_id)
-                source_map[source_map_key] = f.tell() - len(line)
+                sources_map_key = '%s_%s' % (source.ingest_job_id, source_id)
+                sources_map[sources_map_key] = f.tell() - len(line)
                 source_id += 1
 
     map_filename = fname.replace('.txt', '.sources_map')
     with open(map_filename, 'wb') as fileObj:
-        pickle.dump(source_map, fileObj)
+        pickle.dump(sources_map, fileObj)
 
 
 def identify_sources(nepochs_min=20, shutdown_time=10, single_job=False):
