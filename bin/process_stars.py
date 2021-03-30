@@ -104,51 +104,6 @@ def csv_line_to_source(line):
     return source
 
 
-# def fetch_stars_and_sources(source_job_id):
-#     DR4_dir = return_DR4_dir()
-#     dir = '%s/stars_%s' % (DR4_dir, str(source_job_id)[:3])
-#
-#     if not os.path.exists(dir):
-#         logging.error('Source directory missing!')
-#         return
-#
-#     fname = f'{dir}/stars.{source_job_id:06}.txt'
-#     if not os.path.exists(fname):
-#         logging.error('Source file missing!')
-#         return
-#
-#     lines = open(fname, 'r').readlines()[1:]
-#
-#     source_ids = []
-#     source_to_star_dict = {}
-#     for i, line in enumerate(lines):
-#         star = csv_line_to_star_and_sources(line)
-#         source_ids.extend(star.source_ids)
-#         for source_id in star.source_ids:
-#             source_to_star_dict[source_id] = star
-#
-#     sources_fname = fname.replace('star', 'source')
-#     sources_map_fname = sources_fname.replace('.txt', '.sources_map')
-#     sources_map = pickle.load(open(sources_map_fname, 'rb'))
-#
-#     f = open(sources_fname, 'r')
-#
-#     insert_db_id()
-#     sources_db = db.session.query(Source).filter(Source.id.in_(source_ids)).all()
-#     db.session.close()
-#     remove_db_id()
-#     star_to_source_dict = defaultdict(list)
-#     for source_db in sources_db:
-#         star = source_to_star_dict[source_db.id]
-#         star_to_source_dict[star].append(source_db)
-#
-#     stars_and_sources = {}
-#     for star, sources in star_to_source_dict.items():
-#         stars_and_sources[star.id] = (star, sources)
-#
-#     return stars_and_sources
-
-
 def fetch_stars_and_sources(source_job_id):
     DR4_dir = return_DR4_dir()
     dir = '%s/stars_%s' % (DR4_dir, str(source_job_id)[:3])
