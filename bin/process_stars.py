@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from scipy.stats import binned_statistic
 import logging
 from collections import defaultdict, namedtuple
+import pickle
 
 from puzle.models import Source, StarIngestJob, Star, StarProcessJob, Candidate
 from puzle.utils import fetch_job_enddate, return_DR4_dir
@@ -80,6 +81,74 @@ def csv_line_to_star_and_sources(line):
     return star
 
 
+def _parse_object_int(attr):
+    if attr == 'None':
+        return None
+    else:
+        return int(attr)
+
+
+def csv_line_to_source(line):
+    attrs = line.replace('\n', '').split(',')
+    source = Source(id=attrs[0],
+                    object_id_g=_parse_object_int(attrs[1]),
+                    object_id_r=_parse_object_int(attrs[2]),
+                    object_id_i=_parse_object_int(attrs[3]),
+                    lightcurve_position_g=_parse_object_int(attrs[4]),
+                    lightcurve_position_r=_parse_object_int(attrs[5]),
+                    lightcurve_position_i=_parse_object_int(attrs[6]),
+                    lightcurve_filename=attrs[7],
+                    ra=float(attrs[8]),
+                    dec=float(attrs[9]),
+                    ingest_job_id=int(attrs[10]))
+    return source
+
+
+# def fetch_stars_and_sources(source_job_id):
+#     DR4_dir = return_DR4_dir()
+#     dir = '%s/stars_%s' % (DR4_dir, str(source_job_id)[:3])
+#
+#     if not os.path.exists(dir):
+#         logging.error('Source directory missing!')
+#         return
+#
+#     fname = f'{dir}/stars.{source_job_id:06}.txt'
+#     if not os.path.exists(fname):
+#         logging.error('Source file missing!')
+#         return
+#
+#     lines = open(fname, 'r').readlines()[1:]
+#
+#     source_ids = []
+#     source_to_star_dict = {}
+#     for i, line in enumerate(lines):
+#         star = csv_line_to_star_and_sources(line)
+#         source_ids.extend(star.source_ids)
+#         for source_id in star.source_ids:
+#             source_to_star_dict[source_id] = star
+#
+#     sources_fname = fname.replace('star', 'source')
+#     sources_map_fname = sources_fname.replace('.txt', '.sources_map')
+#     sources_map = pickle.load(open(sources_map_fname, 'rb'))
+#
+#     f = open(sources_fname, 'r')
+#
+#     insert_db_id()
+#     sources_db = db.session.query(Source).filter(Source.id.in_(source_ids)).all()
+#     db.session.close()
+#     remove_db_id()
+#     star_to_source_dict = defaultdict(list)
+#     for source_db in sources_db:
+#         star = source_to_star_dict[source_db.id]
+#         star_to_source_dict[star].append(source_db)
+#
+#     stars_and_sources = {}
+#     for star, sources in star_to_source_dict.items():
+#         stars_and_sources[star.id] = (star, sources)
+#
+#     return stars_and_sources
+
+
 def fetch_stars_and_sources(source_job_id):
     DR4_dir = return_DR4_dir()
     dir = '%s/stars_%s' % (DR4_dir, str(source_job_id)[:3])
@@ -93,28 +162,22 @@ def fetch_stars_and_sources(source_job_id):
         logging.error('Source file missing!')
         return
 
-    lines = open(fname, 'r').readlines()[1:]
+    sources_fname = fname.replace('star', 'source')
+    sources_map_fname = sources_fname.replace('.txt', '.sources_map')
+    sources_map = pickle.load(open(sources_map_fname, 'rb'))
 
-    source_ids = []
-    source_to_star_dict = {}
-    for i, line in enumerate(lines):
-        star = csv_line_to_star_and_sources(line)
-        source_ids.extend(star.source_ids)
-        for source_id in star.source_ids:
-            source_to_star_dict[source_id] = star
-
-    insert_db_id()
-    sources_db = db.session.query(Source).filter(Source.id.in_(source_ids)).all()
-    db.session.close()
-    remove_db_id()
-    star_to_source_dict = defaultdict(list)
-    for source_db in sources_db:
-        star = source_to_star_dict[source_db.id]
-        star_to_source_dict[star].append(source_db)
+    lines_star = open(fname, 'r').readlines()[1:]
+    f_sources = open(sources_fname, 'r')
 
     stars_and_sources = {}
-    for star, sources in star_to_source_dict.items():
-        stars_and_sources[star.id] = (star, sources)
+    for i, line_star in enumerate(lines_star):
+        star = csv_line_to_star_and_sources(line_star)
+        source_arr = []
+        for source_id in star.source_ids:
+            f_sources.seek(sources_map[source_id])
+            line_source = f_sources.readline()
+            source_arr.append(csv_line_to_source(line_source))
+        stars_and_sources[star.id] = (star, source_arr)
 
     return stars_and_sources
 
@@ -519,7 +582,41 @@ def finish_job(source_job_id, job_stats):
     remove_db_id()  # release permission for this db connection
 
 
-def process_stars(shutdown_time=10, single_job=False):
+def process_stars(source_job_id):
+    stars_and_sources = fetch_stars_and_sources(source_job_id)
+
+    num_stars = len(stars_and_sources)
+    if num_stars > 0:
+        logger.info(f'Job {source_job_id}: Processing {num_stars} stars')
+        candidates, job_stats, source_ids, fit_stats_best, source_id_to_cand_id_dct = filter_stars_to_candidates(
+            source_job_id, stars_and_sources)
+        num_candidates = len(candidates)
+        logger.info(f'Job {source_job_id}: Uploading {num_candidates} candidates')
+        if num_candidates > 0:
+            upload_candidates(candidates, source_ids, fit_stats_best, source_id_to_cand_id_dct)
+        logger.info(f'Job {source_job_id}: Processing complete')
+    else:
+        logger.info(f'Job {source_job_id}: No stars, skipping process')
+        job_stats = {'num_stars': 0,
+                     'num_sources': 0,
+                     'num_objs': 0,
+                     'num_objs_pass_n_days': 0,
+                     'num_objs_pass_eta': 0,
+                     'num_stars_pass_eta': 0,
+                     'num_objs_pass_rf': 0,
+                     'num_stars_pass_rf': 0,
+                     'num_objs_pass_eta_residual': 0,
+                     'num_stars_pass_eta_residual': 0,
+                     'epoch_edges': {},
+                     'eta_thresholds_low': {},
+                     'eta_thresholds_high': {},
+                     'num_candidates': 0}
+
+    finish_job(source_job_id, job_stats)
+    logger.info(f'Job {source_job_id}: Job complete')
+
+
+def process_stars_script(shutdown_time=10, single_job=False):
     job_enddate = fetch_job_enddate()
     if job_enddate:
         script_enddate = job_enddate - timedelta(minutes=shutdown_time)
@@ -538,37 +635,7 @@ def process_stars(shutdown_time=10, single_job=False):
             time.sleep(2 * 60 * shutdown_time)
             return
 
-        stars_and_sources = fetch_stars_and_sources(source_job_id)
-
-        num_stars = len(stars_and_sources)
-        if num_stars > 0:
-            logger.info(f'Job {source_job_id}: Processing {num_stars} stars')
-            candidates, job_stats, source_ids, fit_stats_best, source_id_to_cand_id_dct = filter_stars_to_candidates(
-                source_job_id, stars_and_sources)
-            num_candidates = len(candidates)
-            logger.info(f'Job {source_job_id}: Uploading {num_candidates} candidates')
-            if num_candidates > 0:
-                upload_candidates(candidates, source_ids, fit_stats_best, source_id_to_cand_id_dct)
-            logger.info(f'Job {source_job_id}: Processing complete')
-        else:
-            logger.info(f'Job {source_job_id}: No stars, skipping process')
-            job_stats = {'num_stars': 0,
-                         'num_sources': 0,
-                         'num_objs': 0,
-                         'num_objs_pass_n_days': 0,
-                         'num_objs_pass_eta': 0,
-                         'num_stars_pass_eta': 0,
-                         'num_objs_pass_rf': 0,
-                         'num_stars_pass_rf': 0,
-                         'num_objs_pass_eta_residual': 0,
-                         'num_stars_pass_eta_residual': 0,
-                         'epoch_edges': {},
-                         'eta_thresholds_low': {},
-                         'eta_thresholds_high': {},
-                         'num_candidates': 0}
-
-        finish_job(source_job_id, job_stats)
-        logger.info(f'Job {source_job_id}: Job complete')
+        process_stars(source_job_id)
 
         if single_job:
             return
@@ -576,4 +643,4 @@ def process_stars(shutdown_time=10, single_job=False):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    process_stars()
+    process_stars_script()
