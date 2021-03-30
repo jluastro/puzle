@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from zort.lightcurveFile import LightcurveFile
 from sqlalchemy.sql.expression import func
 import logging
+import pickle
 
 from puzle.models import Source, SourceIngestJob
 from puzle.utils import fetch_job_enddate, return_DR4_dir, fetch_lightcurve_rcids
@@ -153,6 +154,7 @@ def export_sources(job_id, source_list):
     if os.path.exists(fname):
         os.remove(fname)
 
+    source_map = {}
     with open(fname, 'w') as f:
         header = 'id,'
         header += 'object_id_g,'
@@ -175,8 +177,16 @@ def export_sources(job_id, source_list):
                 source_keys.add(key)
                 source_line = source_to_csv_line(source, source_id)
                 source_exported.append(source)
+                line = f'{source_line}\n'
+                f.write(line)
+
+                source_map_key = '%s_%s' % (source.ingest_job_id, source_id)
+                source_map[source_map_key] = f.tell() - len(line)
                 source_id += 1
-                f.write(f'{source_line}\n')
+
+    map_filename = fname.replace('.txt', '.source_map')
+    with open(map_filename, 'wb') as fileObj:
+        pickle.dump(map, fileObj)
 
 
 def identify_sources(nepochs_min=20, shutdown_time=10, single_job=False):
