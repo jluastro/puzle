@@ -165,7 +165,7 @@ def fetch_ogle_target(ra_cand, dec_cand, radius=5):
 def generate_ps1_psc_maps():
     ps1_psc_dir = os.environ.get('PS1_PSC_DIR')
     ps1_psc_filenames = [f for f in glob.glob(f'{ps1_psc_dir}/*.h5')
-                         if not os.path.exists(f.replace('.txt', '.map'))]
+                         if not os.path.exists(f.replace('.h5', '.map'))]
     ps1_psc_filenames.sort()
 
     for i, ps1_psc_filename in enumerate(ps1_psc_filenames):
@@ -207,10 +207,10 @@ def return_ps1_psc(dec, ps1_psc_dct=None):
     ps1_psc_fname = f'{ps1_psc_dir}/' \
                     f'dec_{dec_prefix}{dec_floor_str}_{dec_ext_str}_classifications.map'
     if ps1_psc_dct and ps1_psc_fname in ps1_psc_dct:
-        print('CACHE %s' % ps1_psc_fname)
+        # print('CACHE %s' % ps1_psc_fname)
         ps1_psc_kdtree, rf_scores = ps1_psc_dct[ps1_psc_fname]
     else:
-        print('loading %s' % ps1_psc_fname)
+        # print('loading %s' % ps1_psc_fname)
         ps1_psc_kdtree, rf_scores = pickle.load(open(ps1_psc_fname, 'rb'))
         ps1_psc_dct[ps1_psc_fname] = ps1_psc_kdtree, rf_scores
     return ps1_psc_kdtree, rf_scores
@@ -222,14 +222,21 @@ def query_ps1_psc_on_disk(ra, dec, radius=2, ps1_psc_dct=None):
     idx_arr = ps1_psc_kdtree.query_ball_point((ra, dec), radius_deg)
 
     if len(idx_arr) == 0:
-        rf = None
-    else:
+        return None
+    elif len(idx_arr) == 1:
         idx = idx_arr[0]
-        rf_score = rf_scores[idx]
-        ra_ps1_psc, dec_ps1_psc = ps1_psc_kdtree.data[idx]
-        rf_tuple = namedtuple('rf',
-                              'ra_stack dec_stack rf_score')
-        rf = rf_tuple(ra_stack=ra_ps1_psc,
-                      dec_stack=dec_ps1_psc,
-                      rf_score=rf_score)
+    else:
+        radec_idx = ps1_psc_kdtree.data[idx_arr]
+        delta_ra = radec_idx[:, 0] - ra
+        delta_dec = radec_idx[:, 1] - dec
+        dist = np.hypot(delta_ra, delta_dec)
+        idx = idx_arr[np.argmin(dist)]
+
+    rf_score = rf_scores[idx]
+    ra_ps1_psc, dec_ps1_psc = ps1_psc_kdtree.data[idx]
+    rf_tuple = namedtuple('rf',
+                          'ra_stack dec_stack rf_score')
+    rf = rf_tuple(ra_stack=ra_ps1_psc,
+                  dec_stack=dec_ps1_psc,
+                  rf_score=rf_score)
     return rf
