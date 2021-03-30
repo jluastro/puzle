@@ -164,22 +164,12 @@ def fetch_ogle_target(ra_cand, dec_cand, radius=5):
 
 def generate_ps1_psc_maps():
     ps1_psc_dir = '/global/cfs/cdirs/uLens/PS1_PSC'
-    ps1_psc_filenames = glob.glob(f'{ps1_psc_dir}/*.h5')
+    ps1_psc_filenames = [f for f in glob.glob(f'{ps1_psc_dir}/*.h5')
+                         if not os.path.exists(f.replace('.txt', '.map'))]
     ps1_psc_filenames.sort()
 
-    if 'SLURMD_NODENAME' in os.environ:
-        from mpi4py import MPI
-        comm = MPI.COMM_WORLD
-        rank = comm.rank
-        size = comm.size
-    else:
-        rank = 0
-        size = 1
-
-    my_filenames = np.array_split(ps1_psc_filenames, size)[rank]
-
-    for i, ps1_psc_filename in enumerate(my_filenames):
-        print(rank, ps1_psc_filename, i, len(my_filenames))
+    for i, ps1_psc_filename in enumerate(ps1_psc_filenames):
+        print(ps1_psc_filename, i, len(ps1_psc_filenames))
         radec = h5py.File(ps1_psc_filename, 'r')['class_table']['block0_values'][:, :2]
         rf_scores = h5py.File(ps1_psc_filename, 'r')['class_table']['block0_values'][:, 2]
         kdtree = cKDTree(radec)
