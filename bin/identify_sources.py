@@ -186,7 +186,7 @@ def export_sources(job_id, source_list):
 
     map_filename = fname.replace('.txt', '.sources_map')
     with open(map_filename, 'wb') as fileObj:
-        pickle.dump(map, fileObj)
+        pickle.dump(source_map, fileObj)
 
 
 def identify_sources(nepochs_min=20, shutdown_time=10, single_job=False):
