@@ -274,43 +274,7 @@ def evenly_split_sample(arr, arr_min, arr_max, num_splits=3):
     return idx_arr, arr_bin_edges
 
 
-def construct_rf_idxs_dct_v1(stars_and_sources, eta_idxs_dct, job_stats, obj_data):
-    num_objs_pass_rf = 0
-    num_stars_pass_rf = 0
-
-    insert_db_id()
-    ulens_con = catalog.ulens_con()
-    rf_idxs_dct = defaultdict(list)
-    for key, eta_idxs in eta_idxs_dct.items():
-        for eta_idx in eta_idxs:
-            rf_idxs = []
-            for (i, j, k) in eta_idx:
-                _, sources = stars_and_sources[i]
-                source = sources[j]
-                obj = source.zort_source.objects[k]
-                rf_score = catalog.query_ps1_psc(obj.ra, obj.dec,
-                                                 con=ulens_con)
-                if rf_score is None:
-                    rf_idxs.append((i, j, k))
-                elif rf_score.rf_score >= RF_THRESHOLD:
-                    obj_key = (i, j, k)
-                    obj_data[obj_key] = obj_data[obj_key]._replace(rf_score=rf_score.rf_score)
-                    rf_idxs.append((i, j, k))
-
-            rf_idxs_dct[key].append(rf_idxs)
-
-            num_objs_pass_rf += len(rf_idxs)
-            num_stars_pass_rf += len(set([idx[0] for idx in rf_idxs]))
-    ulens_con.close()
-    remove_db_id()
-
-    job_stats['num_objs_pass_rf'] = num_objs_pass_rf
-    job_stats['num_stars_pass_rf'] = num_stars_pass_rf
-
-    return rf_idxs_dct
-
-
-def construct_rf_idxs_dct_v2(stars_and_sources, eta_idxs_dct, job_stats, obj_data):
+def construct_rf_idxs_dct(stars_and_sources, eta_idxs_dct, job_stats, obj_data):
     num_objs_pass_rf = 0
     num_stars_pass_rf = 0
 
