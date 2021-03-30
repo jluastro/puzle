@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+    <div>
+    <table class="table table-hover">
+        <tr>
+            <h3>
+                Users
+            </h3>
+        </tr>
+        {% for user in users %}
+        <tr>
+            <td>
+                <b>User:</b> <a href="{{ url_for('user', username=user.username) }}">{{ user.username }}</a>
+                <h5>About Me:</h5>
+                {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}
+                {% if user.last_seen %}<p>Last seen on: {{ user.last_seen }}</p>{% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    </div>
+{% endblock %}

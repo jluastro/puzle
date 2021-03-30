@@ -20,7 +20,7 @@ from puzle import db
 
 logger = logging.getLogger(__name__)
 
-ObjectData = namedtuple('ObjectData', 'eta eta_residual rf_score fit_data')
+ObjectData = namedtuple('ObjectData', 'eta eta_residual rf_score fit_data eta_threshold_low eta_threshold_high')
 
 
 def fetch_job():
@@ -112,7 +112,11 @@ def fetch_stars_and_sources(source_job_id):
         star = source_to_star_dict[source_db.id]
         star_to_source_dict[star].append(source_db)
 
-    return list(star_to_source_dict.items())
+    stars_and_sources = {}
+    for star, sources in star_to_source_dict.items():
+        stars_and_sources[star.id] = (star, sources)
+
+    return stars_and_sources
 
 
 def construct_eta_dct(stars_and_sources, job_stats, obj_data, n_days_min=20):
@@ -123,7 +127,7 @@ def construct_eta_dct(stars_and_sources, job_stats, obj_data, n_days_min=20):
     idxs_dct = defaultdict(list)
     eta_dct = defaultdict(list)
     n_epochs_dct = defaultdict(list)
-    for i, (star, sources) in enumerate(stars_and_sources):
+    for star_id, (star, sources) in stars_and_sources.items():
         num_stars += 1
         for j, source in enumerate(sources):
             num_sources += 1
@@ -137,13 +141,15 @@ def construct_eta_dct(stars_and_sources, job_stats, obj_data, n_days_min=20):
                                                  obj.lightcurve.mag)
 
                 key = '%i_%i' % (obj.fieldid, obj.filterid)
-                idxs_dct[key].append((i, j, k))
+                idxs_dct[key].append((star_id, j, k))
                 eta_dct[key].append(eta)
                 n_epochs_dct[key].append(obj.nepochs)
 
-                obj_key = (i, j, k)
+                obj_key = (star_id, j, k)
                 objectData = ObjectData(eta=eta, eta_residual=None,
-                                        rf_score=None, fit_data=None)
+                                        rf_score=None, fit_data=None,
+                                        eta_threshold_low=None,
+                                        eta_threshold_high=None)
                 obj_data[obj_key] = objectData
 
     job_stats['num_stars'] = num_stars
@@ -154,17 +160,18 @@ def construct_eta_dct(stars_and_sources, job_stats, obj_data, n_days_min=20):
     return eta_dct, idxs_dct, n_epochs_dct
 
 
-def construct_eta_idxs_dct(eta_dct, idxs_dct, n_epochs_dct, job_stats,
+def construct_eta_idxs_dct(eta_dct, idxs_dct, n_epochs_dct, job_stats, obj_data,
                            n_days_min=20, num_epochs_splits=3):
     epoch_edges_dct = {}
-    eta_threshold_dct = defaultdict(list)
+    eta_threshold_low_dct = defaultdict(list)
+    eta_threshold_high_dct = defaultdict(list)
     eta_idxs_dct = defaultdict(list)
     num_objs_pass_eta = 0
     num_stars_pass_eta = 0
     for key, eta_arr in eta_dct.items():
         eta_arr = np.array(eta_arr)
         n_epochs = np.array(n_epochs_dct[key])
-        stars_and_sources_idxs = np.array(idxs_dct[key])
+        stars_and_sources_idxs = idxs_dct[key]
 
         n_epochs_max = np.max(n_epochs)
         for i in range(num_epochs_splits, 0, -1):
@@ -181,12 +188,21 @@ def construct_eta_idxs_dct(eta_dct, idxs_dct, n_epochs_dct, job_stats,
         epoch_edges_dct[key] = arr_bin_edges
 
         for split_idx in split_idx_arr:
-            eta_threshold = float(np.percentile(eta_arr[split_idx], 1))
-            eta_threshold_dct[key].append(eta_threshold)
+            eta_threshold_low = float(np.percentile(eta_arr[split_idx], 1))
+            eta_threshold_low_dct[key].append(eta_threshold_low)
 
-            eta_cond = np.where(eta_arr[split_idx] <= eta_threshold)[0]
-            eta_idxs = stars_and_sources_idxs[split_idx][eta_cond]
-            eta_idxs_dct[key].append(stars_and_sources_idxs[split_idx][eta_cond])
+            eta_threshold_high = float(np.percentile(eta_arr[split_idx], 90))
+            eta_threshold_high_dct[key].append(eta_threshold_high)
+
+            eta_cond = np.where(eta_arr[split_idx] <= eta_threshold_low)[0]
+            eta_idxs_split = [stars_and_sources_idxs[idx] for idx in split_idx]
+            eta_idxs = [eta_idxs_split[idx] for idx in eta_cond]
+            eta_idxs_dct[key].append(eta_idxs)
+
+            for i, j, k in eta_idxs:
+                obj_key = (i, j, k)
+                obj_data[obj_key] = obj_data[obj_key]._replace(eta_threshold_low=eta_threshold_low,
+                                                               eta_threshold_high=eta_threshold_high)
 
             num_objs_pass_eta += len(eta_idxs)
             num_stars_pass_eta += len(set([idx[0] for idx in eta_idxs]))
@@ -195,7 +211,7 @@ def construct_eta_idxs_dct(eta_dct, idxs_dct, n_epochs_dct, job_stats,
     job_stats['num_stars_pass_eta'] = num_stars_pass_eta
     job_stats['epoch_edges'] = epoch_edges_dct
 
-    return eta_idxs_dct, eta_threshold_dct
+    return eta_idxs_dct, eta_threshold_low_dct, eta_threshold_high_dct
 
 
 def evenly_split_sample(arr, arr_min, arr_max, num_splits=3):
@@ -276,13 +292,13 @@ def construct_rf_idxs_dct(stars_and_sources, eta_idxs_dct, job_stats, obj_data):
     return rf_idxs_dct
 
 
-def construct_eta_residual_idxs_dct(stars_and_sources, eta_threshold_dct, rf_idxs_dct, job_stats, obj_data):
+def construct_eta_residual_idxs_dct(stars_and_sources, eta_threshold_high_dct, rf_idxs_dct, job_stats, obj_data):
     num_objs_pass_eta_residual = 0
     num_stars_pass_eta_residual = 0
     eta_residual_idxs_dct = defaultdict(list)
     for key in rf_idxs_dct.keys():
         rf_idxs_arr = rf_idxs_dct[key]
-        eta_threshold_arr = eta_threshold_dct[key]
+        eta_threshold_arr = eta_threshold_high_dct[key]
         for rf_idxs, eta_threshold in zip(rf_idxs_arr, eta_threshold_arr):
             eta_residual_idxs = []
             for (i, j, k) in rf_idxs:
@@ -310,45 +326,52 @@ def construct_eta_residual_idxs_dct(stars_and_sources, eta_threshold_dct, rf_idx
     return eta_residual_idxs_dct
 
 
-def extract_final_idxs(eta_residual_idxs_dct, eta_threshold_dct):
+def extract_final_idxs(eta_residual_idxs_dct):
     final_idxs = []
-    for key in eta_residual_idxs_dct.keys():
-        eta_residual_idxs = eta_residual_idxs_dct[key]
-        eta_thresholds = eta_threshold_dct[key]
-        for eta_residual_idx, eta_threshold in zip(eta_residual_idxs, eta_thresholds):
+    for eta_residual_idxs in eta_residual_idxs_dct.values():
+        for eta_residual_idx in eta_residual_idxs:
             for i, j, k in eta_residual_idx:
-                final_idxs.append((i, j, k, eta_threshold))
+                final_idxs.append((i, j, k))
     return final_idxs
 
 
-def assemble_candidates(stars_and_sources, eta_residual_idxs_dct, eta_threshold_dct, obj_data):
+def assemble_candidates(stars_and_sources, eta_residual_idxs_dct, obj_data):
     candidates = []
+    source_id_to_cand_id_dct = {}
     source_ids = []
-    best_fit_stats = []
+    fit_stats_best = []
 
-    final_idxs = extract_final_idxs(eta_residual_idxs_dct, eta_threshold_dct)
-    unique_star_idxs = list(set([i for i, _, _, _ in final_idxs]))
+    final_idxs = extract_final_idxs(eta_residual_idxs_dct)
+    unique_star_idxs = list(set([i for i, _, _ in final_idxs]))
     for star_idx in unique_star_idxs:
+        # extract the passing indices
+        source_obj_idxs_pass = [(j, k) for i, j, k in final_idxs if i == star_idx]
+        num_objs_pass = len(source_obj_idxs_pass)
+
+        # extract all indices, and note which ones are passing
         star, sources = stars_and_sources[star_idx]
-        source_obj_idxs = [(j, k) for i, j, k, _ in final_idxs if i == star_idx]
-        eta_thresholds = [e for i, _, _, e in final_idxs if i == star_idx]
-        num_objs_pass = len(source_obj_idxs)
-
-        n_days_arr = []
         source_id_arr = []
-        filter_id_arr = []
-        for idx, (j, k) in enumerate(source_obj_idxs):
-            source = sources[j]
-            obj = source.zort_source.objects[k]
-            n_days = len(np.unique(np.floor(obj.lightcurve.hmjd)))
-
-            source_id_arr.append(source.id)
-            filter_id_arr.append(obj.filterid)
-            n_days_arr.append(n_days)
+        color_arr = []
+        pass_arr = []
+        n_days_arr = []
+        source_obj_idxs_tot = []
+        for j, source in enumerate(sources):
+            for k, obj in enumerate(source.zort_source.objects):
+                source_id_arr.append(source.id)
+                source_id_to_cand_id_dct[source.id] = star.id
+                color_arr.append(obj.color)
+                source_obj_idxs_tot.append((j, k))
+                if (j, k) in source_obj_idxs_pass:
+                    n_days = len(np.unique(np.floor(obj.lightcurve.hmjd)))
+                    n_days_arr.append(n_days)
+                    pass_arr.append(True)
+                else:
+                    pass_arr.append(False)
+                    n_days_arr.append(0)
+        num_objs_tot = len(source_obj_idxs_tot)
 
         idx_best = int(np.argmax(n_days_arr))
-        eta_threshold_best = eta_thresholds[idx_best]
-        j, k = source_obj_idxs[idx_best]
+        j, k = source_obj_idxs_tot[idx_best]
         source = sources[j]
         source_ids.append(source.id)
         obj = source.zort_source.objects[k]
@@ -360,28 +383,28 @@ def assemble_candidates(stars_and_sources, eta_residual_idxs_dct, eta_threshold_
         rf_score = objectData.rf_score
         eta_residual = objectData.eta_residual
         fit_data = objectData.fit_data
+        eta_threshold_low = objectData.eta_threshold_low
+        eta_threshold_high = objectData.eta_threshold_high
 
-        if fit_data:
+        # if fit_data is None, then this should not be a valid "best" object!
+        # assert fit_data is not None
+        if fit_data is not None:
             t_0, t_E, f_0, f_1, chi_squared_delta, chi_squared_flat, a_type = fit_data
         else:
-            t_0 = None
-            t_E = None
-            f_0 = None
-            f_1 = None
-            chi_squared_delta = None
-            chi_squared_flat = None
-            a_type = None
+            t_0, t_E, f_0, f_1, chi_squared_delta, chi_squared_flat, a_type = None, None, None, None, None, None, None
 
         cand = Candidate(id=star.id,
                          source_id_arr=source_id_arr,
-                         filter_id_arr=filter_id_arr,
+                         color_arr=color_arr,
+                         pass_arr=pass_arr,
                          ra=star.ra,
                          dec=star.dec,
                          ingest_job_id=star.ingest_job_id,
                          eta_best=eta,
                          rf_score_best=rf_score,
                          eta_residual_best=eta_residual,
-                         eta_threshold_best=eta_threshold_best,
+                         eta_threshold_low_best=eta_threshold_low,
+                         eta_threshold_high_best=eta_threshold_high,
                          t_E_best=t_E,
                          t_0_best=t_0,
                          f_0_best=f_0,
@@ -390,13 +413,14 @@ def assemble_candidates(stars_and_sources, eta_residual_idxs_dct, eta_threshold_
                          chi_squared_flat_best=chi_squared_flat,
                          chi_squared_delta_best=chi_squared_delta,
                          idx_best=idx_best,
-                         num_objs_pass=num_objs_pass)
+                         num_objs_pass=num_objs_pass,
+                         num_objs_tot=num_objs_tot)
         candidates.append(cand)
 
         fit_filter = obj.color
-        best_fit_stats.append((fit_filter, t_E, t_0, f_0, f_1, a_type, chi_squared_flat, chi_squared_delta))
+        fit_stats_best.append((fit_filter, t_E, t_0, f_0, f_1, a_type, chi_squared_flat, chi_squared_delta))
 
-    return candidates, source_ids, best_fit_stats
+    return candidates, source_ids, fit_stats_best, source_id_to_cand_id_dct
 
 
 def filter_stars_to_candidates(source_job_id, stars_and_sources,
@@ -412,10 +436,9 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
                 f'{job_stats["num_objs"]} Objects | '
                 f'{job_stats["num_objs_pass_n_days"]} Objects Past Days Cuts')
 
-    eta_idxs_dct, eta_threshold_dct = construct_eta_idxs_dct(eta_dct, idxs_dct,
-                                                             n_epochs_dct, job_stats,
-                                                             n_days_min=n_days_min,
-                                                             num_epochs_splits=num_epochs_splits)
+    eta_idxs_dct, eta_threshold_low_dct, eta_threshold_high_dct = construct_eta_idxs_dct(
+        eta_dct, idxs_dct, n_epochs_dct, job_stats, obj_data,
+        n_days_min=n_days_min, num_epochs_splits=num_epochs_splits)
     logger.info(f'Job {source_job_id}: '
                 f'{job_stats["num_stars_pass_eta"]} stars pass eta cut | '
                 f'{job_stats["num_objs_pass_eta"]} objects pass eta cut')
@@ -426,34 +449,37 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
                 f'{job_stats["num_objs_pass_rf"]} objects pass rf_score cut')
 
     eta_residual_idxs_dct = construct_eta_residual_idxs_dct(stars_and_sources,
-                                                            eta_threshold_dct,
+                                                            eta_threshold_high_dct,
                                                             rf_idxs_dct, job_stats, obj_data)
     logger.info(f'Job {source_job_id}: '
                 f'{job_stats["num_stars_pass_eta_residual"]} source pass eta_residual cut | '
                 f'{job_stats["num_objs_pass_eta_residual"]} objects pass eta_residual cut')
 
     logger.info(f'Job {source_job_id}: Assembling candidates')
-    candidates, source_ids, best_fit_stats = assemble_candidates(stars_and_sources, eta_residual_idxs_dct,
-                                                                 eta_threshold_dct, obj_data)
+    candidates, source_ids, fit_stats_best, source_id_to_cand_id_dct = assemble_candidates(
+        stars_and_sources, eta_residual_idxs_dct, obj_data)
     job_stats['num_candidates'] = len(candidates)
-    job_stats['eta_thresholds'] = eta_threshold_dct
-    return candidates, job_stats, source_ids, best_fit_stats
+    job_stats['eta_thresholds_low'] = eta_threshold_low_dct
+    job_stats['eta_thresholds_high'] = eta_threshold_high_dct
+    return candidates, job_stats, source_ids, fit_stats_best, source_id_to_cand_id_dct
 
 
-def upload_candidates(candidates, source_ids, best_fit_stats):
+def upload_candidates(candidates, source_ids, fit_stats_best, source_id_to_cand_id_dct):
     insert_db_id()  # get permission to make a db connection
     for cand in candidates:
         db.session.add(cand)
 
     # grab sources from db and hash them in dictionary
-    source_dbs = db.session.query(Source).filter(Source.id.in_(source_ids)).all()
+    source_ids_tot = list(source_id_to_cand_id_dct.keys())
+    source_dbs = db.session.query(Source).filter(Source.id.in_(source_ids_tot)).all()
     source_db_dct = {}
     for source_db in source_dbs:
         source_db_dct[source_db.id] = source_db
+        source_db.cand_id = source_id_to_cand_id_dct[source_db.id]
 
-    for source_id, best_fit_stat in zip(source_ids, best_fit_stats):
+    for source_id, fit_stat in zip(source_ids, fit_stats_best):
         source_db = source_db_dct[source_id]
-        fit_filter, t_E, t_0, f_0, f_1, a_type, chi_squared_flat, chi_squared_delta = best_fit_stat
+        fit_filter, t_E, t_0, f_0, f_1, a_type, chi_squared_flat, chi_squared_delta = fit_stat
         source_db.fit_filter = fit_filter
         source_db.fit_t_0 = t_0
         source_db.fit_t_E = t_E
@@ -485,7 +511,8 @@ def finish_job(source_job_id, job_stats):
     job.num_objs_pass_eta_residual = job_stats['num_objs_pass_eta_residual']
     job.num_stars_pass_eta_residual = job_stats['num_stars_pass_eta_residual']
     job.epoch_edges = job_stats['epoch_edges']
-    job.eta_thresholds = job_stats['eta_thresholds']
+    job.eta_thresholds_low = job_stats['eta_thresholds_low']
+    job.eta_thresholds_high = job_stats['eta_thresholds_high']
     job.num_candidates = job_stats['num_candidates']
     db.session.commit()
     db.session.close()
@@ -516,12 +543,12 @@ def process_stars(shutdown_time=10, single_job=False):
         num_stars = len(stars_and_sources)
         if num_stars > 0:
             logger.info(f'Job {source_job_id}: Processing {num_stars} stars')
-            candidates, job_stats, source_ids, best_fit_stats = filter_stars_to_candidates(
+            candidates, job_stats, source_ids, fit_stats_best, source_id_to_cand_id_dct = filter_stars_to_candidates(
                 source_job_id, stars_and_sources)
             num_candidates = len(candidates)
             logger.info(f'Job {source_job_id}: Uploading {num_candidates} candidates')
             if num_candidates > 0:
-                upload_candidates(candidates, source_ids, best_fit_stats)
+                upload_candidates(candidates, source_ids, fit_stats_best, source_id_to_cand_id_dct)
             logger.info(f'Job {source_job_id}: Processing complete')
         else:
             logger.info(f'Job {source_job_id}: No stars, skipping process')
@@ -536,7 +563,8 @@ def process_stars(shutdown_time=10, single_job=False):
                          'num_objs_pass_eta_residual': 0,
                          'num_stars_pass_eta_residual': 0,
                          'epoch_edges': {},
-                         'eta_thresholds': {},
+                         'eta_thresholds_low': {},
+                         'eta_thresholds_high': {},
                          'num_candidates': 0}
 
         finish_job(source_job_id, job_stats)

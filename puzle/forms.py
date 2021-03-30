@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, \
-    SubmitField, TextAreaField, FloatField, RadioField
+    SubmitField, TextAreaField, FloatField, RadioField, IntegerField
 from wtforms.validators import ValidationError, DataRequired, \
     Email, EqualTo, Length, NumberRange, Optional
 from puzle.models import User
@@ -68,7 +68,7 @@ class ResetPasswordForm(FlaskForm):
     submit = SubmitField('Request Password Reset')
 
 
-class EditSourceCommentForm(FlaskForm):
+class EditCommentForm(FlaskForm):
     comments = TextAreaField('Comments',
                              validators=[Length(min=0, max=1024)])
     submit = SubmitField('Submit')
@@ -93,9 +93,9 @@ class RadialSearchForm(FlaskForm):
 
 
 class FilterSearchForm(FlaskForm):
-    num_objs_pass_min = FloatField('num_objs_pass min',
+    num_objs_pass_min = IntegerField('num_objs_pass min',
                                    validators=[Optional(), NumberRange(min=1)])
-    num_objs_pass_max = FloatField('num_objs_pass max',
+    num_objs_pass_max = IntegerField('num_objs_pass max',
                                    validators=[Optional(), NumberRange(min=1)])
     t_E_best_min = FloatField('t_E_best min (days)',
                               validators=[Optional(), NumberRange(min=0)])
@@ -106,9 +106,13 @@ class FilterSearchForm(FlaskForm):
     chi_squared_delta_best_max = FloatField('chi_squared_delta_best max',
                                             validators=[Optional(), NumberRange(min=0)])
     rf_score_best_min = FloatField('rf_score_best min',
-                                   validators=[Optional(), NumberRange(min=0)])
+                                   validators=[Optional(), NumberRange(min=0, max=1)])
     rf_score_best_max = FloatField('rf_score_best max',
-                                   validators=[Optional(), NumberRange(min=0)])
+                                   validators=[Optional(), NumberRange(min=0, max=1)])
+    eta_best_min = FloatField('eta_best min',
+                              validators=[Optional(), NumberRange(min=0)])
+    eta_best_max = FloatField('eta_best max',
+                              validators=[Optional(), NumberRange(min=0)])
     order_by = RadioField(choices=[('eta_best', 'Order results by eta ascending'),
                                   ('chi_squared_delta_best', 'Order results by chi_squared_delta desc')],
                           default='eta_best')

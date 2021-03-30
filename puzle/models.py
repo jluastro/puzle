@@ -17,6 +17,7 @@ from zort.source import Source as zort_source
 from puzle import app
 from puzle import db
 from puzle import login
+from puzle.catalog import fetch_ogle_target
 
 
 @login.user_loader
@@ -106,22 +107,22 @@ class User(UserMixin, db.Model):
             filter(user_source_association.c.user_id == self.id).\
             order_by(Source.id.asc())
     
-    def follow_star(self, star):
-        if not self.is_following_star(star):
-            self.stars.append(star)
+    def follow_candidate(self, cand):
+        if not self.is_following_candidate(cand):
+            self.candidates.append(cand)
 
-    def unfollow_star(self, star):
-        if self.is_following_star(star):
-            self.stars.remove(star)
+    def unfollow_candidate(self, cand):
+        if self.is_following_candidate(cand):
+            self.candidates.remove(cand)
 
-    def is_following_star(self, star):
-        return star in self.stars.all()
+    def is_following_candidate(self, cand):
+        return cand in self.candidates.all()
 
-    def followed_stars(self):
-        return Star.query.join(user_star_association,
-            (user_star_association.c.star_id == Star.id)).\
-            filter(user_star_association.c.user_id == self.id).\
-            order_by(Star.id.asc())
+    def followed_candidates(self):
+        return Candidate.query.join(user_cand_association,
+            (user_cand_association.c.candidate_id == Candidate.id)).\
+            filter(user_cand_association.c.user_id == self.id).\
+            order_by(Candidate.id.asc())
 
 
 class Source(db.Model):
@@ -148,6 +149,7 @@ class Source(db.Model):
     fit_a_type = db.Column(db.String(128))
     fit_chi_squared_flat = db.Column(db.Float)
     fit_chi_squared_delta = db.Column(db.Float)
+    cand_id = db.Column(db.String(128))
 
     def __init__(self, object_id_g, object_id_r, object_id_i,
                  lightcurve_position_g, lightcurve_position_r, lightcurve_position_i,
@@ -157,7 +159,7 @@ class Source(db.Model):
                  fit_t_E=None, fit_f_0=None,
                  fit_f_1=None, fit_a_type=None,
                  fit_chi_squared_flat=None,
-                 fit_chi_squared_delta=None):
+                 fit_chi_squared_delta=None, cand_id=None):
         self.object_id_g = object_id_g
         self.object_id_r = object_id_r
         self.object_id_i = object_id_i
@@ -181,6 +183,7 @@ class Source(db.Model):
         self.fit_a_type = fit_a_type
         self.fit_chi_squared_flat = fit_chi_squared_flat
         self.fit_chi_squared_delta = fit_chi_squared_delta
+        self.cand_id = cand_id
         
     def __repr__(self):
         return f'Source \n' \
@@ -250,20 +253,16 @@ class Source(db.Model):
         lightcurve_plot_filename = f'{folder}/{self.id}_lightcurve.png'
         if not os.path.exists(lightcurve_plot_filename):
             if self.fit_t_0:
-                model_params = {
-                    't_0': self.fit_t_0,
-                    't_E': self.fit_t_E,
-                    'a_type': self.fit_a_type,
-                    'f_0': self.fit_f_0,
-                    'f_1': self.fit_f_1
-                }
-                model_color = self.fit_filter
+                model_params = {self.fit_filter: {'t_0': self.fit_t_0,
+                                                  't_E': self.fit_t_E,
+                                                  'a_type': self.fit_a_type,
+                                                  'f_0': self.fit_f_0,
+                                                  'f_1': self.fit_f_1}
+                                }
             else:
                 model_params = None
-                model_color = None
             self.zort_source.plot_lightcurves(filename=lightcurve_plot_filename,
-                                              model_params=model_params,
-                                              model_color=model_color)
+                                              model_params=model_params)
 
     def _fetch_mars_results(self):
         radius_deg = 2. / 3600.
@@ -361,7 +360,8 @@ class StarProcessJob(db.Model):
     num_objs_pass_eta_residual = db.Column(db.Integer, nullable=True)
     num_stars_pass_eta_residual = db.Column(db.Integer, nullable=True)
     epoch_edges = db.Column(db.JSON, nullable=True)
-    eta_thresholds = db.Column(db.JSON, nullable=True)
+    eta_thresholds_low = db.Column(db.JSON, nullable=True)
+    eta_thresholds_high = db.Column(db.JSON, nullable=True)
     num_candidates = db.Column(db.Integer, nullable=True)
 
     def __init__(self, source_ingest_job_id):
@@ -440,11 +440,13 @@ class Candidate(db.Model):
 
     id = db.Column(db.String(128), primary_key=True, nullable=False)
     source_id_arr = db.Column(db.ARRAY(db.String(128)))
-    filter_id_arr = db.Column(db.ARRAY(db.Integer))
+    color_arr = db.Column(db.ARRAY(db.String(8)))
+    pass_arr = db.Column(db.ARRAY(db.Boolean))
     eta_best = db.Column(db.Float)
     rf_score_best = db.Column(db.Float)
     eta_residual_best = db.Column(db.Float)
-    eta_threshold_best = db.Column(db.Float)
+    eta_threshold_low_best = db.Column(db.Float)
+    eta_threshold_high_best = db.Column(db.Float)
     t_E_best = db.Column(db.Float)
     t_0_best = db.Column(db.Float)
     f_0_best = db.Column(db.Float)
@@ -459,23 +461,27 @@ class Candidate(db.Model):
     comments = db.Column(db.String(1024))
     _ztf_ids = db.Column(db.String(256))
     num_objs_pass = db.Column(db.Integer)
+    num_objs_tot = db.Column(db.Integer)
+    ogle_target = db.Column(db.String(128))
 
     def __init__(self, source_id_arr, ra, dec,
                  ingest_job_id, id,
-                 filter_id_arr, eta_best,
+                 color_arr, pass_arr, eta_best,
                  rf_score_best, eta_residual_best,
-                 eta_threshold_best,
+                 eta_threshold_low_best, eta_threshold_high_best,
                  t_E_best, t_0_best, f_0_best,
                  f_1_best, a_type_best,
                  chi_squared_flat_best, chi_squared_delta_best,
-                 idx_best, num_objs_pass,
-                 comments=None, _ztf_ids=None,):
+                 idx_best, num_objs_pass, num_objs_tot,
+                 comments=None, _ztf_ids=None, ogle_target=None):
         self.source_id_arr = source_id_arr
-        self.filter_id_arr = filter_id_arr
+        self.color_arr = color_arr
+        self.pass_arr = pass_arr
         self.eta_best = eta_best
         self.rf_score_best = rf_score_best
         self.eta_residual_best = eta_residual_best
-        self.eta_threshold_best = eta_threshold_best
+        self.eta_threshold_low_best = eta_threshold_low_best
+        self.eta_threshold_high_best = eta_threshold_high_best
         self.t_E_best = t_E_best
         self.t_0_best = t_0_best
         self.f_0_best = f_0_best
@@ -485,6 +491,7 @@ class Candidate(db.Model):
         self.chi_squared_delta_best = chi_squared_delta_best
         self.idx_best = idx_best
         self.num_objs_pass = num_objs_pass
+        self.num_objs_tot = num_objs_tot
         self.ra = ra
         self.dec = dec
         self.ingest_job_id = ingest_job_id
@@ -492,6 +499,7 @@ class Candidate(db.Model):
         self.comments = comments
         self._ztf_ids = _ztf_ids
         self._glonlat = None
+        self.ogle_target = ogle_target
 
     def __repr__(self):
         str = 'Candidate \n'
@@ -535,3 +543,49 @@ class Candidate(db.Model):
     def cone_search(self, ra, dec, radius=2):
         radius_deg = radius / 3600.
         return func.q3c_radial_query(text('ra'), text('dec'), ra, dec, radius_deg)
+
+    def _fetch_mars_results(self):
+        radius_deg = 2. / 3600.
+        cone = '%f,%f,%f' % (self.ra, self.dec, radius_deg)
+        query = {"queries": [{"cone": cone}]}
+        results = requests.post('https://mars.lco.global/', json=query).json()
+        if results['total'] == 0:
+            return None
+        else:
+            return results
+
+    def fetch_ztf_ids(self):
+        results = self._fetch_mars_results()
+        if results is None:
+            return 0
+        ztf_ids = [str(r['objectId']) for r in
+                   results['results'][0]['results']]
+        ztf_ids = list(set(ztf_ids))
+        self.ztf_ids = None
+        for ztf_id in ztf_ids:
+            self.ztf_ids = ztf_id
+
+        return len(ztf_ids)
+
+    @hybrid_method
+    def return_source_dct(self):
+        source_dct = defaultdict(list)
+        for source_id, color, pass_id, idx in zip(self.source_id_arr, self.color_arr, self.pass_arr, range(self.num_objs_tot)):
+            source_dct[source_id].append((color, pass_id, idx))
+        return source_dct
+
+    @property
+    def best_source_id(self):
+        best_source_id = None
+        for i, (source_id, color) in enumerate(zip(self.source_id_arr, self.color_arr)):
+            if i == self.idx_best:
+                best_source_id = source_id
+        return best_source_id
+
+    @property
+    def unique_source_id_arr(self):
+        return list(set(self.source_id_arr))
+
+    def fetch_ogle_target(self):
+        self.ogle_target = fetch_ogle_target(self.ra, self.dec)
+        return self.ogle_target

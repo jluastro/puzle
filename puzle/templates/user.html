@@ -1,62 +1,103 @@
 {% extends "base.html" %}
 
 {% block app_content %}
+    <div>
     <table class="table table-hover">
         <tr>
             <td>
-                <tr>
-                    <h1>User: {{ user.username }}</h1>
-                    <h5>About Me:</h5>
-                    {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}
-                    {% if user.last_seen %}<p>Last seen on: {{ user.last_seen }}</p>{% endif %}
-                    {% if user == current_user %}
-                    <p><a href="{{ url_for('edit_profile') }}">Edit your profile</a></p>
-                    {% endif %}
-                </tr>
-                <tr>
-                    <h3>My Sources:</h3>
-                    {% for source in sources.items %}
-                        <p>
-                        <hr>
-                        <img src="{{ url_for('static', filename='source/') }}{{ source.id.split('_')[0] }}/{{ source.id }}_lightcurve.png"> <a href="{{ url_for('source', sourceid=source.id) }}">Source {{ source.id }}</a>
-                        </p>
-                    {% endfor %}
-                </tr>
+                <h3>User: {{ user.username }}</h3>
+                <h5>About Me:</h5>
+                {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}
+                {% if user.last_seen %}<p>Last seen on: {{ user.last_seen }}</p>{% endif %}
+                {% if user == current_user %}
+                <p><a href="{{ url_for('edit_profile') }}">Edit your profile</a></p>
+                {% endif %}
             </td>
         </tr>
-    <tr>
-        <!-- Pagination Links-->
-        <div class="text-right">
-            <a href="{{ url_for('user', username=user.username, page=sources.prev_num) }}"
-               class="btn btn-outline-dark
-               {% if sources.page == 1 %}disabled{% endif %}">
-                &laquo;
-            </a><!-- Loop through the number of pages to display a link for each-->
-            {% for page_num in sources.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}{% if page_num %}
-        <!-- Check for the active page and set the link to "Active"-->
-                    {% if sources.page == page_num %}
-                    <a href="{{ url_for('user', username=user.username, page=page_num) }}"
-                       class="btn btn-dark">
-                        {{ page_num }}
-                    </a>
-                    {% else %}
-                    <a href="{{ url_for('user', username=user.username, page=page_num) }}"
-                       class="btn btn-outline-dark">
-                        {{ page_num }}
-                    </a>
-                    {% endif %}
-                {% else %}
-                    ...
+        <tr>
+            <td>
+                <h3>My Candidates:</h3>
+            </td>
+        </tr>
+        <tr>
+            <th>Candidate</th>
+            <th>n<sub>objs,pass</sub></th>
+            <th>n<sub>objs,tot</sub></th>
+            <th>t<sub>E</sub></th>
+            <th>&#916;&#967;<super>2</super></th>
+            <th>&#951;</th>
+            <th>&#951;<sub>thresh,low</sub></th>
+            <th>&#951;<sub>residual</sub></th>
+            <th>&#951;<sub>thresh,high</sub></th>
+            <th>RB</th>
+            <th>Source ID Best</th>
+        </tr>
+        <tr>
+            {% for cand in cands.items %}
+                <tr>
+                <td><a href="{{ url_for('candidate', candid=cand.id) }}">Candidate {{ cand.id }}</a></td>
+                <td>{{ "%i" % cand.num_objs_pass }}</td>
+                <td>{{ "%i" % cand.num_objs_tot }}</td>
+                {% if cand.t_E_best is float %}
+                    <td>{{ "%.2f" %  cand.t_E_best }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
                 {% endif %}
-            {% endfor %}    <a href="{{ url_for('user', username=user.username, page=sources.next_num) }}"
-               class="btn btn-outline-dark
-               {% if sources.page == sources.pages %}disabled{% endif %}">
-                &raquo;
-            </a>
-            <p class="text-right mt-3">
-               Showing page {{ sources.page }} of {{ sources.pages }}
-            </p>
-        </div>
-    </tr>
+                {% if cand.chi_squared_delta_best is float %}
+                    <td>{{ "%.2f" %  cand.chi_squared_delta_best }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+                <td>{{ "%.2f" % cand.eta_best }}</td>
+                <td>{{ "%.2f" % cand.eta_threshold_low_best }}</td>
+                <td>{{ "%.2f" % cand.eta_residual_best }}</td>
+                <td>{{ "%.2f" % cand.eta_threshold_high_best }}</td>
+                {% if cand.rf_score is float %}
+                    <td>{{ "%.2f" % cand.rf_score }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+                <td>{{ cand.best_source_id }}</td>
+                </tr>
+                <tr>
+                <td colspan="11">
+                {% for source_id in cand.unique_source_id_arr %}
+                <img width="200" src="{{ url_for('static', filename='source/') }}{{ source_id.split('_')[0] }}/{{ source_id }}_lightcurve.png">
+                {% endfor %}
+                </td>
+            {% endfor %}
+        </tr>
     </table>
+    <!-- Pagination Links-->
+    <div class="text-right">
+        <a href="{{ url_for('user', username=user.username, page=cands.prev_num) }}"
+           class="btn btn-outline-dark
+           {% if cands.page == 1 %}disabled{% endif %}">
+            &laquo;
+        </a><!-- Loop through the number of pages to display a link for each-->
+        {% for page_num in cands.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}{% if page_num %}
+    <!-- Check for the active page and set the link to "Active"-->
+                {% if cands.page == page_num %}
+                <a href="{{ url_for('user', username=user.username, page=page_num) }}"
+                   class="btn btn-dark">
+                    {{ page_num }}
+                </a>
+                {% else %}
+                <a href="{{ url_for('user', username=user.username, page=page_num) }}"
+                   class="btn btn-outline-dark">
+                    {{ page_num }}
+                </a>
+                {% endif %}
+            {% else %}
+                ...
+            {% endif %}
+        {% endfor %}    <a href="{{ url_for('user', username=user.username, page=cands.next_num) }}"
+           class="btn btn-outline-dark
+           {% if cands.page == cands.pages %}disabled{% endif %}">
+            &raquo;
+        </a>
+        <p class="text-right mt-3">
+           Showing page {{ cands.page }} of {{ cands.pages }}
+        </p>
+    </div>
 {% endblock %}

@@ -1,4 +1,4 @@
-from flask import render_template, flash, redirect, url_for, request
+from flask import render_template, flash, redirect, url_for, request, session
 from flask_login import current_user, login_user, logout_user, login_required
 from werkzeug.urls import url_parse
 from datetime import datetime
@@ -7,7 +7,7 @@ import astropy.units as u
 from puzle import app, db
 from puzle.forms import LoginForm, RegistrationForm, \
     EditProfileForm, ResetPasswordRequestForm, ResetPasswordForm, \
-    EditSourceCommentForm, RadialSearchForm, EmptyForm, \
+    EditCommentForm, RadialSearchForm, EmptyForm, \
     FilterSearchForm, CandidateOrderForm
 from puzle.models import User, Source, Candidate
 from puzle.email import send_password_reset_email
@@ -71,13 +71,20 @@ def register():
 def user(username):
     user = User.query.filter_by(username=username).first_or_404()
     page = request.args.get('page', 1, type=int)
-    sources = user.followed_sources().paginate(page, app.config['SOURCES_PER_PAGE'], False)
-    next_url = url_for('user', username=username, page=sources.next_num) \
-        if sources.has_next else None
-    prev_url = url_for('user', username=username, page=sources.prev_num) \
-        if sources.has_prev else None
-    return render_template('user.html', user=user, sources=sources,
+    cands = user.followed_candidates().paginate(page, app.config['ITEMS_PER_PAGE'], False)
+    next_url = url_for('user', username=username, page=cands.next_num) \
+        if cands.has_next else None
+    prev_url = url_for('user', username=username, page=cands.prev_num) \
+        if cands.has_prev else None
+    return render_template('user.html', user=user, cands=cands,
                            next_url=next_url, prev_url=prev_url)
+
+
+@app.route('/users', methods=['GET'])
+@login_required
+def users():
+    users = User.query.all()
+    return render_template('users.html', users=users)
 
 
 @app.route('/edit_profile', methods=['GET', 'POST'])
@@ -141,11 +148,24 @@ def source(sourceid):
                            form=form, title=title)
 
 
+@app.route('/candidate/<candid>')
+@login_required
+def candidate(candid):
+    title = 'Candidate %s' % candid
+    form = EmptyForm()
+    cand = Candidate.query.filter_by(id=candid).first_or_404()
+    sources = Source.query.filter(Source.id.in_(cand.source_id_arr)).all()
+    for source in sources:
+        source.load_lightcurve_plot()
+    return render_template('candidate.html', cand=cand, sources=sources,
+                           form=form, title=title, zip=zip)
+
+
 @app.route('/edit_source_comments/<sourceid>', methods=['GET', 'POST'])
 @login_required
 def edit_source_comments(sourceid):
     source = Source.query.filter_by(id=sourceid).first_or_404()
-    form = EditSourceCommentForm()
+    form = EditCommentForm()
     if form.validate_on_submit():
         source.comments = form.comments.data
         db.session.commit()
@@ -157,9 +177,25 @@ def edit_source_comments(sourceid):
                            form=form)
 
 
-@app.route('/fetch_ztf_ids/<sourceid>', methods=['POST'])
+@app.route('/edit_candidate_comments/<candid>', methods=['GET', 'POST'])
 @login_required
-def fetch_ztf_ids(sourceid):
+def edit_candidate_comments(candid):
+    cand = Candidate.query.filter_by(id=candid).first_or_404()
+    form = EditCommentForm()
+    if form.validate_on_submit():
+        cand.comments = form.comments.data
+        db.session.commit()
+        flash('Your changes have been saved.', 'success')
+        return redirect(url_for('candidate', candid=candid))
+    elif request.method == 'GET':
+        form.comments.data = cand.comments
+    return render_template('edit_candidate_comments.html',
+                           form=form)
+
+
+@app.route('/fetch_source_ztf_ids/<sourceid>', methods=['POST'])
+@login_required
+def fetch_source_ztf_ids(sourceid):
     source = Source.query.filter_by(id=sourceid).first_or_404()
     n_ids = source.fetch_ztf_ids()
     flash('%i ZTF IDs Found' % n_ids, 'success')
@@ -167,9 +203,32 @@ def fetch_ztf_ids(sourceid):
     return redirect(url_for('source', sourceid=sourceid))
 
 
-@app.route('/follow/<sourceid>', methods=['POST'])
+@app.route('/fetch_candidate_ztf_ids/<candid>', methods=['POST'])
 @login_required
-def follow(sourceid):
+def fetch_candidate_ztf_ids(candid):
+    cand = Candidate.query.filter_by(id=candid).first_or_404()
+    n_ids = cand.fetch_ztf_ids()
+    flash('%i ZTF IDs Found' % n_ids, 'success')
+    db.session.commit()
+    return redirect(url_for('candidate', candid=candid))
+
+
+@app.route('/fetch_candidate_ogle_target/<candid>', methods=['POST'])
+@login_required
+def fetch_candidate_ogle_target(candid):
+    cand = Candidate.query.filter_by(id=candid).first_or_404()
+    ogle_target = cand.fetch_ogle_target()
+    if ogle_target:
+        flash('OGLE Target Found', 'success')
+    else:
+        flash('No OGLE Target Found', 'success')
+    db.session.commit()
+    return redirect(url_for('candidate', candid=candid))
+
+
+@app.route('/follow_source/<sourceid>', methods=['POST'])
+@login_required
+def follow_source(sourceid):
     form = EmptyForm()
     if form.validate_on_submit():
         source = Source.query.filter_by(id=sourceid).first()
@@ -184,9 +243,9 @@ def follow(sourceid):
         return redirect(url_for('source', sourceid=sourceid))
 
 
-@app.route('/unfollow/<sourceid>', methods=['POST'])
+@app.route('/unfollow_source/<sourceid>', methods=['POST'])
 @login_required
-def unfollow(sourceid):
+def unfollow_source(sourceid):
     form = EmptyForm()
     if form.validate_on_submit():
         source = Source.query.filter_by(id=sourceid).first()
@@ -201,11 +260,53 @@ def unfollow(sourceid):
         return redirect(url_for('source', sourceid=sourceid))
 
 
+@app.route('/follow_candidate/<candid>_<whichpage>', methods=['POST'])
+@login_required
+def follow_candidate(candid, whichpage):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        cand = Candidate.query.filter_by(id=candid).first()
+        if user is None:
+            flash('Candidate {} not found.'.format(cand.id), 'danger')
+            return redirect(url_for('candidate', candid=candid))
+        current_user.follow_candidate(cand)
+        db.session.commit()
+        flash('You are following Candidate {}'.format(cand.id), 'success')
+        print(whichpage)
+        if whichpage == "same":
+            return redirect(request.referrer)
+        elif whichpage == "cand":
+            return redirect(url_for('candidate', candid=candid))
+    else:
+        return redirect(url_for('candidate', candid=candid))
+
+
+@app.route('/unfollow_candidate/<candid>_<whichpage>', methods=['POST'])
+@login_required
+def unfollow_candidate(candid, whichpage):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        cand = Candidate.query.filter_by(id=candid).first()
+        if user is None:
+            flash('Source {} not found.'.format(cand.id), 'danger')
+            return redirect(url_for('candidate', candidateid=candid))
+        current_user.unfollow_candidate(cand)
+        db.session.commit()
+        flash('You are not following Source {}'.format(cand.id), 'success')
+        print(whichpage)
+        if whichpage == "same":
+            return redirect(request.referrer)
+        elif whichpage == "cand":
+            return redirect(url_for('candidate', candid=candid))
+    else:
+        return redirect(url_for('candidate', candid=candid))
+
+
 @app.route('/sources', methods=['GET', 'POST'])
 @login_required
 def sources():
     page = request.args.get('page', 1, type=int)
-    sources = Source.query.order_by(Source.id.asc()).paginate(page, app.config['SOURCES_PER_PAGE'], False)
+    sources = Source.query.order_by(Source.id.asc()).paginate(page, app.config['ITEMS_PER_PAGE'], False)
     next_url = url_for('sources', page=sources.next_num) \
         if sources.has_next else None
     prev_url = url_for('sources', page=sources.prev_num) \
@@ -218,29 +319,20 @@ def sources():
 @app.route('/candidates', methods=['GET', 'POST'])
 @login_required
 def candidates():
-    form = CandidateOrderForm()
-    if form.validate_on_submit():
-        if form.order_by.data == 'eta_best':
-            order_by_cond = Candidate.eta_best.asc()
-        elif form.order_by.data == 'chi_squared_delta_best':
-            order_by_cond = Candidate.chi_squared_delta_best.desc()
-    else:
-        order_by_cond = Candidate.eta_best.asc()
-
-    query = Candidate.query
-    if form.order_by_num_objs.data:
-        query = query.order_by(Candidate.num_objs_pass.desc(), order_by_cond)
-    else:
-        query = query.order_by(order_by_cond)
-
+    form = EmptyForm()
     page = request.args.get('page', 1, type=int)
-    cands = query.paginate(page, app.config['SOURCES_PER_PAGE'], False)
+    cands = Candidate.query.order_by(Candidate.eta_best.asc()).\
+        paginate(page, app.config['ITEMS_PER_PAGE'], False)
     next_url = url_for('candidates', page=cands.next_num) \
         if cands.has_next else None
     prev_url = url_for('candidates', page=cands.prev_num) \
         if cands.has_prev else None
 
-    flash('Browse Candidate', 'info')
+    for cand in cands.items:
+        sources = Source.query.filter(Source.id.in_(cand.source_id_arr)).all()
+        for source in sources:
+            source.load_lightcurve_plot()
+
     return render_template('candidates.html', cands=cands,
                            next_url=next_url, prev_url=prev_url,
                            title='PUZLE candidates', zip=zip,
@@ -250,17 +342,18 @@ def candidates():
 @app.route('/radial_search', methods=['GET', 'POST'])
 @login_required
 def radial_search():
-    form_filter = RadialSearchForm()
-    form_cand = CandidateOrderForm()
-    radius = form_filter.radius.data
-    if form_filter.validate_on_submit():
-        if form_filter.ra.data and form_filter.dec.data:
-            ra, dec = form_filter.ra.data, form_filter.dec.data
-            flash('Searching (ra, dec, radius) = (%.5f, %.5f, %.2f)' % (ra, dec, radius),
+    form_radial = RadialSearchForm()
+    glon, glat = None, None
+    if form_radial.validate_on_submit():
+        radius = form_radial.radius.data
+
+        if form_radial.ra.data and form_radial.dec.data:
+            ra, dec = form_radial.ra.data, form_radial.dec.data
+            flash('Results for (ra, dec, radius) = (%.5f, %.5f, %.2f)' % (ra, dec, radius),
                   'info')
-        elif form_filter.glon.data and form_filter.glat.data:
-            glon, glat = form_filter.glon.data, form_filter.glat.data
-            flash('Searching (glon, glat, radius) = (%.5f, %.5f, %.2f)' % (glon, glat, radius),
+        elif form_radial.glon.data and form_radial.glat.data:
+            glon, glat = form_radial.glon.data, form_radial.glat.data
+            flash('Results for (glon, glat, radius) = (%.5f, %.5f, %.2f)' % (glon, glat, radius),
                   'info')
             coord = SkyCoord(glon, glat,
                              unit=u.degree, frame='galactic')
@@ -272,32 +365,70 @@ def radial_search():
                   'must be entered.', 'danger')
             return redirect(url_for('radial_search'))
 
-        if form_filter.order_by.data == 'eta_best':
+        session['radius'] = radius
+        session['ra'] = ra
+        session['dec'] = dec
+        if glon:
+            session['glon'] = glon
+            session['glat'] = glat
+        session['order_by'] = form_radial.order_by.data
+        session['order_by_num_objs'] = form_radial.order_by_num_objs.data
+
+    else:
+        for key in ['ra', 'dec', 'glon', 'glat', 'radius']:
+            if key in session:
+                getattr(form_radial, key).data = session[key]
+            else:
+                session[key] = None
+
+    if session['ra']:
+        ra = session['ra']
+        dec = session['dec']
+        radius = session['radius']
+        query = Candidate.query.filter(Candidate.cone_search(ra, dec, radius))
+        if session['order_by'] == 'eta_best':
             order_by_cond = Candidate.eta_best.asc()
-        elif form_filter.order_by.data == 'chi_squared_delta_best':
+        elif session['order_by'] == 'chi_squared_delta_best':
             order_by_cond = Candidate.chi_squared_delta_best.desc()
 
-        query = Candidate.query.filter(Candidate.cone_search(ra, dec, radius))
-        if form_filter.order_by_num_objs.data:
+        if session['order_by_num_objs']:
             query = query.order_by(Candidate.num_objs_pass.desc(), order_by_cond)
         else:
             query = query.order_by(order_by_cond)
 
         page = request.args.get('page', 1, type=int)
-        cands = query.paginate(page, app.config['SOURCES_PER_PAGE'], False)
+        cands = query.paginate(page, app.config['ITEMS_PER_PAGE'], False)
         next_url = url_for('candidates', page=cands.next_num) \
             if cands.has_next else None
         prev_url = url_for('candidates', page=cands.prev_num) \
             if cands.has_prev else None
+        paginate = True
 
-        flash('Filter Search Results', 'info')
-        return render_template('candidates.html', cands=cands,
-                               next_url=next_url, prev_url=prev_url,
-                               title='Filter Search Results', zip=zip,
-                               paginate=True, form=form_cand)
+        for cand in cands.items:
+            sources = Source.query.filter(Source.id.in_(cand.source_id_arr)).all()
+            for source in sources:
+                source.load_lightcurve_plot()
+    else:
+        cands = None
+        next_url = None
+        prev_url = None
+        paginate = None
 
-    return render_template('radial_search.html', form=form_filter,
-                           title='Radial Search')
+    return render_template('radial_search.html', cands=cands,
+                           next_url=next_url, prev_url=prev_url,
+                           title='Radial Search Results', zip=zip,
+                           paginate=paginate, form=form_radial)
+
+
+@app.route('/reset_radial_search', methods=['GET'])
+@login_required
+def reset_radial_search():
+    for key in ['ra', 'dec', 'glon', 'glat', 'radius']:
+        try:
+            del session[key]
+        except KeyError:
+            pass
+    return redirect(url_for('radial_search'))
 
 
 @app.route('/filter_search', methods=['GET', 'POST'])
@@ -315,41 +446,92 @@ def filter_search():
             query = query.filter(getattr(Candidate, field) <= val_max)
         return query
 
+    query_fields = ['num_objs_pass', 't_E_best',
+                    'chi_squared_delta_best', 'rf_score_best',
+                    'eta_best']
+
     form_filter = FilterSearchForm()
-    form_cand = CandidateOrderForm()
     if form_filter.validate_on_submit():
-        query = Candidate.query
-
-        for field in ['num_objs_pass', 't_E_best',
-                      'chi_squared_delta_best', 'rf_score_best']:
+        for field in query_fields:
             val_min = getattr(form_filter, f'{field}_min').data
+            session[f'{field}_min'] = val_min
             val_max = getattr(form_filter, f'{field}_max').data
-            query = _append_query(query, field, val_min, val_max)
-            if query is None:
-                return redirect(url_for('filter_search'))
+            session[f'{field}_max'] = val_max
 
-        if form_filter.order_by.data == 'eta_best':
+        session['order_by'] = form_filter.order_by.data
+        session['order_by_num_objs'] = form_filter.order_by_num_objs.data
+
+
+        flash('Filter Search Results', 'info')
+    else:
+        for field in query_fields:
+            for minmax in ['min', 'max']:
+                key = f'{field}_{minmax}'
+                if f'{field}_{minmax}' in session:
+                    getattr(form_filter, key).data = session[key]
+                else:
+                    session[key] = None
+        for order_by_type in ['order_by', 'order_by_num_objs']:
+            if order_by_type in session:
+                getattr(form_filter, order_by_type).data = session[order_by_type]
+            else:
+                session[order_by_type] = None
+
+    query = Candidate.query
+    current_query = False
+    for field in query_fields:
+        val_min = session[f'{field}_min']
+        val_max = session[f'{field}_max']
+        query = _append_query(query, field, val_min, val_max)
+        if val_min is not None or val_max is not None:
+            current_query = True
+
+    if current_query:
+        if session['order_by'] == 'eta_best':
             order_by_cond = Candidate.eta_best.asc()
-        elif form_filter.order_by.data == 'chi_squared_delta_best':
+        elif session['order_by'] == 'chi_squared_delta_best':
             order_by_cond = Candidate.chi_squared_delta_best.desc()
 
-        if form_filter.order_by_num_objs.data:
+        if session['order_by_num_objs']:
             query = query.order_by(Candidate.num_objs_pass.desc(), order_by_cond)
         else:
             query = query.order_by(order_by_cond)
 
         page = request.args.get('page', 1, type=int)
-        cands = query.paginate(page, app.config['SOURCES_PER_PAGE'], False)
+        cands = query.paginate(page, app.config['ITEMS_PER_PAGE'], False)
         next_url = url_for('candidates', page=cands.next_num) \
             if cands.has_next else None
         prev_url = url_for('candidates', page=cands.prev_num) \
             if cands.has_prev else None
+        paginate = True
 
-        flash('Filter Search Results', 'info')
-        return render_template('candidates.html', cands=cands,
-                               next_url=next_url, prev_url=prev_url,
-                               title='Filter Search Results', zip=zip,
-                               paginate=True, form=form_cand)
+        for cand in cands.items:
+            sources = Source.query.filter(Source.id.in_(cand.source_id_arr)).all()
+            for source in sources:
+                source.load_lightcurve_plot()
+    else:
+        cands = None
+        next_url = None
+        prev_url = None
+        paginate = None
 
-    return render_template('filter_search.html', form=form_filter,
-                           title='Filter Search')
+    return render_template('filter_search.html', cands=cands,
+                           next_url=next_url, prev_url=prev_url,
+                           title='Filter Search Results', zip=zip,
+                           paginate=paginate, form=form_filter)
+
+
+@app.route('/reset_filter_search', methods=['GET'])
+@login_required
+def reset_filter_search():
+    query_fields = ['num_objs_pass', 't_E_best',
+                    'chi_squared_delta_best', 'rf_score_best',
+                    'eta_best']
+
+    for field in query_fields:
+        for minmax in ['min', 'max']:
+            try:
+                del session[f'{field}_{minmax}']
+            except KeyError:
+                pass
+    return redirect(url_for('filter_search'))
