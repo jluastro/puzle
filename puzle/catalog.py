@@ -189,7 +189,7 @@ def generate_ps1_psc_maps():
             pickle.dump((kdtree, rf_scores), fileObj)
 
 
-def return_ps1_psc(dec):
+def return_ps1_psc(dec, ps1_psc_dct=None):
     dec_sign = np.sign(dec)
     if dec_sign == 1:
         dec_file = dec
@@ -215,12 +215,17 @@ def return_ps1_psc(dec):
 
     ps1_psc_fname = f'/global/cfs/cdirs/uLens/PS1_PSC/' \
                     f'dec_{dec_prefix}{dec_floor_str}_{dec_ext_str}_classifications.map'
-    ps1_psc_kdtree, rf_scores = pickle.load(open(ps1_psc_fname, 'rb'))
+    if ps1_psc_dct and ps1_psc_fname in ps1_psc_dct:
+        ps1_psc_kdtree, rf_scores = ps1_psc_dct[ps1_psc_fname]
+    else:
+        print('loading %s' % ps1_psc_fname)
+        ps1_psc_kdtree, rf_scores = pickle.load(open(ps1_psc_fname, 'rb'))
+        ps1_psc_dct[ps1_psc_fname] = ps1_psc_kdtree, rf_scores
     return ps1_psc_kdtree, rf_scores
 
 
-def query_ps1_psc_on_disk(ra, dec, radius=2):
-    ps1_psc_kdtree, rf_scores = return_ps1_psc(dec)
+def query_ps1_psc_on_disk(ra, dec, radius=2, ps1_psc_dct=None):
+    ps1_psc_kdtree, rf_scores = return_ps1_psc(dec, ps1_psc_dct)
     radius_deg = radius / 3600.
     idx_arr = ps1_psc_kdtree.query_ball_point((ra, dec), radius_deg)
 
