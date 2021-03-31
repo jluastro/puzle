@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import os
 import pickle
 import numpy as np
-from puzle.models import StarProcessJob
+from puzle.models import SourceIngestJob, StarProcessJob
 from puzle.utils import return_figures_dir, return_DR4_dir, return_data_dir
 from puzle import db
 
@@ -48,7 +48,9 @@ def save_star_process_progress(process_progress):
 
 def plot_star_process_progress():
     DR4_dir = return_DR4_dir()
-    jobs = db.session.query(StarProcessJob).filter(StarProcessJob.finished == True).all()
+    jobs = db.session.query(SourceIngestJob, StarProcessJob).\
+        filter(SourceIngestJob.id == StarProcessJob.source_ingest_job_id).\
+        filter(StarProcessJob.finished == True).all()
 
     star_process_progress = load_star_process_progress()
 
