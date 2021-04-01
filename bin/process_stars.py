@@ -144,7 +144,7 @@ def construct_eta_dct(stars_and_sources, job_stats, obj_data, n_days_min=20):
     num_objs_pass_n_days = 0
     idxs_dct = defaultdict(list)
     eta_dct = defaultdict(list)
-    n_epochs_dct = defaultdict(list)
+    n_days_dct = defaultdict(list)
     for star_id, (star, sources) in stars_and_sources.items():
         num_stars += 1
         for j, source in enumerate(sources):
@@ -161,7 +161,7 @@ def construct_eta_dct(stars_and_sources, job_stats, obj_data, n_days_min=20):
                 key = '%i_%i' % (obj.fieldid, obj.filterid)
                 idxs_dct[key].append((star_id, j, k))
                 eta_dct[key].append(eta)
-                n_epochs_dct[key].append(obj.nepochs)
+                n_days_dct[key].append(n_days)
 
                 obj_key = (star_id, j, k)
                 objectData = ObjectData(eta=eta, eta_residual=None,
@@ -175,10 +175,10 @@ def construct_eta_dct(stars_and_sources, job_stats, obj_data, n_days_min=20):
     job_stats['num_objs'] = num_objs
     job_stats['num_objs_pass_n_days'] = num_objs_pass_n_days
 
-    return eta_dct, idxs_dct, n_epochs_dct
+    return eta_dct, idxs_dct, n_days_dct
 
 
-def construct_eta_idxs_dct(eta_dct, idxs_dct, n_epochs_dct, job_stats, obj_data,
+def construct_eta_idxs_dct(eta_dct, idxs_dct, n_days_dct, job_stats, obj_data,
                            n_days_min=20, num_epochs_splits=3):
     epoch_edges_dct = {}
     eta_threshold_low_dct = defaultdict(list)
@@ -188,15 +188,15 @@ def construct_eta_idxs_dct(eta_dct, idxs_dct, n_epochs_dct, job_stats, obj_data,
     num_stars_pass_eta = 0
     for key, eta_arr in eta_dct.items():
         eta_arr = np.array(eta_arr)
-        n_epochs = np.array(n_epochs_dct[key])
+        n_days = np.array(n_days_dct[key])
         stars_and_sources_idxs = idxs_dct[key]
 
-        n_epochs_max = np.max(n_epochs)
+        n_days_max = np.max(n_days)
         for i in range(num_epochs_splits, 0, -1):
             try:
-                split_idx_arr, arr_bin_edges = evenly_split_sample(n_epochs,
+                split_idx_arr, arr_bin_edges = evenly_split_sample(n_days,
                                                                    arr_min=n_days_min,
-                                                                   arr_max=n_epochs_max+1,
+                                                                   arr_max=n_days_max+1,
                                                                    num_splits=i)
             except ValueError:
                 pass
@@ -443,7 +443,7 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
     job_stats = {}
     obj_data = {}
     logger.info(f'Job {source_job_id}: Calculating eta')
-    eta_dct, idxs_dct, n_epochs_dct = construct_eta_dct(stars_and_sources, job_stats, obj_data,
+    eta_dct, idxs_dct, n_days_dct = construct_eta_dct(stars_and_sources, job_stats, obj_data,
                                                         n_days_min=n_days_min)
     logger.info(f'Job {source_job_id}: '
                 f'{job_stats["num_stars"]} Stars | '
@@ -452,7 +452,7 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
                 f'{job_stats["num_objs_pass_n_days"]} Objects Past Days Cuts')
 
     eta_idxs_dct, eta_threshold_low_dct, eta_threshold_high_dct = construct_eta_idxs_dct(
-        eta_dct, idxs_dct, n_epochs_dct, job_stats, obj_data,
+        eta_dct, idxs_dct, n_days_dct, job_stats, obj_data,
         n_days_min=n_days_min, num_epochs_splits=num_epochs_splits)
     logger.info(f'Job {source_job_id}: '
                 f'{job_stats["num_stars_pass_eta"]} stars pass eta cut | '
