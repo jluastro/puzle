@@ -16,7 +16,7 @@ hostname
 date
 echo "---------------------------"
 
-srun -N 1 -n 32 shifter python /home/puzle/process_stars.py
+srun -N 1 -n 1 shifter python /home/puzle/process_stars.py
 
 echo "---------------------------"
 date

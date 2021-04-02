@@ -39,6 +39,8 @@ RUN mkdir /home/puzle/logs &&\
     chmod -R 777 /home/puzle/astropy_config/astropy &&\
     chmod +x boot.sh &&\
     chown -R puzle:puzle ./
+COPY data/astropy.4.2.1.cfg /home/puzle/astropy_config/astropy/astropy.4.2.1.cfg
+COPY data/astropy.cfg /home/puzle/astropy_config/astropy/astropy.cfg
 
 ENV XDG_CACHE_HOME /home/puzle/astropy_cache
 ENV XDG_CONFIG_HOME /home/puzle/astropy_config
