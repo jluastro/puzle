@@ -29,27 +29,21 @@ RUN mkdir /home/puzle/logs &&\
     mkdir /home/puzle/data/PS1_PSC &&\
     chown -R puzle:puzle /home/puzle/data/PS1_PSC &&\
     chmod -R 775 /home/puzle/data/PS1_PSC &&\
-    mkdir -p /tmp/puzle &&\
-    chown -R puzle:puzle /tmp/puzle &&\
-    chmod -R 775 /tmp/puzle &&\
+    mkdir /home/puzle/data/ulensdb &&\
+    chown -R puzle:puzle /home/puzle/data/ulensdb &&\
+    chmod -R 775 /home/puzle/data/ulensdb &&\
     chmod +x boot.sh &&\
     chown -R puzle:puzle ./
 
-ENV XDG_CACHE_HOME /tmp/mmedford/astropy_cache
-ENV XDG_CONFIG_HOME /tmp/mmedford/astropy_config
+ENV XDG_CACHE_HOME /tmp/puzle/astropy_cache
+ENV XDG_CONFIG_HOME /tmp/puzle/astropy_config
 
-#RUN cd /home &&\
-#    git clone https://github.com/MichaelMedford/zort.git &&\
-#    cd /home/zort &&\
-#    git checkout 38a31c74e &&\
-#    conda run -n puzle python setup.py install
 RUN cd /home &&\
     git clone https://github.com/MichaelMedford/zort.git &&\
     cd /home/zort &&\
     git checkout 38a31c74e &&\
     apt-get install -y musl-dev &&\
     ln -s /usr/lib/x86_64-linux-musl/libc.so /lib/libc.musl-x86_64.so.1
-
 ENV PYTHONPATH /home/zort:$PYTHONPATH
 
 COPY data/eta_thresholds.dct /home/puzle/data/eta_thresholds.dct
