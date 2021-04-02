@@ -8,7 +8,7 @@ import logging
 from puzle.utils import return_data_dir
 
 logger = logging.getLogger(__name__)
-logging.getLogger('filelock').setLevel(logging.WARNING)
+# logging.getLogger('filelock').setLevel(logging.WARNING)
 
 
 def identify_is_nersc():

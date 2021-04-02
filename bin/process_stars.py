@@ -596,4 +596,6 @@ def process_stars_script(shutdown_time=10, single_job=False):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
+    from puzle.ulensdb import logger as logger_ulensdb
+    logger_ulensdb.setLevel(logging.INFO)
     process_stars_script()

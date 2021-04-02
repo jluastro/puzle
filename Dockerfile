@@ -6,7 +6,7 @@ WORKDIR /home/puzle
 COPY environment.yml environment.yml
 RUN conda env create -f environment.yml
 RUN conda init bash
-RUN echo "source activate puzle" >> /home/puzle/.bashrc
+RUN echo "conda activate puzle" >> /home/puzle/.bashrc
 ENV PATH /opt/conda/envs/puzle/bin:$PATH
 
 COPY puzle puzle
@@ -44,7 +44,7 @@ RUN cd /home &&\
     git checkout 38a31c74e &&\
     apt-get install -y musl-dev &&\
     ln -s /usr/lib/x86_64-linux-musl/libc.so /lib/libc.musl-x86_64.so.1
-ENV PYTHONPATH /home/zort:$PYTHONPATH
+ENV PYTHONPATH /home/zort
 
 COPY data/eta_thresholds.dct /home/puzle/data/eta_thresholds.dct
 
@@ -52,3 +52,5 @@ ENV MPLCONFIGDIR /tmp/
 ENV FLASK_APP puzleapp.py
 USER puzle
 EXPOSE 5000
+
+CMD conda activate puzle
