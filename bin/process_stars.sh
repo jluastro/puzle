@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --account=m2218
-#SBATCH --image=docker:michaelmedford/puzle:latest
+#SBATCH --image=registry.services.nersc.gov/mmedford/puzle:latest
 #SBATCH --volume="/global/cfs/cdirs/uLens/ZTF/DR4:/home/puzle/data/DR4"
 #SBATCH --qos=premium
 #SBATCH --constraint=haswell
