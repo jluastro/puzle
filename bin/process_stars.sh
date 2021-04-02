@@ -1,9 +1,11 @@
 #!/bin/bash
 #SBATCH --account=m2218
-#SBATCH --qos=regular
+#SBATCH --image=docker:michaelmedford/puzle:latest
+#SBATCH --volume="/global/cfs/cdirs/uLens/ZTF/DR4:/home/puzle/data/DR4"
+#SBATCH --qos=premium
 #SBATCH --constraint=haswell
 #SBATCH --nodes=1
-#SBATCH --time=07:00:00
+#SBATCH --time=00:30:00
 #SBATCH --job-name=stars
 #SBATCH --output=stars.%j.out
 echo "---------------------------"
@@ -13,9 +15,7 @@ hostname
 date
 echo "---------------------------"
 
-conda activate puzle
-cd /global/cfs/cdirs/uLens/ZTF/DR4
-srun -N 1 -n 32 python /global/homes/m/mmedford/puzle/bin/process_stars.py
+srun -N 1 -n 32 shifter python /home/puzle/process_stars.py
 
 echo "---------------------------"
 date

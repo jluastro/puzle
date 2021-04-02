@@ -12,6 +12,8 @@ ENV PATH /opt/conda/envs/puzle/bin:$PATH
 COPY puzle puzle
 COPY migrations migrations
 COPY puzleapp.py config.py boot.sh ./
+COPY bin/process_stars.py process_stars.py
+RUN chmod 775 process_stars.py
 RUN mkdir /home/puzle/logs &&\
     chown -R puzle:puzle /home/puzle/logs &&\
     chmod -R 775 /home/puzle/logs &&\
@@ -21,6 +23,9 @@ RUN mkdir /home/puzle/logs &&\
     mkdir /home/puzle/data &&\
     chown -R puzle:puzle /home/puzle/data &&\
     chmod -R 775 /home/puzle/data &&\
+    mkdir /home/puzle/data/DR4 &&\
+    chown -R puzle:puzle /home/puzle/data/DR4 &&\
+    chmod -R 775 /home/puzle/data/DR4 &&\
     mkdir -p /home/puzle/astropy_cache/astropy &&\
     chown -R puzle:puzle /home/puzle/astropy_cache &&\
     chmod -R 777 /home/puzle/astropy_cache &&\
@@ -40,4 +45,3 @@ ENV MPLCONFIGDIR /tmp/
 ENV FLASK_APP puzleapp.py
 USER puzle
 EXPOSE 5000
-ENTRYPOINT ["./boot.sh"]
