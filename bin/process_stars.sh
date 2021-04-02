@@ -3,7 +3,7 @@
 #SBATCH --image=registry.services.nersc.gov/mmedford/puzle:latest
 #SBATCH --volume="/global/cfs/cdirs/uLens/ZTF/DR4:/home/puzle/data/DR4"
 #SBATCH --volume="/global/cfs/cdirs/uLens/PS1_PSC:/home/puzle/data/PS1_PSC"
-#SBATCH --volume="/global/cfs/cdirs/uLens/ulensdb:/home/puzle/data/ulensdb"
+#SBATCH --volume="/global/u2/m/mmedford/puzle/data/ulensdb:/home/puzle/data/ulensdb"
 #SBATCH --qos=debug
 #SBATCH --constraint=haswell
 #SBATCH --nodes=1
