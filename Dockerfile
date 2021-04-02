@@ -26,12 +26,17 @@ RUN mkdir /home/puzle/logs &&\
     mkdir /home/puzle/data/DR4 &&\
     chown -R puzle:puzle /home/puzle/data/DR4 &&\
     chmod -R 775 /home/puzle/data/DR4 &&\
+    mkdir /home/puzle/data/PS1_PSC &&\
+    chown -R puzle:puzle /home/puzle/data/PS1_PSC &&\
+    chmod -R 775 /home/puzle/data/PS1_PSC &&\
     mkdir -p /home/puzle/astropy_cache/astropy &&\
     chown -R puzle:puzle /home/puzle/astropy_cache &&\
     chmod -R 777 /home/puzle/astropy_cache &&\
     mkdir -p /home/puzle/astropy_config/astropy &&\
     chown -R puzle:puzle /home/puzle/astropy_config &&\
     chmod -R 777 /home/puzle/astropy_config &&\
+    chown -R puzle:puzle /home/puzle/astropy_config/astropy &&\
+    chmod -R 777 /home/puzle/astropy_config/astropy &&\
     chmod +x boot.sh &&\
     chown -R puzle:puzle ./
 
@@ -40,6 +45,8 @@ ENV XDG_CONFIG_HOME /home/puzle/astropy_config
 
 RUN cd /home && git clone https://github.com/MichaelMedford/zort.git && cd /home/zort && git checkout 38a31c74e
 ENV PYTHONPATH /home/zort:$PYTHONPATH
+
+COPY data/eta_thresholds.dct /home/puzle/data/eta_thresholds.dct
 
 ENV MPLCONFIGDIR /tmp/
 ENV FLASK_APP puzleapp.py

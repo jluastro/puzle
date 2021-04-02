@@ -2,6 +2,7 @@
 #SBATCH --account=m2218
 #SBATCH --image=registry.services.nersc.gov/mmedford/puzle:latest
 #SBATCH --volume="/global/cfs/cdirs/uLens/ZTF/DR4:/home/puzle/data/DR4"
+#SBATCH --volume="/global/cfs/cdirs/uLens/PS1_PSC:/home/puzle/data/PS1_PSC"
 #SBATCH --qos=debug
 #SBATCH --constraint=haswell
 #SBATCH --nodes=1

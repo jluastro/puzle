@@ -5,10 +5,9 @@ from filelock import FileLock
 from pathlib import Path
 import logging
 
-from puzle.utils import execute
+from puzle.utils import execute, return_data_dir
 
 logger = logging.getLogger(__name__)
-ulensdb_file_path = os.getenv('ULENS_DB_FILEPATH')
 logging.getLogger('filelock').setLevel(logging.WARNING)
 
 
@@ -35,6 +34,7 @@ def fetch_db_id():
 
 def load_db_ids():
     # create file if does not exist
+    ulensdb_file_path = '%s/ulensdb.txt' % return_data_dir()
     if not os.path.exists(ulensdb_file_path):
         Path(ulensdb_file_path).touch()
 
@@ -52,6 +52,7 @@ def load_db_ids():
 
 
 def remove_db_id():
+    ulensdb_file_path = '%s/ulensdb.txt' % return_data_dir()
     lock_path = ulensdb_file_path.replace('.txt', '.lock')
     lock = FileLock(lock_path)
 
@@ -74,6 +75,7 @@ def remove_db_id():
 
 
 def insert_db_id(num_ids=50, retry_time=5):
+    ulensdb_file_path = '%s/ulensdb.txt' % return_data_dir()
     lock_path = ulensdb_file_path.replace('.txt', '.lock')
     lock = FileLock(lock_path)
 
