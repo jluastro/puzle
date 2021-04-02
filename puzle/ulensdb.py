@@ -1,7 +1,7 @@
 import os
 import time
 import numpy as np
-from filelock import FileLock
+from filelock import FileLock, SoftFileLock
 from pathlib import Path
 import logging
 
@@ -49,7 +49,7 @@ def load_db_ids():
 def remove_db_id():
     ulensdb_file_path = '%s/ulensdb/ulensdb.txt' % return_data_dir()
     lock_path = ulensdb_file_path.replace('.txt', '.lock')
-    lock = FileLock(lock_path)
+    lock = SoftFileLock(lock_path)
 
     my_db_id = fetch_db_id()
     if my_db_id is None:
@@ -72,7 +72,7 @@ def remove_db_id():
 def insert_db_id(num_ids=50, retry_time=5):
     ulensdb_file_path = '%s/ulensdb/ulensdb.txt' % return_data_dir()
     lock_path = ulensdb_file_path.replace('.txt', '.lock')
-    lock = FileLock(lock_path)
+    lock = SoftFileLock(lock_path)
 
     my_db_id = fetch_db_id()
     if my_db_id is None:
