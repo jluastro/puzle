@@ -5,7 +5,7 @@ from filelock import FileLock
 from pathlib import Path
 import logging
 
-from puzle.utils import execute, return_data_dir
+from puzle.utils import return_data_dir
 
 logger = logging.getLogger(__name__)
 logging.getLogger('filelock').setLevel(logging.WARNING)
