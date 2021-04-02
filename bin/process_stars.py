@@ -139,22 +139,22 @@ def fetch_stars_and_sources(source_job_id):
 
 def construct_eta_dct(stars_and_sources, job_stats, obj_data, n_days_min=20):
     num_stars = 0
-    num_sources = 0
     num_objs = 0
     num_objs_pass_n_days = 0
     idxs_dct = defaultdict(list)
     eta_dct = defaultdict(list)
     n_days_dct = defaultdict(list)
+    star_ids_pass_n_days = set()
     for star_id, (star, sources) in stars_and_sources.items():
         num_stars += 1
         for j, source in enumerate(sources):
-            num_sources += 1
             for k, obj in enumerate(source.zort_source.objects):
                 num_objs += 1
                 n_days = len(np.unique(np.round(obj.lightcurve.hmjd)))
                 if n_days < n_days_min:
                     continue
                 num_objs_pass_n_days += 1
+                star_ids_pass_n_days.add(star_id)
                 eta = calculate_eta_on_daily_avg(obj.lightcurve.hmjd,
                                                  obj.lightcurve.mag)
 
@@ -169,9 +169,10 @@ def construct_eta_dct(stars_and_sources, job_stats, obj_data, n_days_min=20):
                                         eta_threshold_low=None,
                                         eta_threshold_high=None)
                 obj_data[obj_key] = objectData
+    num_stars_pass_n_days = len(star_ids_pass_n_days)
 
     job_stats['num_stars'] = num_stars
-    job_stats['num_sources'] = num_sources
+    job_stats['num_stars_pass_n_days'] = num_stars_pass_n_days
     job_stats['num_objs'] = num_objs
     job_stats['num_objs_pass_n_days'] = num_objs_pass_n_days
 
@@ -447,7 +448,7 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
                                                         n_days_min=n_days_min)
     logger.info(f'Job {source_job_id}: '
                 f'{job_stats["num_stars"]} Stars | '
-                f'{job_stats["num_sources"]} Sources | '
+                f'{job_stats["num_stars_pass_n_days"]} Stars Past Days Cuts | '
                 f'{job_stats["num_objs"]} Objects | '
                 f'{job_stats["num_objs_pass_n_days"]} Objects Past Days Cuts')
 
@@ -516,7 +517,7 @@ def finish_job(source_job_id, job_stats):
     job.uploaded = True
     job.datetime_finished = datetime.now()
     job.num_stars = job_stats['num_stars']
-    job.num_sources = job_stats['num_sources']
+    job.num_stars_pass_n_days = job_stats['num_stars_pass_n_days']
     job.num_objs = job_stats['num_objs']
     job.num_objs_pass_n_days = job_stats['num_objs_pass_n_days']
     job.num_objs_pass_eta = job_stats['num_objs_pass_eta']
@@ -550,7 +551,7 @@ def process_stars(source_job_id):
     else:
         logger.info(f'Job {source_job_id}: No stars, skipping process')
         job_stats = {'num_stars': 0,
-                     'num_sources': 0,
+                     'num_stars_pass_n_days': 0,
                      'num_objs': 0,
                      'num_objs_pass_n_days': 0,
                      'num_objs_pass_eta': 0,
