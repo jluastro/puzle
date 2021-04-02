@@ -570,7 +570,10 @@ def process_stars(source_job_id):
 
 
 def process_stars_script(shutdown_time=10, single_job=False):
-    job_enddate = fetch_job_enddate()
+    try:
+        job_enddate = fetch_job_enddate()
+    except FileNotFoundError:
+        job_enddate = None
     if job_enddate:
         script_enddate = job_enddate - timedelta(minutes=shutdown_time)
         logger.info('Script End Date: %s' % script_enddate)

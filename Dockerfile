@@ -29,23 +29,27 @@ RUN mkdir /home/puzle/logs &&\
     mkdir /home/puzle/data/PS1_PSC &&\
     chown -R puzle:puzle /home/puzle/data/PS1_PSC &&\
     chmod -R 775 /home/puzle/data/PS1_PSC &&\
-    mkdir -p /home/puzle/astropy_cache/astropy &&\
-    chown -R puzle:puzle /home/puzle/astropy_cache &&\
-    chmod -R 777 /home/puzle/astropy_cache &&\
-    mkdir -p /home/puzle/astropy_config/astropy &&\
-    chown -R puzle:puzle /home/puzle/astropy_config &&\
-    chmod -R 777 /home/puzle/astropy_config &&\
-    chown -R puzle:puzle /home/puzle/astropy_config/astropy &&\
-    chmod -R 777 /home/puzle/astropy_config/astropy &&\
+    mkdir -p /tmp/puzle &&\
+    chown -R puzle:puzle /tmp/puzle &&\
+    chmod -R 775 /tmp/puzle &&\
     chmod +x boot.sh &&\
     chown -R puzle:puzle ./
-COPY data/astropy.4.2.1.cfg /home/puzle/astropy_config/astropy/astropy.4.2.1.cfg
-COPY data/astropy.cfg /home/puzle/astropy_config/astropy/astropy.cfg
 
-ENV XDG_CACHE_HOME /home/puzle/astropy_cache
-ENV XDG_CONFIG_HOME /home/puzle/astropy_config
+ENV XDG_CACHE_HOME /tmp/mmedford/astropy_cache
+ENV XDG_CONFIG_HOME /tmp/mmedford/astropy_config
 
-RUN cd /home && git clone https://github.com/MichaelMedford/zort.git && cd /home/zort && git checkout 38a31c74e
+#RUN cd /home &&\
+#    git clone https://github.com/MichaelMedford/zort.git &&\
+#    cd /home/zort &&\
+#    git checkout 38a31c74e &&\
+#    conda run -n puzle python setup.py install
+RUN cd /home &&\
+    git clone https://github.com/MichaelMedford/zort.git &&\
+    cd /home/zort &&\
+    git checkout 38a31c74e &&\
+    apt-get install -y musl-dev &&\
+    ln -s /usr/lib/x86_64-linux-musl/libc.so /lib/libc.musl-x86_64.so.1
+
 ENV PYTHONPATH /home/zort:$PYTHONPATH
 
 COPY data/eta_thresholds.dct /home/puzle/data/eta_thresholds.dct
