@@ -62,7 +62,7 @@ COPY migrations migrations
 COPY puzleapp.py config.py boot.sh ./
 COPY bin/process_stars.py process_stars.py
 COPY mpi_slurm_test.py mpi_slurm_test.py
-RUN chmod 775 process_stars.py
+COPY slurm_test.sh slurm_test.sh
 RUN mkdir /home/puzle/logs &&\
     chown -R puzle:puzle /home/puzle/logs &&\
     chmod -R 775 /home/puzle/logs &&\
