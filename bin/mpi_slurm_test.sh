@@ -17,11 +17,13 @@ hostname
 date
 echo "---------------------------"
 
+ls /global/common/shared/das/container_proxy
+
 export PROXY_SOCKET=/tmp/${USER}.${SLURM_JOB_ID}.sock
 /global/common/shared/das/container_proxy/server.py &
 CPID=$!
 
-srun -N 1 -n 1 shifter bash /home/puzle/slurm_text.sh
+srun -N 1 -n 1 shifter bash /home/puzle/slurm_test.sh
 srun -N 1 -n 5 shifter python /home/puzle/mpi_slurm_test.py
 
 kill $CPID
