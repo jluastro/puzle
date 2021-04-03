@@ -24,7 +24,7 @@ ObjectData = namedtuple('ObjectData', 'eta eta_residual rf_score fit_data eta_th
 
 
 def fetch_job():
-    insert_db_id()  # get permission to make a db connection
+    # insert_db_id()  # get permission to make a db connection
 
     slurm_job_id = os.getenv('SLURM_JOB_ID', 0)
     logger.info(f'ID {slurm_job_id}: Fetching job')
@@ -59,7 +59,7 @@ def fetch_job():
 
     logger.info(f'ID {slurm_job_id}: Processing job {source_job_id}')
 
-    remove_db_id()  # release permission for this db connection
+    # remove_db_id()  # release permission for this db connection
     return source_job_id
 
 
