@@ -111,20 +111,27 @@ def csv_line_to_source(line):
 
 def fetch_stars_and_sources(source_job_id):
     DR4_dir = return_DR4_dir()
+    from puzle.utils import return_data_dir
+    dir = return_data_dir()
+    import glob
+    fis = glob.glob(f'{dir}/*')
+    for fi in fis:
+        logger.info(fi)
+
     dir = '%s/stars_%s' % (DR4_dir, str(source_job_id)[:3])
 
     if not os.path.exists(dir):
-        logger.error(f'Source directory missing for {source_job_id}' % source_job_id)
+        logger.error(f'Source directory missing for {source_job_id}')
         import glob
-        fis = glob.glob('%s/*' % DR4_dir)
+        fis = glob.glob(f'{DR4_dir}/*')
         for fi in fis:
             logger.error(fi)
-        return
+        raise FileNotFoundError
 
     fname = f'{dir}/stars.{source_job_id:06}.txt'
     if not os.path.exists(fname):
-        logger.error(f'Source file missing for {source_job_id}' % source_job_id)
-        return
+        logger.error(f'Source file missing for {source_job_id}')
+        raise FileNotFoundError
 
     sources_fname = fname.replace('star', 'source')
     sources_map_fname = sources_fname.replace('.txt', '.sources_map')
