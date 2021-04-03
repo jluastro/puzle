@@ -8,6 +8,9 @@ rank = comm.rank
 size = comm.size
 
 logger = logging.getLogger(__name__)
+handler = logging.StreamHandler()
+logger.addHandler(handler)
+logger.setLevel(logging.DEBUG)
 
 logger.info('Hello World %i of %i' % (rank, size))
 
