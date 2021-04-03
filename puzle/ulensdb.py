@@ -4,16 +4,10 @@ import numpy as np
 from pathlib import Path
 import logging
 
-from puzle.utils import return_data_dir, execute
+from puzle.utils import return_data_dir, \
+    execute, identify_is_nersc
 
 logger = logging.getLogger(__name__)
-
-
-def identify_is_nersc():
-    for key in os.environ.keys():
-        if 'NERSC' in key:
-            return True
-    return False
 
 
 def fetch_db_id():
