@@ -1,12 +1,9 @@
 #!/bin/bash
 #SBATCH --account=m2218
 #SBATCH --image=registry.services.nersc.gov/mmedford/puzle:latest
-#SBATCH --volume="/global/cfs/cdirs/uLens/ZTF/DR4:/home/puzle/data/DR4"
-#SBATCH --volume="/global/cfs/cdirs/uLens/PS1_PSC:/home/puzle/data/PS1_PSC"
-#SBATCH --volume="/global/u2/m/mmedford/puzle/data/ulensdb:/home/puzle/data/ulensdb"
 #SBATCH --qos=debug
 #SBATCH --constraint=haswell
-#SBATCH --nodes=1
+#SBATCH --nodes=2
 #SBATCH --time=00:30:00
 #SBATCH --job-name=stars
 #SBATCH --output=stars.%j.out
@@ -21,7 +18,7 @@ export PROXY_SOCKET=/tmp/${USER}.${SLURM_JOB_ID}.sock
 /global/common/shared/das/container_proxy/server.py &
 CPID=$!
 
-srun -N 1 -n 2 shifter python /home/puzle/process_stars.py
+srun -N 2 -n 64 shifter --volume="/global/cfs/cdirs/uLens/ZTF/DR4:/home/puzle/data/DR4;/global/cfs/cdirs/uLens/PS1_PSC:/home/puzle/data/PS1_PSC;/global/u2/m/mmedford/puzle/data/ulensdb:/home/puzle/data/ulensdb" python /home/puzle/process_stars.py
 
 kill $CPID
 

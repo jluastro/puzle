@@ -24,7 +24,7 @@ ObjectData = namedtuple('ObjectData', 'eta eta_residual rf_score fit_data eta_th
 
 
 def fetch_job():
-    # insert_db_id()  # get permission to make a db connection
+    insert_db_id()  # get permission to make a db connection
 
     slurm_job_id = os.getenv('SLURM_JOB_ID', 0)
     logger.info(f'ID {slurm_job_id}: Fetching job')
@@ -59,7 +59,7 @@ def fetch_job():
 
     logger.info(f'ID {slurm_job_id}: Processing job {source_job_id}')
 
-    # remove_db_id()  # release permission for this db connection
+    remove_db_id()  # release permission for this db connection
     return source_job_id
 
 
@@ -111,26 +111,10 @@ def csv_line_to_source(line):
 
 def fetch_stars_and_sources(source_job_id):
     DR4_dir = return_DR4_dir()
-    from puzle.utils import return_data_dir
-    dir = return_data_dir()
-    import glob
-    fis = glob.glob(f'{dir}/*')
-    for fi in fis:
-        logger.info(fi)
-
-    fis = glob.glob(f'{DR4_dir}/*')
-    logger.info('%i fits in DR4' % len(fis))
-    for fi in fis[:5]:
-        logger.info(fi)
 
     dir = '%s/stars_%s' % (DR4_dir, str(source_job_id)[:3])
-    logger.info(dir)
     if not os.path.exists(dir):
         logger.error(f'Star directory missing for {source_job_id}')
-        import glob
-        fis = glob.glob(f'{DR4_dir}/*')
-        for fi in fis:
-            logger.error(fi)
         return
 
     fname = f'{dir}/stars.{source_job_id:06}.txt'
@@ -591,10 +575,10 @@ def process_stars(source_job_id):
 
 
 def process_stars_script(shutdown_time=10, single_job=False):
-    # try:
-    #     job_enddate = fetch_job_enddate()
-    # except FileNotFoundError:
-    #     job_enddate = None
+    try:
+        job_enddate = fetch_job_enddate()
+    except FileNotFoundError:
+        job_enddate = None
     job_enddate = None
     if job_enddate:
         script_enddate = job_enddate - timedelta(minutes=shutdown_time)
