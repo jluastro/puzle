@@ -4,7 +4,7 @@ import numpy as np
 from pathlib import Path
 import logging
 
-from puzle.utils import return_data_dir
+from puzle.utils import return_data_dir, execute
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +39,8 @@ def load_db_ids():
 
     if identify_is_nersc():
         # remove rows that are not currently running
-        lines = open('/global/homes/m/mmedford/puzle/data/ulensdb/job_ids.txt', 'r').readlines()[1:]
-        job_ids = set([l.replace('\n', '') for l in lines])
+        stdout, _ = execute('squeue --noheader -u mmedford --format="%i')
+        job_ids = set([s.replace('"', '') for s in stdout.decode().split('\n')])
         db_ids = set([d for d in db_ids if d.split('.')[0] in job_ids])
 
     return db_ids
