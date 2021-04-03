@@ -1,12 +1,15 @@
 import os
 import time
 import numpy as np
+import logging
+from filelock import FileLock
 from pathlib import Path
 
 from puzle.utils import return_data_dir, \
     execute, get_logger
 
 logger = get_logger(__name__)
+logging.getLogger('filelock').setLevel(logging.WARNING)
 
 
 def identify_is_nersc():
@@ -46,9 +49,10 @@ def load_db_ids():
     return db_ids
 
 
-def insert_db_id(num_ids=50, retry_time=5):
+def insert_db_id(num_ids=50, retry_time=.5):
     ulensdb_file_path = '%s/ulensdb/ulensdb.txt' % return_data_dir()
     lock_path = ulensdb_file_path.replace('.txt', '.lock')
+    lock = FileLock(lock_path)
 
     my_db_id = fetch_db_id()
     if my_db_id is None:
@@ -59,11 +63,7 @@ def insert_db_id(num_ids=50, retry_time=5):
     while True:
         time.sleep(abs(np.random.normal(scale=.01 * retry_time)))
         logger.debug(f'{my_db_id}: Attempting insert to {ulensdb_file_path}')
-        if os.path.exists(lock_path):
-            logger.debug(f'{my_db_id}: Access denied')
-        else:
-            logger.debug(f'{my_db_id}: Access granted')
-            Path(lock_path).touch()
+        with lock:
             db_ids = load_db_ids()
             if len(db_ids) < num_ids:
                 db_ids.add(my_db_id)
@@ -73,50 +73,34 @@ def insert_db_id(num_ids=50, retry_time=5):
                         f.write('%s\n' % db_id)
 
                 successFlag = True
-            if os.path.exists(lock_path):
-                os.remove(lock_path)
 
         if successFlag:
             logger.debug(f'{my_db_id}: Insert success')
             return
         else:
             logger.debug(f'{my_db_id}: Insert fail, retry in {retry_time} seconds')
-            # time.sleep(retry_time)
+            time.sleep(retry_time)
 
 
-def remove_db_id(retry_time=5):
+def remove_db_id():
     ulensdb_file_path = '%s/ulensdb/ulensdb.txt' % return_data_dir()
     lock_path = ulensdb_file_path.replace('.txt', '.lock')
+    lock = FileLock(lock_path)
 
     my_db_id = fetch_db_id()
     if my_db_id is None:
         logger.debug(f'{my_db_id}: Skipping remove_db for local process')
         return
 
-    successFlag = False
-    while True:
-        time.sleep(abs(np.random.normal(scale=.01 * retry_time)))
-        logger.debug(f'{my_db_id}: Attempting delete from {ulensdb_file_path}')
-        if not os.path.exists(lock_path):
-            Path(lock_path).touch()
+    logger.debug(f'{my_db_id}: Attempting delete from {ulensdb_file_path}')
+    with lock:
+        db_ids = load_db_ids()
+        logger.debug(f'{my_db_id}: db_ids loaded {db_ids}')
+        db_ids.remove(my_db_id)
 
-            db_ids = load_db_ids()
-            logger.debug(f'{my_db_id}: db_ids loaded {db_ids}')
-            db_ids.remove(my_db_id)
+        with open(ulensdb_file_path, 'w') as f:
+            for db_id in list(db_ids):
+                f.write('%s\n' % db_id)
 
-            with open(ulensdb_file_path, 'w') as f:
-                for db_id in list(db_ids):
-                    f.write('%s\n' % db_id)
-
-            if os.path.exists(lock_path):
-                os.remove(lock_path)
-
-            successFlag = True
-
-        if successFlag:
-            logger.debug(f'{my_db_id}: Delete success')
-            return
-        else:
-            logger.debug(f'{my_db_id}: Delete fail, retry in {retry_time} seconds')
-            # time.sleep(retry_time)
+    logger.debug(f'{my_db_id}: Delete success')
 
