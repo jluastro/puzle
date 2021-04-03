@@ -218,19 +218,11 @@ def load_stacked_array(fname):
     return np.split(stacked.T, idx, axis=0)
 
 
-def identify_is_nersc():
-    for key in os.environ.keys():
-        if 'NERSC' in key:
-            return True
-    return False
-
-
-def get_logger(name, level=logging.DEBUG):
+def get_logger(name, level=logging.INFO):
     logger = logging.getLogger(name)
-    if identify_is_nersc():
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s [%(name)-12s] %(levelname)-8s %(message)s')
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s [%(name)-12s] %(levelname)-8s %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
     logger.setLevel(level)
     return logger

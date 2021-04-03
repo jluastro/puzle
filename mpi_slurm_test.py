@@ -7,7 +7,8 @@ size = comm.size
 
 logger = get_logger(__name__)
 
-logger.info('Hello World %i of %i' % (rank, size))
+print('A: Hello World %i of %i' % (rank, size))
+logger.info('B: Hello World %i of %i' % (rank, size))
 
 if rank == 0:
     stdout, _ = execute('squeue --noheader -u mmedford --format="%i')
