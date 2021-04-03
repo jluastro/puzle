@@ -46,6 +46,44 @@ def load_db_ids():
     return db_ids
 
 
+def insert_db_id(num_ids=50, retry_time=5):
+    ulensdb_file_path = '%s/ulensdb/ulensdb.txt' % return_data_dir()
+    lock_path = ulensdb_file_path.replace('.txt', '.lock')
+
+    my_db_id = fetch_db_id()
+    if my_db_id is None:
+        logger.debug(f'{my_db_id}: Skipping insert_db for local process')
+        return
+
+    successFlag = False
+    while True:
+        time.sleep(abs(np.random.normal(scale=.01 * retry_time)))
+        logger.debug(f'{my_db_id}: Attempting insert to {ulensdb_file_path}')
+        if os.path.exists(lock_path):
+            logger.debug(f'{my_db_id}: Access denied')
+        else:
+            logger.debug(f'{my_db_id}: Access granted')
+            Path(lock_path).touch()
+            db_ids = load_db_ids()
+            if len(db_ids) < num_ids:
+                db_ids.add(my_db_id)
+
+                with open(ulensdb_file_path, 'w') as f:
+                    for db_id in list(db_ids):
+                        f.write('%s\n' % db_id)
+
+                successFlag = True
+            if os.path.exists(lock_path):
+                os.remove(lock_path)
+
+        if successFlag:
+            logger.debug(f'{my_db_id}: Insert success')
+            return
+        else:
+            logger.debug(f'{my_db_id}: Insert fail, retry in {retry_time} seconds')
+            # time.sleep(retry_time)
+
+
 def remove_db_id(retry_time=5):
     ulensdb_file_path = '%s/ulensdb/ulensdb.txt' % return_data_dir()
     lock_path = ulensdb_file_path.replace('.txt', '.lock')
@@ -80,42 +118,5 @@ def remove_db_id(retry_time=5):
             return
         else:
             logger.debug(f'{my_db_id}: Delete fail, retry in {retry_time} seconds')
-            time.sleep(retry_time)
-
-
-def insert_db_id(num_ids=50, retry_time=5):
-    ulensdb_file_path = '%s/ulensdb/ulensdb.txt' % return_data_dir()
-    lock_path = ulensdb_file_path.replace('.txt', '.lock')
-
-    my_db_id = fetch_db_id()
-    if my_db_id is None:
-        logger.debug(f'{my_db_id}: Skipping insert_db for local process')
-        return
-
-    successFlag = False
-    while True:
-        time.sleep(abs(np.random.normal(scale=.01 * retry_time)))
-        logger.debug(f'{my_db_id}: Attempting insert to {ulensdb_file_path}')
-        if os.path.exists(lock_path):
-            logger.debug(f'{my_db_id}: Access denied')
-        else:
-            logger.debug(f'{my_db_id}: Access granted')
-            Path(lock_path).touch()
-            db_ids = load_db_ids()
-            if len(db_ids) < num_ids:
-                db_ids.add(my_db_id)
-
-                with open(ulensdb_file_path, 'w') as f:
-                    for db_id in list(db_ids):
-                        f.write('%s\n' % db_id)
-
-                successFlag = True
-            os.remove(lock_path)
-
-        if successFlag:
-            logger.debug(f'{my_db_id}: Insert success')
-            return
-        else:
-            logger.debug(f'{my_db_id}: Insert fail, retry in {retry_time} seconds')
-            time.sleep(retry_time)
+            # time.sleep(retry_time)
 

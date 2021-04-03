@@ -27,7 +27,7 @@ def fetch_job():
     insert_db_id()  # get permission to make a db connection
 
     slurm_job_id = os.getenv('SLURM_JOB_ID', 0)
-    logger.info(f'ID {slurm_job_id}: Fetching job')
+    logger.info(f'{slurm_job_id}: Fetching job')
 
     db.session.execute('LOCK TABLE star_process_job '
                        'IN ROW EXCLUSIVE MODE;')
@@ -57,7 +57,7 @@ def fetch_job():
     db.session.commit()
     db.session.close()
 
-    logger.info(f'ID {slurm_job_id}: Processing job {source_job_id}')
+    logger.info(f'{slurm_job_id}: Processing job {source_job_id}')
 
     remove_db_id()  # release permission for this db connection
     return source_job_id
@@ -110,6 +110,7 @@ def csv_line_to_source(line):
 
 
 def fetch_stars_and_sources(source_job_id):
+    logger.info(f'Job {source_job_id}: Fetching stars and sources')
     DR4_dir = return_DR4_dir()
 
     dir = '%s/stars_%s' % (DR4_dir, str(source_job_id)[:3])
@@ -579,7 +580,6 @@ def process_stars_script(shutdown_time=10, single_job=False):
         job_enddate = fetch_job_enddate()
     except FileNotFoundError:
         job_enddate = None
-    job_enddate = None
     if job_enddate:
         script_enddate = job_enddate - timedelta(minutes=shutdown_time)
         logger.info('Script End Date: %s' % script_enddate)
