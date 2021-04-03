@@ -27,7 +27,7 @@ def fetch_job():
     insert_db_id()  # get permission to make a db connection
 
     slurm_job_id = os.getenv('SLURM_JOB_ID', 0)
-    print(f'ID {slurm_job_id}: Fetching job')
+    logger.info(f'{slurm_job_id}: Fetching job')
 
     db.session.execute('LOCK TABLE star_process_job '
                        'IN ROW EXCLUSIVE MODE;')
@@ -56,6 +56,8 @@ def fetch_job():
     job.datetime_started = datetime.now()
     db.session.commit()
     db.session.close()
+
+    logger.info(f'{slurm_job_id}: Processing job {source_job_id}')
 
     remove_db_id()  # release permission for this db connection
     return source_job_id
@@ -108,20 +110,17 @@ def csv_line_to_source(line):
 
 
 def fetch_stars_and_sources(source_job_id):
+    logger.info(f'Job {source_job_id}: Fetching stars and sources')
     DR4_dir = return_DR4_dir()
-    dir = '%s/stars_%s' % (DR4_dir, str(source_job_id)[:3])
 
+    dir = '%s/stars_%s' % (DR4_dir, str(source_job_id)[:3])
     if not os.path.exists(dir):
-        logger.error('Source directory missing for %i' % source_job_id)
-        import glob
-        fis = glob.glob('%s/*' % DR4_dir)
-        for fi in fis:
-            logger.error(fi)
+        logger.error(f'Star directory missing for {source_job_id}')
         return
 
     fname = f'{dir}/stars.{source_job_id:06}.txt'
     if not os.path.exists(fname):
-        logger.error('Source file missing for %i' % source_job_id)
+        logger.error(f'Star file missing for {source_job_id}')
         return
 
     sources_fname = fname.replace('star', 'source')
@@ -450,10 +449,10 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
                                n_days_min=20, num_epochs_splits=3):
     job_stats = {}
     obj_data = {}
-    print(f'Job {source_job_id}: Calculating eta')
+    logger.info(f'Job {source_job_id}: Calculating eta')
     eta_dct, idxs_dct, n_days_dct = construct_eta_dct(stars_and_sources, job_stats, obj_data,
                                                         n_days_min=n_days_min)
-    print(f'Job {source_job_id}: '
+    logger.info(f'Job {source_job_id}: '
                 f'{job_stats["num_stars"]} Stars | '
                 f'{job_stats["num_stars_pass_n_days"]} Stars Past Days Cuts | '
                 f'{job_stats["num_objs"]} Objects | '
@@ -462,23 +461,23 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
     eta_idxs_dct, eta_threshold_low_dct, eta_threshold_high_dct = construct_eta_idxs_dct(
         eta_dct, idxs_dct, n_days_dct, job_stats, obj_data,
         n_days_min=n_days_min, num_epochs_splits=num_epochs_splits)
-    print(f'Job {source_job_id}: '
+    logger.info(f'Job {source_job_id}: '
                 f'{job_stats["num_stars_pass_eta"]} stars pass eta cut | '
                 f'{job_stats["num_objs_pass_eta"]} objects pass eta cut')
 
     rf_idxs_dct = construct_rf_idxs_dct(stars_and_sources, eta_idxs_dct, job_stats, obj_data)
-    print(f'Job {source_job_id}: '
+    logger.info(f'Job {source_job_id}: '
                 f'{job_stats["num_stars_pass_rf"]} stars pass rf_score cut | '
                 f'{job_stats["num_objs_pass_rf"]} objects pass rf_score cut')
 
     eta_residual_idxs_dct = construct_eta_residual_idxs_dct(stars_and_sources,
                                                             eta_threshold_high_dct,
                                                             rf_idxs_dct, job_stats, obj_data)
-    print(f'Job {source_job_id}: '
+    logger.info(f'Job {source_job_id}: '
                 f'{job_stats["num_stars_pass_eta_residual"]} source pass eta_residual cut | '
                 f'{job_stats["num_objs_pass_eta_residual"]} objects pass eta_residual cut')
 
-    print(f'Job {source_job_id}: Assembling candidates')
+    logger.info(f'Job {source_job_id}: Assembling candidates')
     candidates, source_ids, fit_stats_best, source_id_to_cand_id_dct = assemble_candidates(
         stars_and_sources, eta_residual_idxs_dct, obj_data)
     job_stats['num_candidates'] = len(candidates)
@@ -547,16 +546,16 @@ def process_stars(source_job_id):
 
     num_stars = len(stars_and_sources)
     if num_stars > 0:
-        print(f'Job {source_job_id}: Processing {num_stars} stars')
+        logger.info(f'Job {source_job_id}: Processing {num_stars} stars')
         candidates, job_stats, source_ids, fit_stats_best, source_id_to_cand_id_dct = filter_stars_to_candidates(
             source_job_id, stars_and_sources)
         num_candidates = len(candidates)
-        print(f'Job {source_job_id}: Uploading {num_candidates} candidates')
+        logger.info(f'Job {source_job_id}: Uploading {num_candidates} candidates')
         if num_candidates > 0:
             upload_candidates(candidates, source_ids, fit_stats_best, source_id_to_cand_id_dct)
-        print(f'Job {source_job_id}: Processing complete')
+        logger.info(f'Job {source_job_id}: Processing complete')
     else:
-        print(f'Job {source_job_id}: No stars, skipping process')
+        logger.info(f'Job {source_job_id}: No stars, skipping process')
         job_stats = {'num_stars': 0,
                      'num_stars_pass_n_days': 0,
                      'num_objs': 0,
@@ -573,7 +572,7 @@ def process_stars(source_job_id):
                      'num_candidates': 0}
 
     finish_job(source_job_id, job_stats)
-    print(f'Job {source_job_id}: Job complete')
+    logger.info(f'Job {source_job_id}: Job complete')
 
 
 def process_stars_script(shutdown_time=10, single_job=False):
@@ -583,7 +582,7 @@ def process_stars_script(shutdown_time=10, single_job=False):
         job_enddate = None
     if job_enddate:
         script_enddate = job_enddate - timedelta(minutes=shutdown_time)
-        print('Script End Date: %s' % script_enddate)
+        logger.info('Script End Date: %s' % script_enddate)
 
     while True:
 
@@ -592,7 +591,7 @@ def process_stars_script(shutdown_time=10, single_job=False):
             return
 
         if job_enddate and datetime.now() >= script_enddate:
-            print(f'Within {shutdown_time} minutes of job end, '
+            logger.info(f'Within {shutdown_time} minutes of job end, '
                         f'shutting down...')
             reset_job(source_job_id)
             time.sleep(2 * 60 * shutdown_time)

@@ -218,7 +218,7 @@ def load_stacked_array(fname):
     return np.split(stacked.T, idx, axis=0)
 
 
-def get_logger(name, level=logging.INFO):
+def get_logger(name, level=logging.DEBUG):
     logger = logging.getLogger(name)
     handler = logging.StreamHandler()
     formatter = logging.Formatter('%(asctime)s [%(name)-12s] %(levelname)-8s %(message)s')
