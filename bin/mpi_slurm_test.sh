@@ -17,7 +17,13 @@ hostname
 date
 echo "---------------------------"
 
-srun -N 1 -n 5 shifter python /home/puzle/mpi_test.py
+export PROXY_SOCKET=/tmp/${USER}.${SLURM_JOB_ID}.sock
+/global/common/shared/das/container_proxy/server.py &
+CPID=$!
+
+srun -N 1 -n 5 shifter python /home/puzle/mpi_slurm_test.py
+
+kill $CPID
 
 echo "---------------------------"
 date

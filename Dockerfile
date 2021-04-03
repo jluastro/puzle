@@ -49,11 +49,19 @@ RUN /sbin/ldconfig
 
 # mpi4py complete
 
+RUN cd /home &&\
+    git clone https://github.com/MichaelMedford/zort.git &&\
+    cd /home/zort &&\
+    git checkout 38a31c74e &&\
+    apt-get install -y musl-dev &&\
+    ln -s /usr/lib/x86_64-linux-musl/libc.so /lib/libc.musl-x86_64.so.1
+ENV PYTHONPATH /home/zort
+
 COPY puzle puzle
 COPY migrations migrations
 COPY puzleapp.py config.py boot.sh ./
 COPY bin/process_stars.py process_stars.py
-COPY mpi_test.py mpi_test.py
+COPY mpi_slurm_test.py mpi_slurm_test.py
 RUN chmod 775 process_stars.py
 RUN mkdir /home/puzle/logs &&\
     chown -R puzle:puzle /home/puzle/logs &&\
@@ -78,14 +86,6 @@ RUN mkdir /home/puzle/logs &&\
 
 ENV XDG_CACHE_HOME /tmp/puzle/astropy_cache
 ENV XDG_CONFIG_HOME /tmp/puzle/astropy_config
-
-RUN cd /home &&\
-    git clone https://github.com/MichaelMedford/zort.git &&\
-    cd /home/zort &&\
-    git checkout 38a31c74e &&\
-    apt-get install -y musl-dev &&\
-    ln -s /usr/lib/x86_64-linux-musl/libc.so /lib/libc.musl-x86_64.so.1
-ENV PYTHONPATH /home/zort
 
 COPY data/eta_thresholds.dct /home/puzle/data/eta_thresholds.dct
 
