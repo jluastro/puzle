@@ -112,12 +112,16 @@ def fetch_stars_and_sources(source_job_id):
     dir = '%s/stars_%s' % (DR4_dir, str(source_job_id)[:3])
 
     if not os.path.exists(dir):
-        logger.error('Source directory missing!')
+        logger.error('Source directory missing for %i' % source_job_id)
+        import glob
+        fis = glob.glob('%s/*' % DR4_dir)
+        for fi in fis:
+            logger.error(fi)
         return
 
     fname = f'{dir}/stars.{source_job_id:06}.txt'
     if not os.path.exists(fname):
-        logger.error('Source file missing!')
+        logger.error('Source file missing for %i' % source_job_id)
         return
 
     sources_fname = fname.replace('star', 'source')
