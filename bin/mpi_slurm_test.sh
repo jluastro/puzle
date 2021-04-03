@@ -19,7 +19,8 @@ echo "---------------------------"
 
 ls /global/common/shared/das/container_proxy
 
-export PROXY_SOCKET=/tmp/${USER}.${SLURM_JOB_ID}.sock
+#export PROXY_SOCKET=/tmp/${USER}.${SLURM_JOB_ID}.sock
+export PROXY_SOCKET=/tmp/${USER}.sock
 echo $PROXY_SOCKET
 /global/common/shared/das/container_proxy/server.py &
 CPID=$!
