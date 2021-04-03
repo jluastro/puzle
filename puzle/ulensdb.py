@@ -96,7 +96,10 @@ def insert_db_id(num_ids=50, retry_time=5):
     while True:
         time.sleep(abs(np.random.normal(scale=.01 * retry_time)))
         logger.debug(f'{my_db_id}: Attempting insert to {ulensdb_file_path}')
-        if not os.path.exists(lock_path):
+        if os.path.exists(lock_path):
+            logger.debug(f'{my_db_id}: Access denied')
+        else:
+            logger.debug(f'{my_db_id}: Access granted')
             Path(lock_path).touch()
             db_ids = load_db_ids()
             if len(db_ids) < num_ids:
@@ -107,8 +110,7 @@ def insert_db_id(num_ids=50, retry_time=5):
                         f.write('%s\n' % db_id)
 
                 successFlag = True
-            if os.path.exists(lock_path):
-                os.remove(lock_path)
+            os.remove(lock_path)
 
         if successFlag:
             logger.debug(f'{my_db_id}: Insert success')

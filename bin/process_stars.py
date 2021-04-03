@@ -118,20 +118,25 @@ def fetch_stars_and_sources(source_job_id):
     for fi in fis:
         logger.info(fi)
 
-    dir = '%s/stars_%s' % (DR4_dir, str(source_job_id)[:3])
+    fis = glob.glob(f'{DR4_dir}/*')
+    logger.info('%i fits in DR4' % len(fis))
+    for fi in fis[:5]:
+        logger.info(fi)
 
+    dir = '%s/stars_%s' % (DR4_dir, str(source_job_id)[:3])
+    logger.info(dir)
     if not os.path.exists(dir):
-        logger.error(f'Source directory missing for {source_job_id}')
+        logger.error(f'Star directory missing for {source_job_id}')
         import glob
         fis = glob.glob(f'{DR4_dir}/*')
         for fi in fis:
             logger.error(fi)
-        raise FileNotFoundError
+        return
 
     fname = f'{dir}/stars.{source_job_id:06}.txt'
     if not os.path.exists(fname):
-        logger.error(f'Source file missing for {source_job_id}')
-        raise FileNotFoundError
+        logger.error(f'Star file missing for {source_job_id}')
+        return
 
     sources_fname = fname.replace('star', 'source')
     sources_map_fname = sources_fname.replace('.txt', '.sources_map')
@@ -586,10 +591,11 @@ def process_stars(source_job_id):
 
 
 def process_stars_script(shutdown_time=10, single_job=False):
-    try:
-        job_enddate = fetch_job_enddate()
-    except FileNotFoundError:
-        job_enddate = None
+    # try:
+    #     job_enddate = fetch_job_enddate()
+    # except FileNotFoundError:
+    #     job_enddate = None
+    job_enddate = None
     if job_enddate:
         script_enddate = job_enddate - timedelta(minutes=shutdown_time)
         logger.info('Script End Date: %s' % script_enddate)
