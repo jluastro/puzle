@@ -49,7 +49,30 @@ def load_db_ids():
     return db_ids
 
 
-def insert_db_id(num_ids=50, retry_time=.5):
+def remove_db_id():
+    ulensdb_file_path = '%s/ulensdb/ulensdb.txt' % return_data_dir()
+    lock_path = ulensdb_file_path.replace('.txt', '.lock')
+    lock = FileLock(lock_path)
+
+    my_db_id = fetch_db_id()
+    if my_db_id is None:
+        logger.debug(f'{my_db_id}: Skipping remove_db for local process')
+        return
+
+    logger.debug(f'{my_db_id}: Attempting delete from {ulensdb_file_path}')
+    with lock:
+        db_ids = load_db_ids()
+        logger.debug(f'{my_db_id}: db_ids loaded {db_ids}')
+        db_ids.remove(my_db_id)
+
+        with open(ulensdb_file_path, 'w') as f:
+            for db_id in list(db_ids):
+                f.write('%s\n' % db_id)
+
+    logger.debug(f'{my_db_id}: Delete success')
+
+
+def insert_db_id(num_ids=50, retry_time=5):
     ulensdb_file_path = '%s/ulensdb/ulensdb.txt' % return_data_dir()
     lock_path = ulensdb_file_path.replace('.txt', '.lock')
     lock = FileLock(lock_path)
@@ -80,27 +103,3 @@ def insert_db_id(num_ids=50, retry_time=.5):
         else:
             logger.debug(f'{my_db_id}: Insert fail, retry in {retry_time} seconds')
             time.sleep(retry_time)
-
-
-def remove_db_id():
-    ulensdb_file_path = '%s/ulensdb/ulensdb.txt' % return_data_dir()
-    lock_path = ulensdb_file_path.replace('.txt', '.lock')
-    lock = FileLock(lock_path)
-
-    my_db_id = fetch_db_id()
-    if my_db_id is None:
-        logger.debug(f'{my_db_id}: Skipping remove_db for local process')
-        return
-
-    logger.debug(f'{my_db_id}: Attempting delete from {ulensdb_file_path}')
-    with lock:
-        db_ids = load_db_ids()
-        logger.debug(f'{my_db_id}: db_ids loaded {db_ids}')
-        db_ids.remove(my_db_id)
-
-        with open(ulensdb_file_path, 'w') as f:
-            for db_id in list(db_ids):
-                f.write('%s\n' % db_id)
-
-    logger.debug(f'{my_db_id}: Delete success')
-

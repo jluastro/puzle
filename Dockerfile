@@ -92,7 +92,4 @@ ENV FLASK_APP puzleapp.py
 USER puzle
 EXPOSE 5000
 
-COPY mpi_slurm_test.py mpi_slurm_test.py
-COPY slurm_test.sh slurm_test.sh
-
 CMD conda activate puzle
