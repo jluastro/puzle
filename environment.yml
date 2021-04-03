@@ -24,6 +24,7 @@ dependencies:
   - matplotlib
   - h5py
   - scipy
+  - sanic
   - pip
   - pip:
       - filelock

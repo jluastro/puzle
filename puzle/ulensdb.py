@@ -17,11 +17,13 @@ def identify_is_nersc():
 
 
 def fetch_db_id():
-    pid = os.getpid()
     slurm_job_id = os.getenv('SLURM_JOB_ID')
     if slurm_job_id is None:
         return None
-    db_id = '%s.%s' % (slurm_job_id, pid)
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    db_id = '%s.%s' % (slurm_job_id, rank)
     return db_id
 
 
