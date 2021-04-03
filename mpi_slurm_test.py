@@ -12,4 +12,4 @@ logger.info('B: Hello World %i of %i' % (rank, size))
 
 if rank == 0:
     stdout, _ = execute('squeue --noheader -u mmedford --format="%i')
-    logger.debug(stdout)
+    logger.info(stdout)
