@@ -14,13 +14,10 @@ hostname
 date
 echo "---------------------------"
 
-export PROXY_SOCKET=/tmp/${USER}.${SLURM_JOB_ID}.sock
-/global/common/shared/das/container_proxy/server.py &
-CPID=$!
-
+fname=/global/u2/m/mmedford/puzle/data/ulensdb/current_slurm_job_ids.txt
+date > $fname
+squeue --noheader -u mmedford --format="%i" >> $fname
 srun -N 10 -n 320 shifter --volume="/global/cfs/cdirs/uLens/ZTF/DR4:/home/puzle/data/DR4;/global/cfs/cdirs/uLens/PS1_PSC:/home/puzle/data/PS1_PSC;/global/u2/m/mmedford/puzle/data/ulensdb:/home/puzle/data/ulensdb" python /home/puzle/test_ulensdb.py
-
-kill $CPID
 
 echo "---------------------------"
 date

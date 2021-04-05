@@ -37,8 +37,8 @@ def load_db_ids(my_db_id):
 
     if identify_is_nersc():
         # remove rows that are not currently running
-        stdout, _ = execute('squeue --noheader -u mmedford --format="%i')
-        job_ids = set([s.replace('"', '') for s in stdout.decode().split('\n')])
+        fname = f'{ulensdb_folder}/current_slurm_job_ids.txt'
+        job_ids = [f.replace('\n', '') for f in open(fname, 'r').readlines()[1:]]
         db_ids_final = []
         db_ids_delete = []
         for db_id in db_ids:
