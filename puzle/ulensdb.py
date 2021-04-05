@@ -37,7 +37,7 @@ def load_db_ids(my_db_id):
     if identify_is_nersc():
         # remove rows that are not currently running
         fname = f'{ulensdb_folder}/current_slurm_job_ids.txt'
-        job_ids = set([f.replace('\n', '') for f in open(fname, 'r').readlines()[1:]])
+        job_ids = set([f.replace('\n', '') for f in open(fname, 'r').readlines()])
         db_ids_final = []
         db_ids_to_delete = []
         for db_id in db_ids:
