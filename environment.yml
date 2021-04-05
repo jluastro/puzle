@@ -22,9 +22,6 @@ dependencies:
   - requests
   - ipython
   - matplotlib
-  - h5py
-  - scipy
-  - sanic
   - pip
   - pip:
       - filelock

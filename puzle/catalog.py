@@ -4,18 +4,12 @@ catalog.py
 """
 
 import os
-import glob
-import h5py
-import pickle
 import psycopg2
 from collections import namedtuple
 from astropy.coordinates import SkyCoord
 from astropy import units as u
 import requests
 import numpy as np
-from scipy.spatial import cKDTree
-
-from puzle.utils import return_data_dir
 
 
 def ulens_con():
@@ -162,83 +156,3 @@ def fetch_ogle_target(ra_cand, dec_cand, radius=5):
         target_id = None
 
     return target_id
-
-
-def generate_ps1_psc_maps():
-    ps1_psc_dir = '%s/PS1_PSC' % return_data_dir()
-    ps1_psc_filenames = [f for f in glob.glob(f'{ps1_psc_dir}/*.h5')
-                         if not os.path.exists(f.replace('.h5', '.map'))]
-    ps1_psc_filenames.sort()
-
-    for i, ps1_psc_filename in enumerate(ps1_psc_filenames):
-        print(ps1_psc_filename, i, len(ps1_psc_filenames))
-        radec = h5py.File(ps1_psc_filename, 'r')['class_table']['block0_values'][:, :2]
-        rf_scores = h5py.File(ps1_psc_filename, 'r')['class_table']['block0_values'][:, 2]
-        kdtree = cKDTree(radec)
-
-        map_filename = ps1_psc_filename.replace('.h5', '.map')
-        with open(map_filename, 'wb') as fileObj:
-            pickle.dump((kdtree, rf_scores), fileObj)
-
-
-def return_ps1_psc(dec, ps1_psc_dct=None):
-    dec_sign = np.sign(dec)
-    if dec_sign == 1:
-        dec_file = dec
-        dec_prefix = ''
-    elif dec_sign == -1:
-        dec_file = np.abs(dec) + 1 / 3.
-        dec_prefix = 'neg'
-    else:
-        dec_file = 0
-        dec_prefix = ''
-
-    dec_floor_str = np.floor(dec_file).astype(int).astype(str)
-    dec_third = np.mod(dec_file, 1) / (1 / 3.)
-
-    if dec_third < 1:
-        dec_ext_str = '0'
-    elif dec_third < 2:
-        dec_ext_str = '33'
-    elif dec_third < 3:
-        dec_ext_str = '66'
-    else:
-        raise Exception
-
-    ps1_psc_dir = '%s/PS1_PSC' % return_data_dir()
-    ps1_psc_fname = f'{ps1_psc_dir}/' \
-                    f'dec_{dec_prefix}{dec_floor_str}_{dec_ext_str}_classifications.map'
-    if ps1_psc_dct and ps1_psc_fname in ps1_psc_dct:
-        # print('CACHE %s' % ps1_psc_fname)
-        ps1_psc_kdtree, rf_scores = ps1_psc_dct[ps1_psc_fname]
-    else:
-        # print('loading %s' % ps1_psc_fname)
-        ps1_psc_kdtree, rf_scores = pickle.load(open(ps1_psc_fname, 'rb'))
-        ps1_psc_dct[ps1_psc_fname] = ps1_psc_kdtree, rf_scores
-    return ps1_psc_kdtree, rf_scores
-
-
-def query_ps1_psc_on_disk(ra, dec, radius=2, ps1_psc_dct=None):
-    ps1_psc_kdtree, rf_scores = return_ps1_psc(dec, ps1_psc_dct)
-    radius_deg = radius / 3600.
-    idx_arr = ps1_psc_kdtree.query_ball_point((ra, dec), radius_deg)
-
-    if len(idx_arr) == 0:
-        return None
-    elif len(idx_arr) == 1:
-        idx = idx_arr[0]
-    else:
-        radec_idx = ps1_psc_kdtree.data[idx_arr]
-        delta_ra = radec_idx[:, 0] - ra
-        delta_dec = radec_idx[:, 1] - dec
-        dist = np.hypot(delta_ra, delta_dec)
-        idx = idx_arr[np.argmin(dist)]
-
-    rf_score = rf_scores[idx]
-    ra_ps1_psc, dec_ps1_psc = ps1_psc_kdtree.data[idx]
-    rf_tuple = namedtuple('rf',
-                          'ra_stack dec_stack rf_score')
-    rf = rf_tuple(ra_stack=ra_ps1_psc,
-                  dec_stack=dec_ps1_psc,
-                  rf_score=rf_score)
-    return rf
