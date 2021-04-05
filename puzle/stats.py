@@ -13,7 +13,6 @@ import pickle
 
 from zort.radec import return_ZTF_RCID_corners
 from zort.photometry import fluxes_to_magnitudes, magnitudes_to_fluxes
-from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle import catalog
 from puzle.utils import lightcurve_file_to_field_id, popsycle_base_folder, \
@@ -114,6 +113,7 @@ def calculate_delta_m(u0, b_sff):
 def generate_random_lightcurves_lb(l, b, objs,
                                    tE_min=20, delta_m_min=0.25,
                                    num_3sigma_cut=5):
+    from microlens.jlu.model import PSPL_Phot_Par_Param1
     popsycle_fname = f'{popsycle_base_folder}/l{l:.1f}_b{b:.1f}_refined_events_ztf_r_Damineli16.fits'
     popsycle_catalog = Table.read(popsycle_fname, format='fits')
     N_samples = len(objs)
