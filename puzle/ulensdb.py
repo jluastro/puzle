@@ -39,13 +39,22 @@ def load_db_ids(my_db_id):
         # remove rows that are not currently running
         stdout, _ = execute('squeue --noheader -u mmedford --format="%i')
         job_ids = set([s.replace('"', '') for s in stdout.decode().split('\n')])
-        db_ids_to_delete = set([d for d in db_ids if os.path.basename(d).split('.')[0] not in job_ids])
-        logger.debug(f'{my_db_id}: Deleting {db_ids_to_delete}')
-        for db_id in db_ids_to_delete:
-            os.remove(f'{ulensdb_folder}/{db_id}.con')
-        db_ids = set([d for d in db_ids if d.split('.')[0] in job_ids])
+        db_ids_final = []
+        db_ids_delete = []
+        for db_id in db_ids:
+            if db_id.split('.')[0] in job_ids:
+                db_ids_final.append(db_id)
+            else:
+                db_ids_delete.append(db_id)
+                os.remove(f'{ulensdb_folder}/{db_id}.con')
 
-    return db_ids
+        logger.debug(f'{my_db_id}: Job_ids {job_ids} '
+                     f'| Keeping {db_ids_final} '
+                     f'| Deleting {db_ids_delete}')
+    else:
+        db_ids_final = db_ids
+
+    return db_ids_final
 
 
 def remove_db_id():
