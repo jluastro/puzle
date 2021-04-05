@@ -43,7 +43,10 @@ def load_db_ids():
             if db_id.split('.')[0] in job_ids:
                 db_ids_final.append(db_id)
             else:
-                os.remove(f'{ulensdb_folder}/{db_id}.con')
+                try:
+                    os.remove(f'{ulensdb_folder}/{db_id}.con')
+                except FileNotFoundError:
+                    continue
     else:
         db_ids_final = db_ids
 
