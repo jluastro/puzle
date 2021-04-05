@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --account=m2218
-#SBATCH --image=registry.services.nersc.gov/mmedford/puzle:v0.0.14
+#SBATCH --image=registry.services.nersc.gov/mmedford/puzle:v0.0.15
 #SBATCH --qos=debug
 #SBATCH --constraint=haswell
 #SBATCH --nodes=10
