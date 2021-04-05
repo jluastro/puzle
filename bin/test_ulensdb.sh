@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --account=m2218
-#SBATCH --image=registry.services.nersc.gov/mmedford/puzle:v0.1.3
+#SBATCH --image=registry.services.nersc.gov/mmedford/puzle:v0.1.4
 #SBATCH --qos=debug
 #SBATCH --constraint=haswell
-#SBATCH --nodes=2
+#SBATCH --nodes=1
 #SBATCH --time=00:30:00
 #SBATCH --job-name=test
 #SBATCH --output=test.%j.out

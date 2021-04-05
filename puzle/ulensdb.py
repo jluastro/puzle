@@ -73,7 +73,7 @@ def insert_db_id(num_ids=2, retry_time=5):
         time.sleep(abs(np.random.normal(scale=.01 * retry_time)))
         db_ids = load_db_ids()
         num_db_ids = len(db_ids)
-        logger.debug(f'{my_db_id}: Attempting insert to {ulensdb_folder} | {num_db_ids} db_ids')
+        logger.debug(f'{my_db_id}: Attempting insert to {ulensdb_folder} | {num_db_ids} db_ids | {db_ids}')
         if num_db_ids < num_ids:
             Path(ulensdb_file).touch()
             successFlag = True
