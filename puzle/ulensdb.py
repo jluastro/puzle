@@ -28,7 +28,7 @@ def fetch_db_id():
     return db_id
 
 
-def load_db_ids():
+def load_db_ids(my_db_id):
     ulensdb_folder = '%s/ulensdb' % return_data_dir()
 
     # load db_ids from disk
@@ -39,7 +39,8 @@ def load_db_ids():
         # remove rows that are not currently running
         stdout, _ = execute('squeue --noheader -u mmedford --format="%i')
         job_ids = set([s.replace('"', '') for s in stdout.decode().split('\n')])
-        db_ids_to_delete = set([d for d in db_ids if d.split('.')[0] not in job_ids])
+        db_ids_to_delete = set([d for d in db_ids if os.path.basename(d).split('.')[0] not in job_ids])
+        logger.debug(f'{my_db_id}: Deleting {db_ids_to_delete}')
         for db_id in db_ids_to_delete:
             os.remove(f'{ulensdb_folder}/{db_id}.con')
         db_ids = set([d for d in db_ids if d.split('.')[0] in job_ids])
@@ -79,7 +80,7 @@ def insert_db_id(num_ids=40, retry_time=10):
     while True:
         time.sleep(abs(np.random.normal(loc=retry_time,
                                         scale=.5 * retry_time)))
-        db_ids = load_db_ids()
+        db_ids = load_db_ids(my_db_id)
         num_db_ids = len(db_ids)
         logger.debug(f'{my_db_id}: Attempting insert to {ulensdb_folder} | {num_db_ids} db_ids | {db_ids}')
         if num_db_ids < num_ids:
