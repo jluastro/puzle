@@ -7,25 +7,27 @@ import os
 import numpy as np
 from datetime import datetime, timedelta
 from scipy.stats import binned_statistic
-import logging
 from collections import defaultdict, namedtuple
 import pickle
 
 from puzle.models import Source, StarIngestJob, Star, StarProcessJob, Candidate
-from puzle.utils import fetch_job_enddate, return_DR4_dir
+from puzle.utils import fetch_job_enddate, return_DR4_dir, get_logger
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle.stats import calculate_eta_on_daily_avg, \
     RF_THRESHOLD, calculate_eta_on_daily_avg_residuals
 from puzle import catalog
 from puzle import db
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 ObjectData = namedtuple('ObjectData', 'eta eta_residual rf_score fit_data eta_threshold_low eta_threshold_high')
 
 
 def fetch_job():
     insert_db_id()  # get permission to make a db connection
+
+    slurm_job_id = os.getenv('SLURM_JOB_ID', 0)
+    logger.info(f'{slurm_job_id}: Fetching job')
 
     db.session.execute('LOCK TABLE star_process_job '
                        'IN ROW EXCLUSIVE MODE;')
@@ -44,15 +46,18 @@ def fetch_job():
     if 'SLURMD_NODENAME' in os.environ:
         from mpi4py import MPI
         comm = MPI.COMM_WORLD
-        rank = comm.rank
+        rank = comm.Get_rank()
     else:
         rank = 0
+
     job.slurm_job_rank = rank
     job.started = True
-    job.slurm_job_id = os.getenv('SLURM_JOB_ID')
+    job.slurm_job_id = slurm_job_id
     job.datetime_started = datetime.now()
     db.session.commit()
     db.session.close()
+
+    logger.info(f'{slurm_job_id}: Processing job {source_job_id}')
 
     remove_db_id()  # release permission for this db connection
     return source_job_id
@@ -105,16 +110,17 @@ def csv_line_to_source(line):
 
 
 def fetch_stars_and_sources(source_job_id):
+    logger.info(f'Job {source_job_id}: Fetching stars and sources')
     DR4_dir = return_DR4_dir()
-    dir = '%s/stars_%s' % (DR4_dir, str(source_job_id)[:3])
 
+    dir = '%s/stars_%s' % (DR4_dir, str(source_job_id)[:3])
     if not os.path.exists(dir):
-        logging.error('Source directory missing!')
+        logger.error(f'Star directory missing for {source_job_id}')
         return
 
     fname = f'{dir}/stars.{source_job_id:06}.txt'
     if not os.path.exists(fname):
-        logging.error('Source file missing!')
+        logger.error(f'Star file missing for {source_job_id}')
         return
 
     sources_fname = fname.replace('star', 'source')
@@ -569,23 +575,10 @@ def process_stars(source_job_id):
     logger.info(f'Job {source_job_id}: Job complete')
 
 
-def process_stars_script(shutdown_time=10, single_job=False):
-    job_enddate = fetch_job_enddate()
-    if job_enddate:
-        script_enddate = job_enddate - timedelta(minutes=shutdown_time)
-        logger.info('Script End Date: %s' % script_enddate)
-
+def process_stars_script(single_job=False):
     while True:
-
         source_job_id = fetch_job()
         if source_job_id is None:
-            return
-
-        if job_enddate and datetime.now() >= script_enddate:
-            logger.info(f'Within {shutdown_time} minutes of job end, '
-                        f'shutting down...')
-            reset_job(source_job_id)
-            time.sleep(2 * 60 * shutdown_time)
             return
 
         process_stars(source_job_id)
@@ -595,5 +588,4 @@ def process_stars_script(shutdown_time=10, single_job=False):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
     process_stars_script()

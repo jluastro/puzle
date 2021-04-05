@@ -15,6 +15,8 @@ import requests
 import numpy as np
 from scipy.spatial import cKDTree
 
+from puzle.utils import return_data_dir
+
 
 def ulens_con():
     """Connection to the NERSC ulens database.
@@ -163,8 +165,7 @@ def fetch_ogle_target(ra_cand, dec_cand, radius=5):
 
 
 def generate_ps1_psc_maps():
-    ps1_psc_dir = os.environ.get('PS1_PSC_DIR',
-                                 '/global/cfs/cdirs/uLens/PS1_PSC')
+    ps1_psc_dir = '%s/PS1_PSC' % return_data_dir()
     ps1_psc_filenames = [f for f in glob.glob(f'{ps1_psc_dir}/*.h5')
                          if not os.path.exists(f.replace('.h5', '.map'))]
     ps1_psc_filenames.sort()
@@ -204,8 +205,7 @@ def return_ps1_psc(dec, ps1_psc_dct=None):
     else:
         raise Exception
 
-    ps1_psc_dir = os.environ.get('PS1_PSC_DIR',
-                                 '/global/cfs/cdirs/uLens/PS1_PSC')
+    ps1_psc_dir = '%s/PS1_PSC' % return_data_dir()
     ps1_psc_fname = f'{ps1_psc_dir}/' \
                     f'dec_{dec_prefix}{dec_floor_str}_{dec_ext_str}_classifications.map'
     if ps1_psc_dct and ps1_psc_fname in ps1_psc_dct:

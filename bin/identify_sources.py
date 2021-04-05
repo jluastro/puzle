@@ -8,15 +8,15 @@ import numpy as np
 from datetime import datetime, timedelta
 from zort.lightcurveFile import LightcurveFile
 from sqlalchemy.sql.expression import func
-import logging
 import pickle
 
 from puzle.models import Source, SourceIngestJob
-from puzle.utils import fetch_job_enddate, return_DR4_dir, fetch_lightcurve_rcids
+from puzle.utils import fetch_job_enddate, return_DR4_dir, \
+    fetch_lightcurve_rcids, get_logger
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle import db
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def object_in_bounds(obj, ra_start, ra_end, dec_start, dec_end):
@@ -86,13 +86,13 @@ def fetch_job():
     dec_end = job.dec_end
 
     if 'SLURMD_NODENAME' in os.environ:
+        slurm_job_id = os.getenv('SLURM_JOB_ID')
         from mpi4py import MPI
         comm = MPI.COMM_WORLD
-        rank = comm.rank
-        slurm_job_id = os.getenv('SLURM_JOB_ID')
+        rank = comm.Get_rank()
     else:
-        rank = 0
         slurm_job_id = 0
+        rank = 0
     job.slurm_job_rank = rank
     job.started = True
     job.slurm_job_id = slurm_job_id
@@ -247,5 +247,4 @@ def identify_sources_script(nepochs_min=20, shutdown_time=10, single_job=False):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
     identify_sources_script()
