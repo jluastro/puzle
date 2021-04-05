@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH --account=m2218
-#SBATCH --image=registry.services.nersc.gov/mmedford/puzle:v0.1.1
+#SBATCH --image=registry.services.nersc.gov/mmedford/puzle:v0.1.2
 #SBATCH --qos=debug
 #SBATCH --constraint=haswell
 #SBATCH --nodes=2
 #SBATCH --time=00:30:00
-#SBATCH --job-name=stars
-#SBATCH --output=stars.%j.out
+#SBATCH --job-name=test
+#SBATCH --output=test.%j.out
 echo "---------------------------"
 echo "Job id = $SLURM_JOBID"
 echo "Proc id = $SLURM_PROCID"
