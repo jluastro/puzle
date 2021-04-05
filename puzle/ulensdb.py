@@ -59,18 +59,22 @@ def remove_db_id():
     logger.debug(f'{my_db_id}: Delete success')
 
 
-def insert_db_id(num_ids=2, retry_time=5):
+def insert_db_id(num_ids=2, retry_time=10):
     my_db_id = fetch_db_id()
     if my_db_id is None:
         logger.debug(f'{my_db_id}: Skipping insert_db for local process')
         return
+
+    rank = int(my_db_id.split('.')[1])
+    pid = os.getpid()
+    np.random.seed(rank + pid)
 
     ulensdb_folder = '%s/ulensdb' % return_data_dir()
     ulensdb_file = f'{ulensdb_folder}/{my_db_id}.con'
 
     successFlag = False
     while True:
-        time.sleep(abs(np.random.normal(scale=.01 * retry_time)))
+        time.sleep(retry_time + abs(np.random.normal(scale=.5 * retry_time)))
         db_ids = load_db_ids()
         num_db_ids = len(db_ids)
         logger.debug(f'{my_db_id}: Attempting insert to {ulensdb_folder} | {num_db_ids} db_ids | {db_ids}')
@@ -82,5 +86,4 @@ def insert_db_id(num_ids=2, retry_time=5):
             logger.debug(f'{my_db_id}: Insert success')
             return
         else:
-            logger.debug(f'{my_db_id}: Insert fail, retry in {retry_time} seconds')
-            time.sleep(retry_time)
+            logger.debug(f'{my_db_id}: Insert fail, retry in ~{retry_time} seconds')
