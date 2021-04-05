@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --account=m2218
-#SBATCH --image=registry.services.nersc.gov/mmedford/puzle:v0.1.19
+#SBATCH --image=registry.services.nersc.gov/mmedford/puzle:v1.6
 #SBATCH --qos=debug
 #SBATCH --constraint=haswell
 #SBATCH --nodes=10
-#SBATCH --time=00:30:00
+#SBATCH --time=10:00:00
 #SBATCH --job-name=stars
 #SBATCH --output=stars.%j.out
 echo "---------------------------"
