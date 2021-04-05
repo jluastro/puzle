@@ -105,7 +105,6 @@ def csv_line_to_source(line):
 
 
 def fetch_stars_and_sources(source_job_id):
-    logger.info(f'Fetching stars and sources for job {source_job_id}')
 
     DR4_dir = return_DR4_dir()
     dir = '%s/stars_%s' % (DR4_dir, str(source_job_id)[:3])
@@ -124,6 +123,9 @@ def fetch_stars_and_sources(source_job_id):
     sources_map = pickle.load(open(sources_map_fname, 'rb'))
 
     lines_star = open(fname, 'r').readlines()[1:]
+    num_stars = len(lines_star)
+    logger.info(f'Fetching {num_stars} stars and sources for job {source_job_id}')
+
     f_sources = open(sources_fname, 'r')
 
     stars_and_sources = {}
@@ -135,6 +137,8 @@ def fetch_stars_and_sources(source_job_id):
             line_source = f_sources.readline()
             source_arr.append(csv_line_to_source(line_source))
         stars_and_sources[star.id] = (star, source_arr)
+
+    f_sources.close()
 
     return stars_and_sources
 
