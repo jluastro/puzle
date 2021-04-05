@@ -193,7 +193,20 @@ def star_to_csv_line(star):
     return line
 
 
-def identify_stars(shutdown_time=10, single_job=False):
+def identify_stars(source_job_id):
+    logger.info(f'Job {source_job_id}: Fetching sources')
+    sources = fetch_sources(source_job_id)
+
+    num_sources = len(sources)
+    logger.info(f'Job {source_job_id}: Exporting {num_sources} stars to disk')
+    export_stars(source_job_id, sources)
+    logger.info(f'Job {source_job_id}: Export complete')
+
+    finish_job(source_job_id)
+    logger.info(f'Job {source_job_id}: Job complete')
+
+
+def identify_stars_script(shutdown_time=10, single_job=False):
     job_enddate = fetch_job_enddate()
     if job_enddate:
         script_enddate = job_enddate - timedelta(minutes=shutdown_time)
@@ -212,16 +225,7 @@ def identify_stars(shutdown_time=10, single_job=False):
             time.sleep(2 * 60 * shutdown_time)
             return
 
-        logger.info(f'Job {source_job_id}: Fetching sources')
-        sources = fetch_sources(source_job_id)
-
-        num_sources = len(sources)
-        logger.info(f'Job {source_job_id}: Exporting {num_sources} stars to disk')
-        export_stars(source_job_id, sources)
-        logger.info(f'Job {source_job_id}: Export complete')
-
-        finish_job(source_job_id)
-        logger.info(f'Job {source_job_id}: Job complete')
+        identify_stars(source_job_id)
 
         if single_job:
             return
@@ -229,4 +233,4 @@ def identify_stars(shutdown_time=10, single_job=False):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    identify_stars()
+    identify_stars_script()

@@ -350,7 +350,7 @@ class StarProcessJob(db.Model):
     slurm_job_rank = db.Column(db.Integer, nullable=True)
     source_ingest_job_id = db.Column(db.BigInteger, nullable=False)
     num_stars = db.Column(db.Integer, nullable=True)
-    num_sources = db.Column(db.Integer, nullable=True)
+    num_stars_pass_n_days = db.Column(db.Integer, nullable=True)
     num_objs = db.Column(db.Integer, nullable=True)
     num_objs_pass_n_days = db.Column(db.Integer, nullable=True)
     num_objs_pass_eta = db.Column(db.Integer, nullable=True)
