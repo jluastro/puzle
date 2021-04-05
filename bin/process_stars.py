@@ -105,6 +105,8 @@ def csv_line_to_source(line):
 
 
 def fetch_stars_and_sources(source_job_id):
+    logger.info(f'Fetching stars and sources for job {source_job_id}')
+
     DR4_dir = return_DR4_dir()
     dir = '%s/stars_%s' % (DR4_dir, str(source_job_id)[:3])
 
