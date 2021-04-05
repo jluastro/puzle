@@ -8,15 +8,14 @@ import numpy as np
 from datetime import datetime, timedelta
 from zort.lightcurveFile import LightcurveFile
 from sqlalchemy.sql.expression import func
-import pickle
+import logging
 
 from puzle.models import Source, SourceIngestJob
-from puzle.utils import fetch_job_enddate, return_DR4_dir, \
-    fetch_lightcurve_rcids, get_logger
+from puzle.utils import fetch_job_enddate, return_DR4_dir, fetch_lightcurve_rcids
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle import db
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def object_in_bounds(obj, ra_start, ra_end, dec_start, dec_end):
@@ -86,13 +85,13 @@ def fetch_job():
     dec_end = job.dec_end
 
     if 'SLURMD_NODENAME' in os.environ:
-        slurm_job_id = os.getenv('SLURM_JOB_ID')
         from mpi4py import MPI
         comm = MPI.COMM_WORLD
-        rank = comm.Get_rank()
+        rank = comm.rank
+        slurm_job_id = os.getenv('SLURM_JOB_ID')
     else:
-        slurm_job_id = 0
         rank = 0
+        slurm_job_id = 0
     job.slurm_job_rank = rank
     job.started = True
     job.slurm_job_id = slurm_job_id
@@ -154,7 +153,6 @@ def export_sources(job_id, source_list):
     if os.path.exists(fname):
         os.remove(fname)
 
-    sources_map = {}
     with open(fname, 'w') as f:
         header = 'id,'
         header += 'object_id_g,'
@@ -177,52 +175,11 @@ def export_sources(job_id, source_list):
                 source_keys.add(key)
                 source_line = source_to_csv_line(source, source_id)
                 source_exported.append(source)
-                line = f'{source_line}\n'
-                f.write(line)
-
-                sources_map_key = '%s_%s' % (source.ingest_job_id, source_id)
-                sources_map[sources_map_key] = f.tell() - len(line)
                 source_id += 1
-
-    map_filename = fname.replace('.txt', '.sources_map')
-    with open(map_filename, 'wb') as fileObj:
-        pickle.dump(sources_map, fileObj)
+                f.write(f'{source_line}\n')
 
 
-def identify_sources(job_data, nepochs_min=20):
-    job_id, ra_start, ra_end, dec_start, dec_end = job_data
-    logger.info(f'Job {job_id}: ra: {ra_start:.5f} to {ra_end:.5f} ')
-    logger.info(f'Job {job_id}: dec: {dec_start:.5f} to {dec_end:.5f} ')
-
-    lightcurve_rcids = fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end)
-
-    source_list = []
-    for lightcurve_file, rcids_to_read in lightcurve_rcids:
-        lightcurveFile = LightcurveFile(lightcurve_file, apply_catmask=True,
-                                        rcids_to_read=rcids_to_read)
-
-        for obj in lightcurveFile:
-            if obj.lightcurve.nepochs < nepochs_min:
-                continue
-
-            if not object_in_bounds(obj, ra_start, ra_end, dec_start, dec_end):
-                continue
-
-            obj.locate_siblings()
-
-            source = convert_obj_to_source(obj, lightcurve_file, job_id)
-            source_list.append(source)
-
-    num_sources = len(source_list)
-    logger.info(f'Job {job_id}: Exporting {num_sources} sources to disk')
-    export_sources(job_id, source_list)
-    logger.info(f'Job {job_id}: Export complete')
-
-    finish_job(job_id)
-    logger.info(f'Job {job_id}: Job complete')
-
-
-def identify_sources_script(nepochs_min=20, shutdown_time=10, single_job=False):
+def identify_sources(nepochs_min=20, shutdown_time=10, single_job=False):
     job_enddate = fetch_job_enddate()
     if job_enddate:
         script_enddate = job_enddate - timedelta(minutes=shutdown_time)
@@ -233,18 +190,48 @@ def identify_sources_script(nepochs_min=20, shutdown_time=10, single_job=False):
         if job_data is None:
             return
 
-        if job_enddate and datetime.now() >= script_enddate:
-            logger.info(f'Within {shutdown_time} minutes of job end, '
-                        f'shutting down...')
-            reset_job(job_data[0])
-            time.sleep(2 * 60 * shutdown_time)
-            return
+        job_id, ra_start, ra_end, dec_start, dec_end = job_data
+        logger.info(f'Job {job_id}: ra: {ra_start:.5f} to {ra_end:.5f} ')
+        logger.info(f'Job {job_id}: dec: {dec_start:.5f} to {dec_end:.5f} ')
 
-        identify_sources(job_data, nepochs_min=nepochs_min)
+        lightcurve_rcids = fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end)
+
+        source_list = []
+        for lightcurve_file, rcids_to_read in lightcurve_rcids:
+            lightcurveFile = LightcurveFile(lightcurve_file, apply_catmask=True,
+                                            rcids_to_read=rcids_to_read)
+
+            for obj in lightcurveFile:
+                if obj.lightcurve.nepochs < nepochs_min:
+                    continue
+
+                if not object_in_bounds(obj, ra_start, ra_end, dec_start, dec_end):
+                    continue
+
+                obj.locate_siblings()
+
+                source = convert_obj_to_source(obj, lightcurve_file, job_id)
+                source_list.append(source)
+
+                if job_enddate and datetime.now() >= script_enddate:
+                    logger.info(f'Within {shutdown_time} minutes of job end, '
+                                f'shutting down...')
+                    reset_job(job_id)
+                    time.sleep(2 * 60 * shutdown_time)
+                    return
+
+        num_sources = len(source_list)
+        logger.info(f'Job {job_id}: Exporting {num_sources} sources to disk')
+        export_sources(job_id, source_list)
+        logger.info(f'Job {job_id}: Export complete')
+
+        finish_job(job_id)
+        logger.info(f'Job {job_id}: Job complete')
 
         if single_job:
             return
 
 
 if __name__ == '__main__':
-    identify_sources_script()
+    logging.basicConfig(level=logging.INFO)
+    identify_sources()

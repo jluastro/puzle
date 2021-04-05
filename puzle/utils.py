@@ -6,7 +6,6 @@ import os
 import glob
 import subprocess
 import numpy as np
-import logging
 from datetime import datetime
 from astropy.coordinates import SkyCoord
 from zort.radec import return_shifted_ra, return_ZTF_RCID_corners
@@ -216,13 +215,3 @@ def load_stacked_array(fname):
     idx = npzfile['stacked_index']
     stacked = npzfile['stacked_array']
     return np.split(stacked.T, idx, axis=0)
-
-
-def get_logger(name, level=logging.INFO):
-    logger = logging.getLogger(name)
-    handler = logging.StreamHandler()
-    formatter = logging.Formatter('%(asctime)s [%(name)-12s] %(levelname)-8s %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    logger.setLevel(level)
-    return logger
