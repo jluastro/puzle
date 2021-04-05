@@ -20,9 +20,7 @@ def identify_is_nersc():
 
 
 def fetch_db_id():
-    slurm_job_id = os.getenv('SLURM_JOB_ID')
-    if slurm_job_id is None:
-        return None
+    slurm_job_id = os.getenv('SLURM_JOB_ID', 0)
     from mpi4py import MPI
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
@@ -61,9 +59,7 @@ def remove_db_id():
     logger.debug(f'{my_db_id}: Delete success')
 
 
-def insert_db_id(num_ids=5, retry_time=5):
-    time.sleep(retry_time + abs(np.random.normal(scale=.1 * retry_time)))
-
+def insert_db_id(num_ids=2, retry_time=5):
     my_db_id = fetch_db_id()
     if my_db_id is None:
         logger.debug(f'{my_db_id}: Skipping insert_db for local process')
@@ -84,7 +80,6 @@ def insert_db_id(num_ids=5, retry_time=5):
 
         if successFlag:
             logger.debug(f'{my_db_id}: Insert success')
-            time.sleep(10)
             return
         else:
             logger.debug(f'{my_db_id}: Insert fail, retry in {retry_time} seconds')
