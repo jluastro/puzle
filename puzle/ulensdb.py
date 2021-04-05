@@ -5,8 +5,7 @@ import logging
 import glob
 from pathlib import Path
 
-from puzle.utils import return_data_dir, \
-    execute, get_logger
+from puzle.utils import return_data_dir, get_logger
 
 logger = get_logger(__name__)
 logging.getLogger('filelock').setLevel(logging.WARNING)
@@ -28,7 +27,7 @@ def fetch_db_id():
     return db_id
 
 
-def load_db_ids(my_db_id):
+def load_db_ids():
     ulensdb_folder = '%s/ulensdb' % return_data_dir()
 
     # load db_ids from disk
@@ -38,19 +37,13 @@ def load_db_ids(my_db_id):
     if identify_is_nersc():
         # remove rows that are not currently running
         fname = f'{ulensdb_folder}/current_slurm_job_ids.txt'
-        job_ids = [f.replace('\n', '') for f in open(fname, 'r').readlines()[1:]]
+        job_ids = set([f.replace('\n', '') for f in open(fname, 'r').readlines()[1:]])
         db_ids_final = []
-        db_ids_delete = []
         for db_id in db_ids:
             if db_id.split('.')[0] in job_ids:
                 db_ids_final.append(db_id)
             else:
-                db_ids_delete.append(db_id)
                 os.remove(f'{ulensdb_folder}/{db_id}.con')
-
-        logger.debug(f'{my_db_id}: Job_ids {job_ids} '
-                     f'| Keeping {db_ids_final} '
-                     f'| Deleting {db_ids_delete}')
     else:
         db_ids_final = db_ids
 
@@ -89,7 +82,7 @@ def insert_db_id(num_ids=40, retry_time=10):
     while True:
         time.sleep(abs(np.random.normal(loc=retry_time,
                                         scale=.5 * retry_time)))
-        db_ids = load_db_ids(my_db_id)
+        db_ids = load_db_ids()
         num_db_ids = len(db_ids)
         logger.debug(f'{my_db_id}: Attempting insert to {ulensdb_folder} | {num_db_ids} db_ids | {db_ids}')
         if num_db_ids < num_ids:
