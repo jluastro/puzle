@@ -1,4 +1,3 @@
-import os
 from flask import Flask
 from config import Config
 from sqlalchemy.pool import NullPool
@@ -7,8 +6,6 @@ from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_bootstrap import Bootstrap
-
-os.environ['PATH'] += os.pathsep + '/global/common/shared/das/container_proxy'
 
 app = Flask(__name__)
 app.config.from_object(Config)
