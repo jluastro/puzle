@@ -27,7 +27,7 @@ def fetch_db_id():
     return db_id
 
 
-def load_db_ids():
+def load_db_ids(my_db_id):
     ulensdb_folder = '%s/ulensdb' % return_data_dir()
 
     # load db_ids from disk
@@ -39,14 +39,19 @@ def load_db_ids():
         fname = f'{ulensdb_folder}/current_slurm_job_ids.txt'
         job_ids = set([f.replace('\n', '') for f in open(fname, 'r').readlines()[1:]])
         db_ids_final = []
+        db_ids_to_delete = []
         for db_id in db_ids:
             if db_id.split('.')[0] in job_ids:
                 db_ids_final.append(db_id)
             else:
-                try:
-                    os.remove(f'{ulensdb_folder}/{db_id}.con')
-                except FileNotFoundError:
-                    continue
+                db_ids_to_delete.append(db_id)
+
+        logger.debug(f'{my_db_id}: db_ids {db_ids} | db_ids_to_delete {db_ids_to_delete}')
+        for db_id in db_ids_to_delete:
+            try:
+                os.remove(f'{ulensdb_folder}/{db_id}.con')
+            except FileNotFoundError:
+                continue
     else:
         db_ids_final = db_ids
 
@@ -87,14 +92,14 @@ def insert_db_id(num_ids=40, retry_time=10):
     while True:
         time.sleep(abs(np.random.normal(loc=retry_time,
                                         scale=.5 * retry_time)))
-        db_ids = load_db_ids()
+        db_ids = load_db_ids(my_db_id)
         num_db_ids = len(db_ids)
         logger.debug(f'{my_db_id}: Attempting insert to {ulensdb_folder} | {num_db_ids} db_ids | {db_ids}')
         if num_db_ids < num_ids:
             Path(ulensdb_file).touch(mode=os.O_CREAT,
                                      exist_ok=False)
             if not os.path.exists(ulensdb_file):
-                raise Exception(f'{ulensdb_file} did not write to disk')
+                raise Exception(f'{my_db_id}: {ulensdb_file} did not write to disk')
             successFlag = True
 
         if successFlag:
