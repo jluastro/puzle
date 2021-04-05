@@ -68,7 +68,7 @@ def insert_db_id(num_ids=2, retry_time=10):
     rank = int(my_db_id.split('.')[1])
     pid = os.getpid()
     np.random.seed(rank + pid)
-    time_sleep = np.random.uniform(np.arange(int(retry_time)))
+    time_sleep = np.random.choice(np.arange(1, int(retry_time)))
     time_sleep += np.random.normal(loc=retry_time)
     time.sleep(abs(time_sleep))
 
@@ -77,7 +77,8 @@ def insert_db_id(num_ids=2, retry_time=10):
 
     successFlag = False
     while True:
-        time.sleep(retry_time + abs(np.random.normal(scale=.5 * retry_time)))
+        time.sleep(abs(np.random.normal(loc=retry_time,
+                                        scale=.5 * retry_time)))
         db_ids = load_db_ids()
         num_db_ids = len(db_ids)
         logger.debug(f'{my_db_id}: Attempting insert to {ulensdb_folder} | {num_db_ids} db_ids | {db_ids}')
