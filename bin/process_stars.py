@@ -88,8 +88,16 @@ def _parse_object_int(attr):
         return int(attr)
 
 
-def csv_line_to_source(line):
+def csv_line_to_source(line, lightcurve_file_pointers):
     attrs = line.replace('\n', '').split(',')
+
+    filename = attrs[7]
+    if filename in lightcurve_file_pointers:
+        lightcurve_file_pointer = lightcurve_file_pointers[filename]
+    else:
+        lightcurve_file_pointer = open(filename, 'r')
+        lightcurve_file_pointers[filename] = lightcurve_file_pointer
+
     source = Source(id=attrs[0],
                     object_id_g=_parse_object_int(attrs[1]),
                     object_id_r=_parse_object_int(attrs[2]),
@@ -100,7 +108,8 @@ def csv_line_to_source(line):
                     lightcurve_filename=attrs[7],
                     ra=float(attrs[8]),
                     dec=float(attrs[9]),
-                    ingest_job_id=int(attrs[10]))
+                    ingest_job_id=int(attrs[10]),
+                    lightcurve_file_pointer=lightcurve_file_pointer)
     return source
 
 
@@ -129,16 +138,21 @@ def fetch_stars_and_sources(source_job_id):
     f_sources = open(sources_fname, 'r')
 
     stars_and_sources = {}
+    lightcurve_file_pointers = {}
     for i, line_star in enumerate(lines_star):
         star = csv_line_to_star_and_sources(line_star)
         source_arr = []
         for source_id in star.source_ids:
             f_sources.seek(sources_map[source_id])
             line_source = f_sources.readline()
-            source_arr.append(csv_line_to_source(line_source))
+            source = csv_line_to_source(line_source, lightcurve_file_pointers)
+            source_arr.append(source)
         stars_and_sources[star.id] = (star, source_arr)
 
     f_sources.close()
+
+    for file in lightcurve_file_pointers.values():
+        file.close()
 
     return stars_and_sources
 
