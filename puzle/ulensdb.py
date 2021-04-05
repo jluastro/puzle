@@ -59,6 +59,8 @@ def remove_db_id():
         logger.debug(f'{my_db_id}: Skipping remove_db for local process')
         return
 
+    logger.debug(f'{my_db_id}: Attempting delete')
+
     ulensdb_file = '%s/ulensdb/%s.con' % (return_data_dir(), my_db_id)
     os.remove(ulensdb_file)
 

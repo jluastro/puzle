@@ -3,7 +3,6 @@
 test_ulensdb.py
 """
 
-import numpy as np
 import time
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle.utils import get_logger
