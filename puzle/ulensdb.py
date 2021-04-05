@@ -68,6 +68,9 @@ def insert_db_id(num_ids=2, retry_time=10):
     rank = int(my_db_id.split('.')[1])
     pid = os.getpid()
     np.random.seed(rank + pid)
+    time_sleep = np.random.uniform(np.arange(int(retry_time)))
+    time_sleep += np.random.normal(loc=retry_time)
+    time.sleep(abs(time_sleep))
 
     ulensdb_folder = '%s/ulensdb' % return_data_dir()
     ulensdb_file = f'{ulensdb_folder}/{my_db_id}.con'
