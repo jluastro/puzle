@@ -1,11 +1,10 @@
 from scipy.optimize import curve_fit
 import numpy as np
-import logging
 from zort.photometry import magnitudes_to_fluxes
 
-from puzle.utils import return_data_dir, load_stacked_array
+from puzle.utils import return_data_dir, load_stacked_array, get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def return_q(t_arr, t0, t_eff):

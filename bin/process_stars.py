@@ -7,19 +7,18 @@ import os
 import numpy as np
 from datetime import datetime, timedelta
 from scipy.stats import binned_statistic
-import logging
 from collections import defaultdict, namedtuple
 import pickle
 
 from puzle.models import Source, StarIngestJob, Star, StarProcessJob, Candidate
-from puzle.utils import fetch_job_enddate, return_DR4_dir
+from puzle.utils import fetch_job_enddate, return_DR4_dir, get_logger
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle.stats import calculate_eta_on_daily_avg, \
     RF_THRESHOLD, calculate_eta_on_daily_avg_residuals
 from puzle import catalog
 from puzle import db
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 ObjectData = namedtuple('ObjectData', 'eta eta_residual rf_score fit_data eta_threshold_low eta_threshold_high')
 
@@ -119,12 +118,12 @@ def fetch_stars_and_sources(source_job_id):
     dir = '%s/stars_%s' % (DR4_dir, str(source_job_id)[:3])
 
     if not os.path.exists(dir):
-        logging.error('Source directory missing!')
+        logger.error('Source directory missing!')
         return
 
     fname = f'{dir}/stars.{source_job_id:06}.txt'
     if not os.path.exists(fname):
-        logging.error('Source file missing!')
+        logger.error('Source file missing!')
         return
 
     sources_fname = fname.replace('star', 'source')
@@ -615,5 +614,4 @@ def process_stars_script(shutdown_time=10, single_job=False):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
     process_stars_script()

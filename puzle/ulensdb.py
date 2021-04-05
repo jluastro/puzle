@@ -5,9 +5,9 @@ from filelock import FileLock
 from pathlib import Path
 import logging
 
-from puzle.utils import execute
+from puzle.utils import execute, get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 ulensdb_file_path = os.getenv('ULENS_DB_FILEPATH')
 logging.getLogger('filelock').setLevel(logging.WARNING)
 

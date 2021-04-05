@@ -8,15 +8,15 @@ import numpy as np
 from datetime import datetime, timedelta
 from sqlalchemy.sql.expression import func
 from zort.radec import return_shifted_ra
-import logging
 from scipy.spatial import cKDTree
 
 from puzle.models import Source, SourceIngestJob, Star, StarIngestJob
-from puzle.utils import fetch_job_enddate, return_DR3_dir, lightcurve_file_to_field_id
+from puzle.utils import fetch_job_enddate, return_DR3_dir, \
+    lightcurve_file_to_field_id, get_logger
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle import db
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def fetch_job():
@@ -106,7 +106,7 @@ def fetch_sources(source_job_id):
     dir = '%s/sources_%s' % (DR3_dir, str(source_job_id)[:3])
 
     if not os.path.exists(dir):
-        logging.error('Source directory missing!')
+        logger.error('Source directory missing!')
         return
 
     fname = f'{dir}/sources.{source_job_id:06}.txt'
@@ -229,5 +229,4 @@ def identify_stars(shutdown_time=10, single_job=False):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
     identify_stars()
