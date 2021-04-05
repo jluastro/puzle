@@ -59,7 +59,7 @@ def remove_db_id():
     logger.debug(f'{my_db_id}: Delete success')
 
 
-def insert_db_id(num_ids=2, retry_time=10):
+def insert_db_id(num_ids=40, retry_time=10):
     my_db_id = fetch_db_id()
     if my_db_id is None:
         logger.debug(f'{my_db_id}: Skipping insert_db for local process')
