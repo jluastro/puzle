@@ -83,7 +83,8 @@ def insert_db_id(num_ids=40, retry_time=10):
         num_db_ids = len(db_ids)
         logger.debug(f'{my_db_id}: Attempting insert to {ulensdb_folder} | {num_db_ids} db_ids | {db_ids}')
         if num_db_ids < num_ids:
-            Path(ulensdb_file).touch()
+            Path(ulensdb_file).touch(mode=os.O_CREAT,
+                                     exist_ok=False)
             successFlag = True
 
         if successFlag:
