@@ -92,4 +92,5 @@ ENV FLASK_APP puzleapp.py
 USER puzle
 EXPOSE 5000
 
+COPY bin/test_ulensdb.py test_ulensdb.py
 CMD conda activate puzle
