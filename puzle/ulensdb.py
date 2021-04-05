@@ -93,6 +93,8 @@ def insert_db_id(num_ids=40, retry_time=10):
         if num_db_ids < num_ids:
             Path(ulensdb_file).touch(mode=os.O_CREAT,
                                      exist_ok=False)
+            if not os.path.exists(ulensdb_file):
+                raise Exception(f'{ulensdb_file} did not write to disk')
             successFlag = True
 
         if successFlag:
