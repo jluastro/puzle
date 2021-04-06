@@ -40,8 +40,8 @@ def parquet_to_asciilc(inpath, outdir='/global/cfs/cdirs/uLens/ZTF/DR5'):
     """
     ds = pq.ParquetDataset(inpath, use_legacy_dataset=False)
     df = ds.read().to_pandas()
-    df.sort_values(['filterid', 'rcid', 'objdec'],
-                   ascending=[False, True, True],
+    df.sort_values(['filterid', 'rcid'],
+                   ascending=[False, True],
                    inplace=True)
     fields = df.fieldid.unique()
     assert len(fields) == 1
