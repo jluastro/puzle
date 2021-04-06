@@ -70,7 +70,7 @@ def parquet_to_asciilc(inpath, outdir='/global/cfs/cdirs/uLens/ZTF/DR5'):
 
 def return_unconverted_folders(path):
     completed_fields = [f.split('/')[-1].split('_')[0] for f in glob.glob(f'{path}/field*txt')]
-    folders_tmp = [f for f in glob.glob(f'{path}/field*') if 'txt' not in f]
+    folders_tmp = [f for f in glob.glob(f'{path}/field*') if 'ra' not in f]
     folders = []
     for folder in folders_tmp:
         field = folder.split('/')[-1]
