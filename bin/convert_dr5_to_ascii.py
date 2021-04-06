@@ -77,7 +77,7 @@ def return_unconverted_folders(path):
     for folder in folders_tmp:
         field = folder.split('/')[-1]
         if field not in completed_fields:
-            folders.append(folders_tmp)
+            folders.append(folder)
     folders.sort()
     return folders
 
