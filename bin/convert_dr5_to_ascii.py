@@ -70,9 +70,20 @@ def parquet_to_asciilc(inpath, outdir='/global/cfs/cdirs/uLens/ZTF/DR5'):
     return
 
 
-def convert_DR5_to_ascii(path='/global/cfs/cdirs/uLens/ZTF/DR5'):
-    folders = glob.glob(f'{path}/field*')
+def return_unconverted_folders(path):
+    completed_fields = [f.split('/')[-1].split('_')[0] for f in glob.glob(f'{path}/field*txt')]
+    folders_tmp = [f for f in glob.glob(f'{path}/field*') if 'txt' not in f]
+    folders = []
+    for folder in folders_tmp:
+        field = folder.split('/')[-1]
+        if field not in completed_fields:
+            folders.append(folders_tmp)
     folders.sort()
+    return folders
+
+
+def convert_DR5_to_ascii(path='/global/cfs/cdirs/uLens/ZTF/DR5'):
+    folders = return_unconverted_folders(path)
 
     if 'SLURMD_NODENAME' in os.environ:
         from mpi4py import MPI
