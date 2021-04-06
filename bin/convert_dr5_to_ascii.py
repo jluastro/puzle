@@ -53,7 +53,6 @@ def parquet_to_asciilc(inpath, outdir='/global/cfs/cdirs/uLens/ZTF/DR5'):
     outname = os.path.join(outdir,
                            'field{:06d}_ra{:.5f}to{:.5f}_dec{:.5f}to{:.5f}.txt'.format(
                                field, ramin, ramax, decmin, decmax))
-    counter = 0
     with open(outname, 'w') as fh:
         for row in df.itertuples():
             fh.write("# %17d %3d %1d %4d %2d %9.5f %9.5f\n" %
@@ -64,9 +63,8 @@ def parquet_to_asciilc(inpath, outdir='/global/cfs/cdirs/uLens/ZTF/DR5'):
                 fh.write("  %13.5f %6.3f %5.3f %6.3f %5d\n" %
                          (row.hmjd[i], row.mag[i], row.magerr[i],
                           row.clrcoeff[i], row.catflags[i]))
-            counter += 1
-            if counter == 100:
-                break
+
+    del df, ds
     return
 
 
