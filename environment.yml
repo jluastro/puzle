@@ -27,4 +27,5 @@ dependencies:
       - filelock
       - python-dotenv
       - shapely
+      - greenlet
 prefix: /Users/michael/miniconda3/envs/puzle
