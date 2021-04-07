@@ -13,7 +13,7 @@ hostname
 date
 echo "---------------------------"
 
-conda activate puzle
+conda activate pyarrow
 srun -N 1 -n 32 python /global/homes/m/mmedford/puzle/bin/convert_dr5_to_ascii.py
 
 echo "---------------------------"
