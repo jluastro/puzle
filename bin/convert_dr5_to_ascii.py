@@ -9,21 +9,6 @@ import numpy as np
 import pandas as pd
 
 
-def sort_files_into_folders(path='/global/cfs/cdirs/uLens/ZTF/DR5'):
-    files = glob.glob(f'{path}/*parquet')
-    files.sort()
-    for i, file in enumerate(files):
-        if i % 10 == 0:
-            print(i, len(files))
-        file_base = os.path.basename(file)
-        field = 'field' + file_base.split('_')[1]
-        field_dir = f'{path}/{field}'
-        if not os.path.exists(field_dir):
-            os.makedirs(field_dir)
-        file_new = f'{field_dir}/{file_base}'
-        os.rename(file, file_new)
-
-
 def parquet_to_ascii(inpath, outdir='/global/cfs/cdirs/uLens/ZTF/DR5'):
     """
     Convert ZTF lightcurve Parquet dataset for one field to the pre-DR5 ascii format
@@ -68,36 +53,17 @@ def parquet_to_ascii(inpath, outdir='/global/cfs/cdirs/uLens/ZTF/DR5'):
     os.rename(fname_tmp, fname)
 
 
-def return_unconverted_folders(path):
-    completed_fields = [f.split('/')[-1].split('_')[0] for f in glob.glob(f'{path}/field*txt')]
-    folders_tmp = [f for f in glob.glob(f'{path}/field*') if 'ra' not in f]
-    folders = []
-    for folder in folders_tmp:
-        field = folder.split('/')[-1]
-        if field not in completed_fields:
-            folders.append(folder)
-    folders.sort()
-    return folders
-
-
 def convert_DR5_to_ascii(path='/global/cfs/cdirs/uLens/ZTF/DR5'):
-    folders = return_unconverted_folders(path)
-
-    if 'SLURMD_NODENAME' in os.environ:
-        from mpi4py import MPI
-        comm = MPI.COMM_WORLD
-        rank = comm.rank
-        size = comm.size
-    else:
-        rank = 0
-        size = 1
-
-    my_folders = np.array_split(folders, size)[rank]
-
-    for i, folder in enumerate(my_folders):
-        print('%i) Converting %s (%i / %i)' % (rank, folder, i, len(my_folders)))
-        parquet_to_ascii(inpath=folder,
-                         outdir=path)
+    folders = [f for f in glob.glob(f'{path}/field*') if '.' not in f]
+    folders.sort()
+    for i, folder in enumerate(folders):
+        output_files = [f for f in glob.glob(f'{folder}*.*') if f != folder]
+        if len(output_files) == 0:
+            print('Converting %s (%i / %i)' % (folder, i, len(folders)))
+            parquet_to_ascii(inpath=folder,
+                             outdir=path)
+        else:
+            print('Skipping %s (%i / %i)' % (folder, i, len(folders)))
 
 
 if __name__ == '__main__':
