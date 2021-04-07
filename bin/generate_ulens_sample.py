@@ -58,7 +58,7 @@ def fetch_objects(ra, dec, radius, limit=None):
     cone_filter = Source.cone_search(ra, dec, radius)
     query = db.session.query(Source).filter(cone_filter).order_by(func.random())
     if limit is not None:
-        query = query.limit(limit)
+        query = query.limit(limit * 10)
     sources = query.all()
 
     print('Extracting objects from sources')
@@ -66,10 +66,12 @@ def fetch_objects(ra, dec, radius, limit=None):
     for source in sources:
         zort_source = source.load_zort_source()
         nepochs_arr = [obj.nepochs for obj in zort_source.objects]
+        if np.max(nepochs_arr) < 20:
+            continue
         obj = zort_source.objects[np.argmax(nepochs_arr)]
         objects.append(obj)
 
-    return objects
+    return objects[:limit]
 
 
 def calculate_delta_m(u0, b_sff):
