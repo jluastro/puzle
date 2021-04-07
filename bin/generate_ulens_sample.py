@@ -118,6 +118,7 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000,
 
     objects = fetch_objects(ra, dec, radius, limit=N_samples)
     lightcurves = []
+    metadata = []
 
     increment = N_samples / 10
     for i, obj in enumerate(objects):
@@ -159,12 +160,13 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000,
             delta_m_min_cond = delta_m >= delta_m_min
             if np.sum(delta_m_min_cond) >= delta_m_min_cut:
                 lightcurves.append((obj_t, obj_mag_micro, obj_magerr))
+                metadata.append((t0, u0, tE, mag_src, piE_E, piE_N, b_sff, obj.ra, obj.dec))
                 break
 
-    return lightcurves
+    return lightcurves, metadata
 
 
-if __name__ == '__main__':
+def generate_random_lightcurves():
     N_samples = 100
     tE_min = 20
     delta_m_min = 0.1
@@ -172,12 +174,28 @@ if __name__ == '__main__':
     lb_arr = gather_PopSyCLE_lb()
 
     lightcurves_arr = []
+    metadata_arr = []
     for i, (l, b) in enumerate(lb_arr):
         print('Processing (l, b) = (%.2f, %.2f) |  %i / %i' % (l, b, i, len(lb_arr)))
-        lightcurves = generate_random_lightcurves_lb(l, b,
-                                                     N_samples=N_samples, tE_min=tE_min,
-                                                     delta_m_min=delta_m_min, delta_m_min_cut=delta_m_min_cut)
+        lightcurves, metadata = generate_random_lightcurves_lb(l, b,
+                                                               N_samples=N_samples, tE_min=tE_min,
+                                                               delta_m_min=delta_m_min, delta_m_min_cut=delta_m_min_cut)
         lightcurves_arr += lightcurves
+        metadata_arr += metadata
 
     fname = '%s/ulens_sample.npz' % return_data_dir()
     save_stacked_array(fname, lightcurves_arr)
+
+    dtype = [('t0', float), ('u0', float), ('tE', float),
+             ('mag_src', float), ('piE_E', float),
+             ('piE_N', float), ('b_sff', float),
+             ('ra', float), ('dec', float)]
+    metadata_arr = np.array(metadata_arr, dtype=dtype)
+    metadata_dct = {k: metadata_arr[k] for k in metadata_arr.dtype.names}
+
+    fname = '%s/ulens_sample_metadata.npz' % return_data_dir()
+    np.savez(fname, **metadata_dct)
+
+
+if __name__ == '__main__':
+    generate_random_lightcurves()
