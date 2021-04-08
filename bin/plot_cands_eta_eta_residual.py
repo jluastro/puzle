@@ -88,6 +88,7 @@ def eta_ulens_arrs():
 
     eta_ulens_arr = []
     eta_residual_ulens_arr = []
+    eta_residual_actual_ulens_arr = []
     observable_arr = []
     for i, d in enumerate(data):
         if i % 10 == 0:
@@ -101,6 +102,7 @@ def eta_ulens_arrs():
         if eta_residual_daily is not None:
             eta_ulens_arr.append(eta_daily)
             eta_residual_ulens_arr.append(eta_residual_daily)
+            eta_residual_actual_ulens_arr.append(metadata['eta_residual'][i])
 
             hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
             cond_decreasing = test_for_three_consecutive_decreases(mag_round)
@@ -119,9 +121,45 @@ def eta_ulens_arrs():
             else:
                 observable_arr.append(False)
 
-    return eta_ulens_arr, eta_residual_ulens_arr, observable_arr
+    eta_ulens_arr = np.array(eta_ulens_arr)
+    eta_residual_ulens_arr = np.array(eta_residual_ulens_arr)
+    eta_residual_actual_ulens_arr = np.array(eta_residual_actual_ulens_arr)
+    observable_arr = np.array(observable_arr)
+
+    return eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr
 
 
 def plot_eta_eta_residual():
     eta_arr, eta_residual_arr = return_eta_arrs()
-    eta_ulens_arr, eta_residual_ulens_arr, observable_arr = eta_ulens_arrs()
+    eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr = eta_ulens_arrs()
+
+    cond_obs = observable_arr == True
+
+    fig, ax = plt.subplots(3, 1, figsize=(10, 10))
+    for a in ax: a.clear()
+    ax[0].set_title('cands')
+    ax[0].hexbin(eta_arr, eta_residual_arr, mincnt=1)
+    ax[0].scatter(eta_ulens_arr, eta_residual_ulens_arr,
+                  color='r', s=5, label='ulens')
+    ax[0].scatter(eta_ulens_arr, eta_residual_actual_ulens_arr,
+                  color='g', s=5, label='ulens actual')
+    ax[0].scatter(eta_ulens_arr[cond_obs], eta_residual_actual_ulens_arr[cond_obs],
+                  color='g', s=5, label='ulens observable')
+    ax[0].legend()
+    ax[1].set_title('ulens total')
+    ax[1].hexbin(eta_ulens_arr, eta_residual_ulens_arr,
+                 mincnt=1, gridsize=20)
+    ax[2].set_title('ulens observable')
+    ax[2].hexbin(eta_ulens_arr[cond_obs], eta_residual_ulens_arr[cond_obs],
+                 mincnt=1, gridsize=20)
+    xmin = min([a.get_xlim()[0] for a in ax])
+    xmax = max([a.get_xlim()[1] for a in ax])
+    ymin = min([a.get_ylim()[0] for a in ax])
+    ymax = max([a.get_ylim()[1] for a in ax])
+    for a in ax:
+        a.set_xlim((xmin, xmax))
+        a.set_ylim((ymin, ymax))
+        a.grid(True)
+        a.set_xlabel('eta', fontsize=10)
+        a.set_ylabel('eta_residual', fontsize=10)
+    fig.tight_layout()
