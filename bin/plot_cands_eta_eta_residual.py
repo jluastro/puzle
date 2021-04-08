@@ -249,6 +249,11 @@ def plot_eta_eta_residual(eta_arr, eta_residual_arr, eta_ulens_arr, eta_residual
         a.set_ylabel('eta_residual', fontsize=10)
     fig.tight_layout()
 
+    figures_dir = return_figures_dir()
+    fname = f'{figures_dir}/ulens_cands_eta_eta_residual.png'
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    print('-- %s saved' % fname)
+
 
 def plot_eta_residual_ulens_vs_actual(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr):
     x_min = np.min([np.min(eta_residual_ulens_arr), np.min(eta_residual_actual_ulens_arr)])
@@ -272,6 +277,12 @@ def plot_eta_residual_ulens_vs_actual(eta_ulens_arr, eta_residual_ulens_arr, eta
         a.set_ylabel('modeled eta_residual ulens', fontsize=10)
         a.plot(x, x, color='r', linewidth=1)
     fig.tight_layout()
+
+
+    figures_dir = return_figures_dir()
+    fname = f'{figures_dir}/ulens_eta_residual_vs_actual.png'
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    print('-- %s saved' % fname)
 
 
 def plot_lowest_ulens_eta(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr):
@@ -301,6 +312,11 @@ def plot_lowest_ulens_eta(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_ac
         a.invert_yaxis()
     fig.tight_layout()
 
+    figures_dir = return_figures_dir()
+    fname = f'{figures_dir}/ulens_lowest_eta.png'
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    print('-- %s saved' % fname)
+
 
 def generate_all_plots():
     eta_arr, eta_residual_arr = return_eta_arrs()
@@ -311,3 +327,6 @@ def generate_all_plots():
     plot_eta_residual_ulens_vs_actual(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr)
     plot_lowest_ulens_eta(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr)
 
+
+if __name__ == '__main__':
+    generate_all_plots()
