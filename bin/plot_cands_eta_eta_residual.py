@@ -58,8 +58,6 @@ def return_eta_ulens_arrs():
     eta_ulens_arr = []
     eta_residual_ulens_arr = []
     eta_residual_actual_ulens_arr = []
-    idx_arr = []
-    observable_arr = []
     for i, d in enumerate(data):
         if i % 100 == 0:
             print('Loading candidate %i / %i' % (i, len(data)))
@@ -69,39 +67,55 @@ def return_eta_ulens_arrs():
 
         eta_daily = calculate_eta_on_daily_avg(hmjd, mag)
         eta_residual_daily = calculate_eta_on_daily_avg_residuals(hmjd, mag, magerr)
-        if eta_residual_daily is not None and not np.isnan(eta_residual_daily):
-            idx_arr.append(i)
-            eta_ulens_arr.append(eta_daily)
-            eta_residual_ulens_arr.append(eta_residual_daily)
-            eta_residual_actual_ulens_arr.append(metadata['eta_residual'][i])
-
-            hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
-            cond_decreasing = test_for_three_consecutive_decreases(mag_round)
-            #
-            # zp = 21.2477
-            # A = np.array(calc_magnification(metadata['u0'][i]))
-            # factor_ZP = 10 ** (zp / 2.5)
-            # f_S = 10 ** ((metadata['mag_src'][i] - zp) / (-2.5))
-            # f_tot = f_S / metadata['b_sff'][i]
-            # lhs = (A - 1) * f_S
-            # rhs = 3 * np.sqrt(f_tot / factor_ZP)
-            # cond_bump = lhs > rhs
-
-            median = np.median(mag_round)
-            std = np.std(mag_round)
-            cond_three_sigma = np.sum(mag_round <= median - 3 * std) > 3
-
-            if cond_decreasing and cond_three_sigma:
-                observable_arr.append(True)
-            else:
-                observable_arr.append(False)
+        eta_ulens_arr.append(eta_daily)
+        eta_residual_ulens_arr.append(eta_residual_daily)
+        eta_residual_actual_ulens_arr.append(metadata['eta_residual'][i])
 
     eta_ulens_arr = np.array(eta_ulens_arr)
     eta_residual_ulens_arr = np.array(eta_residual_ulens_arr)
     eta_residual_actual_ulens_arr = np.array(eta_residual_actual_ulens_arr)
+
+    return eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr
+
+
+def return_observable_arr():
+    fname = '%s/ulens_sample.npz' % return_data_dir()
+    data = load_stacked_array(fname)
+
+    fname = '%s/ulens_sample_metadata.npz' % return_data_dir()
+    metadata = np.load(fname)
+
+    observable_arr = []
+    for i, d in enumerate(data):
+        if i % 100 == 0:
+            print('Loading candidate %i / %i' % (i, len(data)))
+        hmjd = d[:, 0]
+        mag = d[:, 1]
+
+        hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
+        cond_decreasing = test_for_three_consecutive_decreases(mag_round)
+        #
+        # zp = 21.2477
+        # A = np.array(calc_magnification(metadata['u0'][i]))
+        # factor_ZP = 10 ** (zp / 2.5)
+        # f_S = 10 ** ((metadata['mag_src'][i] - zp) / (-2.5))
+        # f_tot = f_S / metadata['b_sff'][i]
+        # lhs = (A - 1) * f_S
+        # rhs = 3 * np.sqrt(f_tot / factor_ZP)
+        # cond_bump = lhs > rhs
+
+        median = np.median(mag_round)
+        std = np.std(mag_round)
+        cond_three_sigma = np.sum(mag_round <= median - 3 * std) > 3
+
+        if cond_decreasing and cond_three_sigma:
+            observable_arr.append(True)
+        else:
+            observable_arr.append(False)
+
     observable_arr = np.array(observable_arr)
 
-    return eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr, idx_arr
+    return observable_arr
 
 
 def return_ulens_sample(eta_ulens_arr, eta_residual_ulens_arr,
@@ -162,6 +176,8 @@ def plot_cands_samples(eta_arr, eta_residual_arr):
                           (0.75, 0.8, 3, 3.05),
                           (0.95, 1, 1.95, 2),
                           (1.75, 2, 2, 2.5)]
+    title = 'region5'
+    region = (0, 0.5, 1.75, 2.5)
     for i, region in enumerate(regions_of_interst):
         cands = return_cands_sample(*region)
         title = f'region{i}'
@@ -318,14 +334,128 @@ def plot_lowest_ulens_eta(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_ac
     print('-- %s saved' % fname)
 
 
+def plot_ulens_tE_piE(observable_arr):
+    fname = '%s/ulens_sample_metadata.npz' % return_data_dir()
+    metadata = np.load(fname)
+
+    cond = observable_arr == True
+
+    tE = metadata['tE']
+    piE = np.hypot(metadata['piE_E'], metadata['piE_N'])
+
+    fig, ax = plt.subplots(2, 2, figsize=(10, 10))
+    ax = ax.flatten()
+
+    tE_bins = np.logspace(np.log10(2e1), 3, 15)
+    ax[0].hist(tE, bins=tE_bins, histtype='step', label='ulens total')
+    ax[0].hist(tE[cond], bins=tE_bins, histtype='step', label='ulens obs')
+    ax[0].set_xlabel('t_E', fontsize=12)
+    ax[0].set_yscale('log')
+    ax[0].legend()
+
+    piE_bins = np.logspace(-2, np.log10(3), 15)
+    ax[1].hist(piE, bins=piE_bins, histtype='step', label='ulens total')
+    ax[1].hist(piE[cond], bins=piE_bins, histtype='step', label='ulens obs')
+    ax[1].set_xlabel('pi_E', fontsize=12)
+    ax[1].set_yscale('log')
+    ax[1].legend()
+
+    tE_counts, _ = np.histogram(tE, bins=tE_bins)
+    tE_obs_counts, _ = np.histogram(tE[cond], bins=tE_bins)
+    tE_obs_frac = tE_obs_counts / tE_counts
+    ax[2].plot(tE_bins[:-1], tE_obs_frac, marker='.')
+    ax[2].set_xlabel('t_E', fontsize=12)
+    ax[2].set_ylabel('N_obs / N_total')
+
+    piE_counts, _ = np.histogram(piE, bins=piE_bins)
+    piE_obs_counts, _ = np.histogram(piE[cond], bins=piE_bins)
+    piE_obs_frac = piE_obs_counts / piE_counts
+    ax[3].plot(piE_bins[:-1], piE_obs_frac, marker='.')
+    ax[3].set_xlabel('pi_E', fontsize=12)
+    ax[3].set_ylabel('N_obs / N_total')
+
+    for a in ax:
+        a.set_xscale('log')
+    fig.tight_layout()
+
+    figures_dir = return_figures_dir()
+    fname = f'{figures_dir}/ulens_tE_piE.png'
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    print('-- %s saved' % fname)
+
+
+def plot_ulens_tE_piE_vs_eta(eta_ulens_arr, eta_residual_ulens_arr, observable_arr):
+    fname = '%s/ulens_sample_metadata.npz' % return_data_dir()
+    metadata = np.load(fname)
+
+    cond = observable_arr == True
+
+    tE = metadata['tE']
+    piE = np.hypot(metadata['piE_E'], metadata['piE_N'])
+
+    fig, ax = plt.subplots(2, 2, figsize=(10, 10))
+    ax = ax.flatten()
+
+    def return_fit(x, y):
+        idx_arr = np.argsort(x)
+        x_sort, y_sort = x[idx_arr], y[idx_arr]
+        x_log, y_log = np.log10(x_sort), np.log10(y_sort)
+        m, b = np.polyfit(x_log, y_log, deg=1)
+        return 10 ** (x_log), 10 ** (x_log * m + b)
+
+    ax[0].scatter(tE, eta_ulens_arr,
+                  s=5, alpha=.3, label='ulens total')
+    ax[0].scatter(tE[cond], eta_ulens_arr[cond],
+                  s=5, alpha=.3, label='ulens obs')
+    ax[0].plot(*return_fit(tE[cond], eta_ulens_arr[cond]), color='r', alpha=.4)
+    ax[0].set_xlabel('tE')
+    ax[0].set_ylabel('eta')
+
+    ax[1].scatter(tE, eta_residual_ulens_arr,
+                  s=5, alpha=.3, label='ulens total')
+    ax[1].scatter(tE[cond], eta_residual_ulens_arr[cond],
+                  s=5, alpha=.3, label='ulens obs')
+    ax[1].plot(*return_fit(tE[cond], eta_residual_ulens_arr[cond]), color='r', alpha=.4)
+    ax[1].set_xlabel('tE')
+    ax[1].set_ylabel('eta_residual')
+
+    ax[2].scatter(piE, eta_ulens_arr,
+                  s=5, alpha=.3, label='ulens total')
+    ax[2].scatter(piE[cond], eta_ulens_arr[cond],
+                  s=5, alpha=.3, label='ulens obs')
+    ax[2].plot(*return_fit(piE[cond], eta_ulens_arr[cond]), color='r', alpha=.4)
+    ax[2].set_xlabel('piE')
+    ax[2].set_ylabel('eta')
+
+    ax[3].scatter(piE, eta_residual_ulens_arr,
+                  s=5, alpha=.3, label='ulens total')
+    ax[3].scatter(piE[cond], eta_residual_ulens_arr[cond],
+                  s=5, alpha=.3, label='ulens obs')
+    ax[3].plot(*return_fit(piE[cond], eta_residual_ulens_arr[cond]), color='r', alpha=.4)
+    ax[3].set_xlabel('piE')
+    ax[3].set_ylabel('eta_residual')
+
+    for a in ax:
+        a.legend(markerscale=3)
+        a.set_xscale('log')
+    fig.tight_layout()
+
+    fname = '%s/ulens_tE_piE_vs_eta.png' % return_figures_dir()
+    fig.savefig(fname)
+    plt.close(fig)
+
+
 def generate_all_plots():
     eta_arr, eta_residual_arr = return_eta_arrs()
-    eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr, idx_arr = return_eta_ulens_arrs()
+    eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr = return_eta_ulens_arrs()
+    observable_arr = return_observable_arr()
     plot_cands_samples(eta_arr, eta_residual_arr)
     plot_ulens_samples(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr)
     plot_eta_eta_residual(eta_arr, eta_residual_arr, eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr)
     plot_eta_residual_ulens_vs_actual(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr)
     plot_lowest_ulens_eta(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr)
+    plot_ulens_tE_piE(observable_arr)
+    plot_ulens_tE_piE_vs_eta(eta_ulens_arr, eta_residual_ulens_arr, observable_arr)
 
 
 if __name__ == '__main__':
