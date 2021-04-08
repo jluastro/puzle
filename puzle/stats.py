@@ -49,7 +49,7 @@ def gather_PopSyCLE_refined_events():
     print(f'{N_samples} Samples')
 
 
-def fetch_sample_objects(lightcurve_file, n_days_min=20,
+def fetch_sample_objects(lightcurve_file, n_days_min=50,
                          rf_threshold=RF_THRESHOLD,
                          num_sources_rcid=150, rcid_radius=1250,
                          rcid_list=None):

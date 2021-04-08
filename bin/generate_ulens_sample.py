@@ -53,25 +53,22 @@ def gather_PopSyCLE_lb():
     return lb_arr
 
 
-def fetch_objects(ra, dec, radius, limit):
+def fetch_objects(ra, dec, radius, limit, n_days_min=50):
 
     print('Running query for sources')
     cone_filter = Source.cone_search(ra, dec, radius)
     query = db.session.query(Source).filter(cone_filter).order_by(func.random())
-    if limit is not None:
-        query = query.limit(limit * 10)
     sources = query.all()
 
     print('Extracting objects from sources')
     objects = []
     for source in sources:
         zort_source = source.load_zort_source()
-        # nepochs_arr = [obj.nepochs for obj in zort_source.objects]
         n_days_arr = []
         for obj in zort_source.objects:
             n_days = len(np.unique(np.round(obj.lightcurve.hmjd)))
             n_days_arr.append(n_days)
-        if np.max(n_days_arr) < 20:
+        if np.max(n_days_arr) < n_days_min:
             continue
         obj = zort_source.objects[np.argmax(n_days_arr)]
         objects.append(obj)
@@ -184,7 +181,7 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000,
 
 
 def generate_random_lightcurves():
-    N_samples = 100
+    N_samples = 1000
     tE_min = 20
     delta_m_min = 0.1
     delta_m_min_cut = 3
