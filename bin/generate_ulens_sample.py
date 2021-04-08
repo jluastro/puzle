@@ -162,7 +162,7 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000,
             delta_m = obj_mag - obj_mag_micro
             delta_m_min_cond = delta_m >= delta_m_min
 
-            eta_residual = calculate_eta_on_daily_avg(obj_t, delta_m)
+            eta_residual = calculate_eta_on_daily_avg(obj_t, obj_mag)
             if np.sum(delta_m_min_cond) >= delta_m_min_cut:
                 lightcurves.append((obj_t, obj_mag_micro, obj_magerr))
                 metadata.append((t0, u0, tE, mag_src, piE_E, piE_N, b_sff, obj.ra, obj.dec, eta_residual))

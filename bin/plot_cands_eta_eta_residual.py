@@ -79,7 +79,7 @@ def test_for_three_consecutive_decreases(arr):
                 for i in range(len(arr)-2)])
 
 
-def eta_ulens_arrs():
+def return_eta_ulens_arrs():
     fname = '%s/ulens_sample.npz' % return_data_dir()
     data = load_stacked_array(fname)
 
@@ -92,7 +92,7 @@ def eta_ulens_arrs():
     observable_arr = []
     for i, d in enumerate(data):
         if i % 10 == 0:
-            print(i, len(data))
+            print('Loading candidate %i / %i' % (i, len(data)))
         hmjd = d[:, 0]
         mag = d[:, 1]
         magerr = d[:, 2]
@@ -131,7 +131,7 @@ def eta_ulens_arrs():
 
 def plot_eta_eta_residual():
     eta_arr, eta_residual_arr = return_eta_arrs()
-    eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr = eta_ulens_arrs()
+    eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr = return_eta_ulens_arrs()
 
     cond_obs = observable_arr == True
 
@@ -144,8 +144,8 @@ def plot_eta_eta_residual():
     ax[0].scatter(eta_ulens_arr, eta_residual_actual_ulens_arr,
                   color='g', s=5, label='ulens actual')
     ax[0].scatter(eta_ulens_arr[cond_obs], eta_residual_actual_ulens_arr[cond_obs],
-                  color='g', s=5, label='ulens observable')
-    ax[0].legend()
+                  color='k', s=5, label='ulens observable')
+    ax[0].legend(markerscale=3)
     ax[1].set_title('ulens total')
     ax[1].hexbin(eta_ulens_arr, eta_residual_ulens_arr,
                  mincnt=1, gridsize=20)
