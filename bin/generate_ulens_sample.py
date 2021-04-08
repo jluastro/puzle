@@ -6,6 +6,7 @@ from scipy.stats import expon
 from astropy.table import Table, vstack
 from astropy.coordinates import SkyCoord
 import astropy.units as u
+from sqlalchemy.sql.expression import func
 
 from zort.photometry import fluxes_to_magnitudes
 from microlens.jlu.model import PSPL_Phot_Par_Param1
@@ -88,7 +89,7 @@ def csv_line_to_source(line, lightcurve_file_pointers):
 
 def fetch_objects(ra, dec, radius, limit, n_days_min=20):
     cone_filter = SourceIngestJob.cone_search(ra, dec, radius)
-    jobs = db.session.query(SourceIngestJob).filter(cone_filter).all()
+    jobs = db.session.query(SourceIngestJob).filter(cone_filter).order_by(func.random()).all()
 
     n_samples_per_source = max(1, int(10 * (limit / len(jobs))))
     DR4_dir = return_DR4_dir()
