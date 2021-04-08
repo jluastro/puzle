@@ -13,7 +13,7 @@ from microlens.jlu.model import PSPL_Phot_Par_Param1
 from puzle import db
 from puzle.models import Source
 from puzle.utils import return_data_dir, save_stacked_array
-from puzle.stats import calculate_eta_on_daily_avg
+from puzle.stats import calculate_eta_on_daily_avg, calculate_eta_on_daily_avg_residuals
 
 popsycle_base_folder = '/global/cfs/cdirs/uLens/PopSyCLE_runs/PopSyCLE_runs_v3_refined_events'
 
@@ -53,7 +53,7 @@ def gather_PopSyCLE_lb():
     return lb_arr
 
 
-def fetch_objects(ra, dec, radius, limit=None):
+def fetch_objects(ra, dec, radius, limit):
 
     print('Running query for sources')
     cone_filter = Source.cone_search(ra, dec, radius)
@@ -75,6 +75,8 @@ def fetch_objects(ra, dec, radius, limit=None):
             continue
         obj = zort_source.objects[np.argmax(n_days_arr)]
         objects.append(obj)
+        if len(objects) >= limit:
+            break
 
     return objects[:limit]
 
@@ -172,9 +174,11 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000,
 
             eta_residual = calculate_eta_on_daily_avg(obj_t, obj_mag)
             if np.sum(delta_m_min_cond) >= delta_m_min_cut:
-                lightcurves.append((obj_t, obj_mag_micro, obj_magerr))
-                metadata.append((t0, u0, tE, mag_src, piE_E, piE_N, b_sff, obj.ra, obj.dec, eta_residual))
-                break
+                eta_residual_daily = calculate_eta_on_daily_avg_residuals(obj_t, obj_mag_micro, obj_magerr)
+                if eta_residual_daily is not None and not np.isnan(eta_residual_daily):
+                    lightcurves.append((obj_t, obj_mag_micro, obj_magerr))
+                    metadata.append((t0, u0, tE, mag_src, piE_E, piE_N, b_sff, obj.ra, obj.dec, eta_residual))
+                    break
 
     return lightcurves, metadata
 
