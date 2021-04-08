@@ -66,10 +66,14 @@ def fetch_objects(ra, dec, radius, limit=None):
     objects = []
     for source in sources:
         zort_source = source.load_zort_source()
-        nepochs_arr = [obj.nepochs for obj in zort_source.objects]
-        if np.max(nepochs_arr) < 20:
+        # nepochs_arr = [obj.nepochs for obj in zort_source.objects]
+        n_days_arr = []
+        for obj in zort_source.objects:
+            n_days = len(np.unique(np.round(obj.lightcurve.hmjd)))
+            n_days_arr.append(n_days)
+        if np.max(n_days_arr) < 20:
             continue
-        obj = zort_source.objects[np.argmax(nepochs_arr)]
+        obj = zort_source.objects[np.argmax(n_days_arr)]
         objects.append(obj)
 
     return objects[:limit]
