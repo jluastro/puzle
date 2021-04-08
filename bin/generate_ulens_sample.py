@@ -238,7 +238,7 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000,
 
 
 def generate_random_lightcurves():
-    N_samples = 100
+    N_samples = 2000
     tE_min = 20
     delta_m_min = 0.1
     delta_m_min_cut = 3
