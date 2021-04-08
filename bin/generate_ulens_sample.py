@@ -139,7 +139,11 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000,
         obj_magerr = obj.lightcurve.magerr
         obj_flux = obj.lightcurve.flux
         obj_fluxerr = obj.lightcurve.fluxerr
-        t0_min, t0_max = np.min(obj_t), np.max(obj_t)
+        try:
+            t0_min, t0_max = np.min(obj_t), np.max(obj_t)
+        except ValueError:
+            print('Exiting sample %i due to ValueError on obj_t' % i)
+            continue
 
         attempts = 0
         while True:
