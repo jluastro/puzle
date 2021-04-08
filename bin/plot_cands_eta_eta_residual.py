@@ -211,10 +211,6 @@ def return_ulens_sample(eta_ulens_arr, eta_residual_ulens_arr, observable_arr,
         eta_residual_sample.append(eta_residual_ulens_arr[idx])
         data_sample.append(data[idx])
 
-        hmjd = data[idx][:, 0]
-        mag = data[idx][:, 1]
-        eta_new = calculate_eta_on_daily_avg(hmjd, mag)
-
     return eta_sample, eta_residual_sample, data_sample
 
 
