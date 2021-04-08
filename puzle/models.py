@@ -319,6 +319,11 @@ class SourceIngestJob(db.Model):
         self.dec_start = dec_start
         self.dec_end = dec_end
 
+    @hybrid_method
+    def cone_search(self, ra, dec, radius=2):
+        radius_deg = radius / 3600.
+        return func.q3c_radial_query(text('ra_start'), text('dec_start'), ra, dec, radius_deg)
+
 
 class StarIngestJob(db.Model):
     __table_args__ = {'schema': 'puzle'}
