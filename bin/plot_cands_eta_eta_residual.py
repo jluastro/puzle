@@ -5,7 +5,6 @@ plot_cands_eta_eta_residual.py
 
 import numpy as np
 from sqlalchemy.sql.expression import func
-from popsycle.synthetic import calc_magnification
 from puzle.models import Candidate, Source
 from puzle.stats import calculate_eta_on_daily_avg_residuals, \
     calculate_eta_on_daily_avg, average_xy_on_round_x
@@ -172,15 +171,14 @@ def plot_cands(title, eta_arr, eta_residual_arr, cands):
 
 
 def plot_cands_samples(eta_arr, eta_residual_arr):
-    regions_of_interst = [(0.95, 1, 2.45, 2.5),
+    regions_of_interest = [(0.95, 1, 2.45, 2.5),
                           (0.75, 0.8, 3, 3.05),
                           (0.95, 1, 1.95, 2),
                           (1.75, 2, 2, 2.5)]
-    title = 'region5'
-    region = (0, 0.5, 1.75, 2.5)
-    for i, region in enumerate(regions_of_interst):
+    regions_of_interest = [(1, 1.1, 2.35, 2.55) for _ in range(6)]
+    for i, region in enumerate(regions_of_interest):
         cands = return_cands_sample(*region)
-        title = f'region{i}'
+        title = str(i)
         plot_cands(title, eta_arr, eta_residual_arr, cands)
 
 
