@@ -301,7 +301,7 @@ def consolidate_lightcurves():
         for key in metadata:
             metadata_dct[key].extend(list(metadata[key]))
 
-    fname_total = f'{data_dir}.ulens_sample.total.npz'
+    fname_total = f'{data_dir}/ulens_sample.total.npz'
     save_stacked_array(fname_total, lightcurves_arr)
 
     fname_total = f'{data_dir}/ulens_sample_metadata.total.npz'
