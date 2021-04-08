@@ -58,6 +58,7 @@ def fetch_objects(ra, dec, radius, limit, n_days_min=50):
     print('Running query for sources')
     cone_filter = Source.cone_search(ra, dec, radius)
     query = db.session.query(Source).filter(cone_filter).order_by(func.random())
+    query = query.limit(limit * 100)
     sources = query.all()
 
     print('Extracting objects from sources')
