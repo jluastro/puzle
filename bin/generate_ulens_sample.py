@@ -12,7 +12,8 @@ from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle import db
 from puzle.models import Source
-from puzle.utils import return_data_dir, return_figures_dir, save_stacked_array
+from puzle.utils import return_data_dir, save_stacked_array
+from puzle.stats import calculate_eta_on_daily_avg
 
 popsycle_base_folder = '/global/cfs/cdirs/uLens/PopSyCLE_runs/PopSyCLE_runs_v3_refined_events'
 
@@ -160,9 +161,11 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000,
             obj_mag_micro, _ = fluxes_to_magnitudes(obj_flux_micro, obj_fluxerr)
             delta_m = obj_mag - obj_mag_micro
             delta_m_min_cond = delta_m >= delta_m_min
+
+            eta_residual = calculate_eta_on_daily_avg(obj_t, delta_m)
             if np.sum(delta_m_min_cond) >= delta_m_min_cut:
                 lightcurves.append((obj_t, obj_mag_micro, obj_magerr))
-                metadata.append((t0, u0, tE, mag_src, piE_E, piE_N, b_sff, obj.ra, obj.dec))
+                metadata.append((t0, u0, tE, mag_src, piE_E, piE_N, b_sff, obj.ra, obj.dec, eta_residual))
                 break
 
     return lightcurves, metadata
@@ -188,10 +191,11 @@ def generate_random_lightcurves():
     fname = '%s/ulens_sample.npz' % return_data_dir()
     save_stacked_array(fname, lightcurves_arr)
 
-    dtype = [('t0', float), ('u0', float), ('tE', float),
-             ('mag_src', float), ('piE_E', float),
-             ('piE_N', float), ('b_sff', float),
-             ('ra', float), ('dec', float)]
+    dtype = [('t0', float), ('u0', float),
+             ('tE', float), ('mag_src', float),
+             ('piE_E', float), ('piE_N', float),
+             ('b_sff', float), ('ra', float),
+             ('dec', float), ('eta_residual', float)]
     metadata_arr = np.array(metadata_arr, dtype=dtype)
     metadata_dct = {k: metadata_arr[k] for k in metadata_arr.dtype.names}
 

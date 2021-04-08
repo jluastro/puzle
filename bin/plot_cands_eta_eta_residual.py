@@ -120,3 +120,8 @@ def eta_ulens_arrs():
                 observable_arr.append(False)
 
     return eta_ulens_arr, eta_residual_ulens_arr, observable_arr
+
+
+def plot_eta_eta_residual():
+    eta_arr, eta_residual_arr = return_eta_arrs()
+    eta_ulens_arr, eta_residual_ulens_arr, observable_arr = eta_ulens_arrs()
