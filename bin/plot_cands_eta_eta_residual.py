@@ -227,7 +227,7 @@ def plot_ulens_samples(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actua
                                                                       region[2],
                                                                       region[3]))
             continue
-        title = f'region{i}'
+        title = str(i)
         plot_ulens(title, eta_ulens_obs_arr, eta_residual_ulens_obs_arr,
                    eta_sample, eta_residual_sample, data_sample)
 
