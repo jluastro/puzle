@@ -254,7 +254,7 @@ def generate_random_lightcurves():
         rank = 0
         size = 1
 
-    my_lb_arr = np.array_split(lb_arr, size)[rank][:2]
+    my_lb_arr = np.array_split(lb_arr, size)[rank]
 
     lightcurves_arr = []
     metadata_arr = []
