@@ -48,10 +48,10 @@ def test_for_three_consecutive_decreases(arr):
 
 
 def return_eta_ulens_arrs():
-    fname = '%s/ulens_sample.npz' % return_data_dir()
+    fname = '%s/ulens_sample.total.npz' % return_data_dir()
     data = load_stacked_array(fname)
 
-    fname = '%s/ulens_sample_metadata.npz' % return_data_dir()
+    fname = '%s/ulens_sample_metadata.total.npz' % return_data_dir()
     metadata = np.load(fname)
 
     eta_ulens_arr = []
