@@ -1,18 +1,18 @@
 import os
 import glob
 import numpy as np
+from collections import defaultdict
 from scipy.stats import expon
 from astropy.table import Table, vstack
 from astropy.coordinates import SkyCoord
 import astropy.units as u
-from sqlalchemy.sql.expression import func
 
 from zort.photometry import fluxes_to_magnitudes
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle import db
-from puzle.models import Source
-from puzle.utils import return_data_dir, save_stacked_array
+from puzle.models import Source, SourceIngestJob
+from puzle.utils import return_data_dir, save_stacked_array, return_DR4_dir, load_stacked_array
 from puzle.stats import calculate_eta_on_daily_avg, calculate_eta_on_daily_avg_residuals
 
 popsycle_base_folder = '/global/cfs/cdirs/uLens/PopSyCLE_runs/PopSyCLE_runs_v3_refined_events'
@@ -44,6 +44,7 @@ def gather_PopSyCLE_refined_events():
 
 def gather_PopSyCLE_lb():
     fis = glob.glob(f'{popsycle_base_folder}/*fits')
+    fis.sort()
     lb_arr = []
     for fi in fis:
         lb = os.path.basename(fi).split('_')
@@ -53,30 +54,83 @@ def gather_PopSyCLE_lb():
     return lb_arr
 
 
-def fetch_objects(ra, dec, radius, limit, n_days_min=50):
+def _parse_object_int(attr):
+    if attr == 'None':
+        return None
+    else:
+        return int(attr)
 
-    print('Running query for sources')
-    cone_filter = Source.cone_search(ra, dec, radius)
-    query = db.session.query(Source).filter(cone_filter).order_by(func.random())
-    query = query.limit(limit * 100)
-    sources = query.all()
 
-    print('Extracting objects from sources')
+def csv_line_to_source(line, lightcurve_file_pointers):
+    attrs = line.replace('\n', '').split(',')
+
+    filename = attrs[7]
+    if filename in lightcurve_file_pointers:
+        lightcurve_file_pointer = lightcurve_file_pointers[filename]
+    else:
+        lightcurve_file_pointer = open(filename, 'r')
+        lightcurve_file_pointers[filename] = lightcurve_file_pointer
+
+    source = Source(id=attrs[0],
+                    object_id_g=_parse_object_int(attrs[1]),
+                    object_id_r=_parse_object_int(attrs[2]),
+                    object_id_i=_parse_object_int(attrs[3]),
+                    lightcurve_position_g=_parse_object_int(attrs[4]),
+                    lightcurve_position_r=_parse_object_int(attrs[5]),
+                    lightcurve_position_i=_parse_object_int(attrs[6]),
+                    lightcurve_filename=attrs[7],
+                    ra=float(attrs[8]),
+                    dec=float(attrs[9]),
+                    ingest_job_id=int(attrs[10]),
+                    lightcurve_file_pointer=lightcurve_file_pointer)
+    return source
+
+
+def fetch_objects(ra, dec, radius, limit, n_days_min=20):
+    cone_filter = SourceIngestJob.cone_search(ra, dec, radius)
+    jobs = db.session.query(SourceIngestJob).filter(cone_filter).all()
+
+    n_samples_per_source = max(1, int(10 * (limit / len(jobs))))
+    DR4_dir = return_DR4_dir()
+
+    lightcurve_file_pointers = {}
     objects = []
-    for source in sources:
-        zort_source = source.load_zort_source()
-        n_days_arr = []
-        for obj in zort_source.objects:
-            n_days = len(np.unique(np.round(obj.lightcurve.hmjd)))
-            n_days_arr.append(n_days)
-        if np.max(n_days_arr) < n_days_min:
+    for i, job in enumerate(jobs):
+        if i % 10 == 0:
+            print('Processing job %i/%i | %i objects' % (i, len(jobs), len(objects)))
+        source_job_id = job.id
+        dir = '%s/sources_%s' % (DR4_dir, str(source_job_id)[:3])
+        fname = f'{dir}/sources.{source_job_id:06}.txt'
+        if not os.path.exists(fname):
             continue
-        obj = zort_source.objects[np.argmax(n_days_arr)]
-        objects.append(obj)
+
+        lines = open(fname, 'r').readlines()[1:]
+        if len(lines) == 0:
+            continue
+
+        size = min(len(lines), n_samples_per_source)
+        idx_arr = np.random.choice(np.arange(len(lines)),
+                                   size=size,
+                                   replace=False)
+        for idx in idx_arr:
+            source = csv_line_to_source(lines[idx], lightcurve_file_pointers)
+            zort_source = source.load_zort_source()
+            n_days_arr = []
+            for obj in zort_source.objects:
+                n_days = len(np.unique(np.round(obj.lightcurve.hmjd)))
+                n_days_arr.append(n_days)
+            if np.max(n_days_arr) < n_days_min:
+                continue
+            obj = zort_source.objects[np.argmax(n_days_arr)]
+            objects.append(obj)
+
         if len(objects) >= limit:
             break
 
-    return objects[:limit]
+    for file in lightcurve_file_pointers.values():
+        file.close()
+
+    return objects
 
 
 def calculate_delta_m(u0, b_sff):
@@ -92,7 +146,8 @@ def calculate_delta_m(u0, b_sff):
 
 
 def generate_random_lightcurves_lb(l, b, N_samples=1000,
-                                   tE_min=20, delta_m_min=0.1, delta_m_min_cut=3):
+                                   tE_min=20, delta_m_min=0.1, delta_m_min_cut=3,
+                                   n_days_min=20):
     popsycle_fname = f'{popsycle_base_folder}/l{l:.1f}_b{b:.1f}_refined_events_ztf_r_Damineli16.fits'
     popsycle_catalog = Table.read(popsycle_fname, format='fits')
 
@@ -123,7 +178,8 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000,
     ra, dec = coord.icrs.ra.value, coord.icrs.dec.value
     radius = np.sqrt(47 / np.pi) * 3600.
 
-    objects = fetch_objects(ra, dec, radius, limit=N_samples)
+    objects = fetch_objects(ra, dec, radius,
+                            limit=N_samples, n_days_min=n_days_min)
     lightcurves = []
     metadata = []
 
@@ -186,19 +242,33 @@ def generate_random_lightcurves():
     tE_min = 20
     delta_m_min = 0.1
     delta_m_min_cut = 3
+    n_days_min = 20
     lb_arr = gather_PopSyCLE_lb()
+
+    if 'SLURMD_NODENAME' in os.environ:
+        from mpi4py import MPI
+        comm = MPI.COMM_WORLD
+        rank = comm.rank
+        size = comm.size
+    else:
+        rank = 0
+        size = 1
+
+    my_lb_arr = np.array_split(lb_arr, size)[rank][:2]
 
     lightcurves_arr = []
     metadata_arr = []
-    for i, (l, b) in enumerate(lb_arr):
-        print('Processing (l, b) = (%.2f, %.2f) |  %i / %i' % (l, b, i, len(lb_arr)))
+    for i, (l, b) in enumerate(my_lb_arr):
+        print('Processing (l, b) = (%.2f, %.2f) |  %i / %i' % (l, b, i, len(my_lb_arr)))
         lightcurves, metadata = generate_random_lightcurves_lb(l, b,
                                                                N_samples=N_samples, tE_min=tE_min,
-                                                               delta_m_min=delta_m_min, delta_m_min_cut=delta_m_min_cut)
+                                                               delta_m_min=delta_m_min, delta_m_min_cut=delta_m_min_cut,
+                                                               n_days_min=n_days_min)
         lightcurves_arr += lightcurves
         metadata_arr += metadata
 
-    fname = '%s/ulens_sample.npz' % return_data_dir()
+    data_dir = return_data_dir()
+    fname = f'{data_dir}/ulens_sample.{rank:02d}.npz'
     save_stacked_array(fname, lightcurves_arr)
 
     dtype = [('t0', float), ('u0', float),
@@ -209,8 +279,32 @@ def generate_random_lightcurves():
     metadata_arr = np.array(metadata_arr, dtype=dtype)
     metadata_dct = {k: metadata_arr[k] for k in metadata_arr.dtype.names}
 
-    fname = '%s/ulens_sample_metadata.npz' % return_data_dir()
+    fname = f'{data_dir}/ulens_sample_metadata.{rank:02d}.npz'
     np.savez(fname, **metadata_dct)
+
+
+def consolidate_lightcurves():
+    data_dir = return_data_dir()
+    ulens_sample_fnames = glob.glob(f'{data_dir}/ulens_sample.??.npz')
+    ulens_sample_fnames.sort()
+
+    lightcurves_arr = []
+    metadata_dct = defaultdict(list)
+    for fname in ulens_sample_fnames:
+        data = load_stacked_array(fname)
+        for d in data:
+            lightcurves_arr.append((d[:,0], d[:,1], d[:,2]))
+
+        fname_metadata = fname.replace('sample.', 'sample_metadata.')
+        metadata = np.load(fname_metadata)
+        for key in metadata:
+            metadata_dct[key].extend(list(metadata[key]))
+
+    fname_total = f'{data_dir}.ulens_sample.total.npz'
+    save_stacked_array(fname_total, lightcurves_arr)
+
+    fname_total = f'{data_dir}/ulens_sample_metadata.total.npz'
+    np.savez(fname_total, **metadata_dct)
 
 
 if __name__ == '__main__':
