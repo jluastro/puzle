@@ -130,7 +130,7 @@ def fetch_objects(ra, dec, radius, limit, n_days_min=20):
     for file in lightcurve_file_pointers.values():
         file.close()
 
-    return objects
+    return objects[:limit]
 
 
 def calculate_delta_m(u0, b_sff):
