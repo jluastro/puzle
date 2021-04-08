@@ -345,7 +345,8 @@ def construct_eta_residual_idxs_dct(stars_and_sources, eta_threshold_high_dct, r
                 magerr = obj.lightcurve.magerr
                 eta_residual, fit_data = calculate_eta_on_daily_avg_residuals(hmjd, mag, magerr,
                                                                               return_fit_data=True)
-                if eta_residual is not None and eta_residual > eta_threshold:
+                # if eta_residual is not None and eta_residual > eta_threshold:
+                if eta_residual is not None:
                     eta_residual_idxs.append((i, j, k))
                     obj_key = (i, j, k)
                     obj_data[obj_key] = obj_data[obj_key]._replace(eta_residual=eta_residual)
