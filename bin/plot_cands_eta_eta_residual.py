@@ -117,34 +117,6 @@ def return_observable_arr():
     return observable_arr
 
 
-def return_ulens_sample(eta_ulens_arr, eta_residual_ulens_arr,
-                        eta_low, eta_high, eta_residual_low, eta_residual_high,
-                        N_sample=5):
-    fname = '%s/ulens_sample.npz' % return_data_dir()
-    data = load_stacked_array(fname)
-
-    cond = eta_ulens_arr >= eta_low
-    cond *= eta_ulens_arr <= eta_high
-    cond *= eta_residual_ulens_arr >= eta_residual_low
-    cond *= eta_residual_ulens_arr <= eta_residual_high
-
-    if np.sum(cond) == 0:
-        return None, None, None
-
-    idx_sample = np.random.choice(np.where(cond == True)[0],
-                                  size=min(N_sample, np.sum(cond)), replace=False)
-
-    eta_sample = []
-    eta_residual_sample = []
-    data_sample = []
-    for idx in idx_sample:
-        eta_sample.append(eta_ulens_arr[idx])
-        eta_residual_sample.append(eta_residual_ulens_arr[idx])
-        data_sample.append(data[idx])
-
-    return eta_sample, eta_residual_sample, data_sample
-
-
 def plot_cands(title, eta_arr, eta_residual_arr, cands):
     fig, ax = plt.subplots(3, 2, figsize=(10, 10))
     ax = ax.flatten()
@@ -182,18 +154,22 @@ def plot_cands_samples(eta_arr, eta_residual_arr):
         plot_cands(title, eta_arr, eta_residual_arr, cands)
 
 
-def plot_ulens(title, eta_ulens_arr, eta_residual_ulens_arr, eta_sample, eta_residual_sample, data_sample):
+def plot_ulens(title, eta_ulens_arr, eta_residual_ulens_arr, observable_arr,
+               eta_sample, eta_residual_sample, data_sample):
+    cond = observable_arr == True
     fig, ax = plt.subplots(3, 2, figsize=(10, 10))
     ax = ax.flatten()
     for a in ax: a.clear()
-    ax[0].hexbin(eta_ulens_arr, eta_residual_ulens_arr,
+    ax[0].hexbin(eta_ulens_arr[cond], eta_residual_ulens_arr[cond],
                  mincnt=1, gridsize=10)
     ax[0].set_xlabel('eta', fontsize=10)
     ax[0].set_ylabel('eta_residual', fontsize=10)
-    for i, (data, eta, eta_residual) in enumerate(zip(data_sample, eta_sample, eta_residual_sample), 1):
-        hmjd = data[:, 0]
-        mag = data[:, 1]
+    for i, (d, eta, eta_residual) in enumerate(zip(data_sample, eta_sample, eta_residual_sample), 1):
+        hmjd = d[:, 0]
+        mag = d[:, 1]
+        eta_new = calculate_eta_on_daily_avg(hmjd, mag)
         hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
+        ax[i].set_title('eta = %.3f | %.3f' % (eta_sample[i-1], eta_new))
         ax[i].scatter(hmjd, mag, color='b', s=5)
         ax[i].scatter(hmjd_round, mag_round, color='g', s=5)
         ax[0].scatter(eta, eta_residual, color='r', s=1)
@@ -209,18 +185,46 @@ def plot_ulens(title, eta_ulens_arr, eta_residual_ulens_arr, eta_sample, eta_res
     print('-- %s saved' % fname)
 
 
+def return_ulens_sample(eta_ulens_arr, eta_residual_ulens_arr, observable_arr,
+                        eta_low, eta_high, eta_residual_low, eta_residual_high,
+                        N_sample=5):
+    fname = '%s/ulens_sample.npz' % return_data_dir()
+    data = load_stacked_array(fname)
+
+    cond = observable_arr = True
+    cond *= eta_ulens_arr >= eta_low
+    cond *= eta_ulens_arr <= eta_high
+    cond *= eta_residual_ulens_arr >= eta_residual_low
+    cond *= eta_residual_ulens_arr <= eta_residual_high
+
+    if np.sum(cond) == 0:
+        return None, None, None
+
+    idx_sample = np.random.choice(np.where(cond == True)[0],
+                                  size=min(N_sample, np.sum(cond)), replace=False)
+
+    eta_sample = []
+    eta_residual_sample = []
+    data_sample = []
+    for idx in idx_sample:
+        eta_sample.append(eta_ulens_arr[idx])
+        eta_residual_sample.append(eta_residual_ulens_arr[idx])
+        data_sample.append(data[idx])
+
+        hmjd = data[idx][:, 0]
+        mag = data[idx][:, 1]
+        eta_new = calculate_eta_on_daily_avg(hmjd, mag)
+
+    return eta_sample, eta_residual_sample, data_sample
+
+
 def plot_ulens_samples(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr):
-    cond = observable_arr == True
-    eta_ulens_obs_arr = eta_ulens_arr[cond]
-    eta_residual_ulens_obs_arr = eta_residual_ulens_arr[cond]
-    regions_of_interst = [(0, 0.25, 1.75, 2.25),
+    regions_of_interst = [(0.1, 0.3, 1.5, 2),
                           (1.5, 1.75, 1.75, 2.25),
-                          (0, 0.25, 0, 1),
-                          (3, 4, 3, 4),
-                          (0.75, 1, 2.5, 4)]
+                          (0, 0.25, 0, 1)]
     for i, region in enumerate(regions_of_interst):
         eta_sample, eta_residual_sample, data_sample = return_ulens_sample(
-            eta_ulens_obs_arr, eta_residual_ulens_obs_arr, *region)
+            eta_ulens_arr, eta_residual_ulens_arr, observable_arr, *region)
         if eta_sample is None:
             print('No samples in region: (%.2f, %.2f, %.2f, %.2f)' % (region[0],
                                                                       region[1],
@@ -228,7 +232,7 @@ def plot_ulens_samples(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actua
                                                                       region[3]))
             continue
         title = str(i)
-        plot_ulens(title, eta_ulens_obs_arr, eta_residual_ulens_obs_arr,
+        plot_ulens(title, eta_ulens_arr, eta_residual_ulens_arr, observable_arr,
                    eta_sample, eta_residual_sample, data_sample)
 
 
