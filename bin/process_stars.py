@@ -156,7 +156,7 @@ def fetch_stars_and_sources(source_job_id):
     return stars_and_sources
 
 
-def construct_eta_dct(stars_and_sources, job_stats, obj_data, n_days_min=20):
+def construct_eta_dct(stars_and_sources, job_stats, obj_data, n_days_min=50):
     num_stars = 0
     num_objs = 0
     num_objs_pass_n_days = 0
@@ -199,7 +199,7 @@ def construct_eta_dct(stars_and_sources, job_stats, obj_data, n_days_min=20):
 
 
 def construct_eta_idxs_dct(eta_dct, idxs_dct, n_days_dct, job_stats, obj_data,
-                           n_days_min=20, num_epochs_splits=3):
+                           n_days_min=50, num_epochs_splits=3):
     epoch_edges_dct = {}
     eta_threshold_low_dct = defaultdict(list)
     eta_threshold_high_dct = defaultdict(list)
@@ -459,7 +459,7 @@ def assemble_candidates(stars_and_sources, eta_residual_idxs_dct, obj_data):
 
 
 def filter_stars_to_candidates(source_job_id, stars_and_sources,
-                               n_days_min=20, num_epochs_splits=3):
+                               n_days_min=50, num_epochs_splits=3):
     job_stats = {}
     obj_data = {}
     logger.info(f'Job {source_job_id}: Calculating eta')
