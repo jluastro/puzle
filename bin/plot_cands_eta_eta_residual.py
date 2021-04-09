@@ -175,11 +175,6 @@ def plot_eta_eta_residual(eta_arr, eta_residual_arr, eta_ulens_arr, eta_residual
     for a in ax: a.clear()
     ax[0].set_title('cands')
     ax[0].hexbin(eta_arr, eta_residual_arr, mincnt=1, gridsize=25)
-    ax[0].scatter(eta_ulens_arr, eta_residual_ulens_arr,
-                  color='r', s=2, alpha=.1, label='ulens')
-    ax[0].scatter(eta_ulens_arr[cond_obs], eta_residual_actual_ulens_arr[cond_obs],
-                  color='k', s=2, alpha=.1, label='ulens observable')
-    ax[0].legend(markerscale=3)
     ax[1].set_title('ulens total')
     ax[1].hexbin(eta_ulens_arr, eta_residual_ulens_arr,
                  mincnt=1, gridsize=25)
