@@ -325,23 +325,7 @@ def calculate_eta_values():
     data_dir = return_data_dir()
     fname = f'{data_dir}/ulens_sample.total.npz'
     data = load_stacked_array(fname)
-    data = data[:6]
 
-    if rank == 0:
-        test_etas = []
-        test_eta_residuals = []
-        for i, d in enumerate(data):
-            hmjd = d[:, 0]
-            mag = d[:, 1]
-            magerr = d[:, 2]
-
-            eta_daily = calculate_eta_on_daily_avg(hmjd, mag)
-            eta_residual_daily = calculate_eta_on_daily_avg_residuals(hmjd, mag, magerr)
-            test_etas.append(eta_daily)
-            test_eta_residuals.append(eta_residual_daily)
-        print('KEY: ', test_etas)
-
-    my_idx = np.array_split(np.arange(len(data)), size)[rank]
     my_data = np.array_split(data, size)[rank]
     my_etas = []
     my_eta_residuals = []
@@ -355,19 +339,14 @@ def calculate_eta_values():
         my_etas.append(eta_daily)
         my_eta_residuals.append(eta_residual_daily)
 
-    print(rank, my_etas)
     total_etas = comm.gather(my_etas, root=0)
     total_eta_residuals = comm.gather(my_eta_residuals, root=0)
-    total_idx = comm.gather(my_idx, root=0)
 
     if rank == 0:
         etas = list(itertools.chain(*total_etas))
         eta_residuals = list(itertools.chain(*total_eta_residuals))
-        idxs = list(itertools.chain(*total_idx))
-        print(rank, etas)
-        print(rank, idxs)
         fname = f'{data_dir}/ulens_sample_etas.total.npz'
-        np.savez(fname, eta=total_etas[0], eta_residual=total_eta_residuals[0])
+        np.savez(fname, eta=etas, eta_residual=eta_residuals)
 
 
 if __name__ == '__main__':
