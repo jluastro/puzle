@@ -152,7 +152,8 @@ def return_ulens_sample(eta_ulens_arr, eta_residual_ulens_arr, observable_arr,
 def plot_ulens_samples(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr):
     regions_of_interst = [(0.1, 0.3, 1.5, 2),
                           (1.5, 1.75, 1.75, 2.25),
-                          (0, 0.25, 0, 1)]
+                          (0, 0.25, 0, 1),
+                          (0.5, 1.0, 0.5, 1.0)]
     for i, region in enumerate(regions_of_interst):
         eta_sample, eta_residual_sample, data_sample = return_ulens_sample(
             eta_ulens_arr, eta_residual_ulens_arr, observable_arr, *region)
