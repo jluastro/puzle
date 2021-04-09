@@ -172,6 +172,7 @@ def plot_eta_eta_residual(eta_arr, eta_residual_arr, eta_ulens_arr, eta_residual
 
     cond_obs = observable_arr == True
 
+    # linear-linear
     fig, ax = plt.subplots(3, 1, figsize=(10, 10))
     for a in ax: a.clear()
     ax[0].set_title('cands')
@@ -190,12 +191,68 @@ def plot_eta_eta_residual(eta_arr, eta_residual_arr, eta_ulens_arr, eta_residual
         a.set_xlim((xmin, xmax))
         a.set_ylim((ymin, ymax))
         a.grid(True)
-        a.set_xlabel('eta', fontsize=10)
-        a.set_ylabel('eta_residual', fontsize=10)
+        a.set_xlabel('log(eta)', fontsize=10)
+        a.set_ylabel('log(eta_residual)', fontsize=10)
     fig.tight_layout()
 
     figures_dir = return_figures_dir()
     fname = f'{figures_dir}/ulens_cands_eta_eta_residual.png'
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    print('-- %s saved' % fname)
+
+    # log-linear
+    fig, ax = plt.subplots(3, 1, figsize=(10, 10))
+    for a in ax: a.clear()
+    ax[0].set_title('cands')
+    ax[0].hexbin(np.log10(eta_arr), eta_residual_arr, mincnt=1, gridsize=25)
+    ax[1].set_title('ulens total')
+    ax[1].hexbin(np.log10(eta_ulens_arr), eta_residual_ulens_arr,
+                 mincnt=1, gridsize=25)
+    ax[2].set_title('ulens observable')
+    ax[2].hexbin(np.log10(eta_ulens_arr[cond_obs]), eta_residual_ulens_arr[cond_obs],
+                 mincnt=1, gridsize=25)
+    xmin = min([a.get_xlim()[0] for a in ax])
+    xmax = max([a.get_xlim()[1] for a in ax])
+    ymin = min([a.get_ylim()[0] for a in ax])
+    ymax = max([a.get_ylim()[1] for a in ax])
+    for a in ax:
+        a.set_xlim((xmin, xmax))
+        a.set_ylim((ymin, ymax))
+        a.grid(True)
+        a.set_xlabel('log(eta)', fontsize=10)
+        a.set_ylabel('eta_residual', fontsize=10)
+    fig.tight_layout()
+
+    figures_dir = return_figures_dir()
+    fname = f'{figures_dir}/ulens_cands_log-eta_eta_residual.png'
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    print('-- %s saved' % fname)
+
+    # log-log
+    fig, ax = plt.subplots(3, 1, figsize=(10, 10))
+    for a in ax: a.clear()
+    ax[0].set_title('cands')
+    ax[0].hexbin(np.log10(eta_arr), np.log10(eta_residual_arr), mincnt=1, gridsize=25)
+    ax[1].set_title('ulens total')
+    ax[1].hexbin(np.log10(eta_ulens_arr), np.log10(eta_residual_ulens_arr),
+                 mincnt=1, gridsize=25)
+    ax[2].set_title('ulens observable')
+    ax[2].hexbin(np.log10(eta_ulens_arr[cond_obs]), np.log10(eta_residual_ulens_arr[cond_obs]),
+                 mincnt=1, gridsize=25)
+    xmin = min([a.get_xlim()[0] for a in ax])
+    xmax = max([a.get_xlim()[1] for a in ax])
+    ymin = min([a.get_ylim()[0] for a in ax])
+    ymax = max([a.get_ylim()[1] for a in ax])
+    for a in ax:
+        a.set_xlim((xmin, xmax))
+        a.set_ylim((ymin, ymax))
+        a.grid(True)
+        a.set_xlabel('log(eta)', fontsize=10)
+        a.set_ylabel('log(eta_residual)', fontsize=10)
+    fig.tight_layout()
+
+    figures_dir = return_figures_dir()
+    fname = f'{figures_dir}/ulens_cands_log-eta_log-eta_residual.png'
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
 
