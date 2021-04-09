@@ -307,6 +307,47 @@ def consolidate_lightcurves():
     fname_total = f'{data_dir}/ulens_sample_metadata.total.npz'
     np.savez(fname_total, **metadata_dct)
 
+    num_samples = len(lightcurves_arr)
+    print(f'{num_samples} Samples in Total')
+
+
+def calculate_eta_values():
+    if 'SLURMD_NODENAME' in os.environ:
+        from mpi4py import MPI
+        comm = MPI.COMM_WORLD
+        rank = comm.rank
+        size = comm.size
+    else:
+        rank = 0
+        size = 1
+
+    data_dir = return_data_dir()
+    fname = f'{data_dir}/ulens_sample.total.npz'
+    data = load_stacked_array(fname)
+    data = data[:4]
+
+    my_data = np.array_split(data, size)[rank]
+    my_etas = []
+    my_eta_residuals = []
+    for i, d in enumerate(my_data):
+        hmjd = d[:, 0]
+        mag = d[:, 1]
+        magerr = d[:, 2]
+
+        eta_daily = calculate_eta_on_daily_avg(hmjd, mag)
+        eta_residual_daily = calculate_eta_on_daily_avg_residuals(hmjd, mag, magerr)
+        my_etas.append(eta_daily)
+        my_eta_residuals.append(eta_residual_daily)
+
+    print(rank, my_etas)
+    total_etas = comm.gather(my_etas, root=0)
+    total_eta_residuals = comm.gather(my_eta_residuals, root=0)
+
+    if rank == 0:
+        print(rank, total_etas)
+        fname = f'{data_dir}/ulens_sample_etas.total.npz'
+        np.savez(fname, eta=total_etas, eta_residual=total_eta_residuals)
+
 
 if __name__ == '__main__':
-    generate_random_lightcurves()
+    calculate_eta_values()

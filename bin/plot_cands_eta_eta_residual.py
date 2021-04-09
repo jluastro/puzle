@@ -59,7 +59,7 @@ def return_eta_ulens_arrs():
     eta_residual_actual_ulens_arr = []
     for i, d in enumerate(data):
         if i % 100 == 0:
-            print('Loading candidate %i / %i' % (i, len(data)))
+            print('Loading ulens %i / %i' % (i, len(data)))
         hmjd = d[:, 0]
         mag = d[:, 1]
         magerr = d[:, 2]
