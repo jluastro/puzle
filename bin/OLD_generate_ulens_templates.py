@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """
-generate_ulens_templates.py
+OLD_generate_ulens_templates.py
 """
 
 import matplotlib.pyplot as plt

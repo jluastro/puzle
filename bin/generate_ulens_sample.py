@@ -245,7 +245,7 @@ def generate_random_lightcurves():
     tE_min = 20
     delta_m_min = 0.1
     delta_m_min_cut = 3
-    n_days_min = 20
+    n_days_min = 50
     lb_arr = gather_PopSyCLE_lb()
 
     if 'SLURMD_NODENAME' in os.environ:
