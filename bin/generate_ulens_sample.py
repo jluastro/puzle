@@ -15,7 +15,8 @@ from microlens.jlu.model import PSPL_Phot_Par_Param1
 from puzle import db
 from puzle.models import Source, SourceIngestJob
 from puzle.utils import return_data_dir, save_stacked_array, return_DR4_dir, load_stacked_array
-from puzle.stats import calculate_eta_on_daily_avg, calculate_eta_on_daily_avg_residuals
+from puzle.stats import calculate_eta_on_daily_avg, \
+    calculate_eta_on_daily_avg_residuals, average_xy_on_round_x
 
 popsycle_base_folder = '/global/cfs/cdirs/uLens/PopSyCLE_runs/PopSyCLE_runs_v3_refined_events'
 
@@ -313,6 +314,16 @@ def consolidate_lightcurves():
     print(f'{num_samples} Samples in Total')
 
 
+
+def strictly_decreasing(L):
+    return all(x>y for x, y in zip(L, L[1:]))
+
+
+def test_for_three_consecutive_decreases(arr):
+    return any([strictly_decreasing(arr[i:i+3])
+                for i in range(len(arr)-2)])
+
+
 def calculate_eta_values():
     # run consolidate lightcurves first
 
@@ -332,6 +343,7 @@ def calculate_eta_values():
     my_data = np.array_split(data, size)[rank]
     my_etas = []
     my_eta_residuals = []
+    my_observables = []
     for i, d in enumerate(my_data):
         hmjd = d[:, 0]
         mag = d[:, 1]
@@ -342,14 +354,38 @@ def calculate_eta_values():
         my_etas.append(eta_daily)
         my_eta_residuals.append(eta_residual_daily)
 
+        hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
+        cond_decreasing = test_for_three_consecutive_decreases(mag_round)
+        #
+        # zp = 21.2477
+        # A = np.array(calc_magnification(metadata['u0'][i]))
+        # factor_ZP = 10 ** (zp / 2.5)
+        # f_S = 10 ** ((metadata['mag_src'][i] - zp) / (-2.5))
+        # f_tot = f_S / metadata['b_sff'][i]
+        # lhs = (A - 1) * f_S
+        # rhs = 3 * np.sqrt(f_tot / factor_ZP)
+        # cond_bump = lhs > rhs
+
+        median = np.median(mag_round)
+        std = np.std(mag_round)
+        cond_three_sigma = np.sum(mag_round <= median - 3 * std) > 3
+
+        if cond_decreasing and cond_three_sigma:
+            my_observables.append(True)
+        else:
+            my_observables.append(False)
+
     total_etas = comm.gather(my_etas, root=0)
     total_eta_residuals = comm.gather(my_eta_residuals, root=0)
+    total_observables = comm.gather(my_observables, root=0)
 
     if rank == 0:
         etas = list(itertools.chain(*total_etas))
         eta_residuals = list(itertools.chain(*total_eta_residuals))
+        observables = list(itertools.chain(*total_observables))
         fname = f'{data_dir}/ulens_sample_etas.total.npz'
-        np.savez(fname, eta=etas, eta_residual=eta_residuals)
+        np.savez(fname, eta=etas,
+                 eta_residual=eta_residuals, observable=observables)
 
 
 if __name__ == '__main__':
