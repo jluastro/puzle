@@ -7,6 +7,7 @@ from astropy.table import Table, vstack
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 from sqlalchemy.sql.expression import func
+import itertools
 
 from zort.photometry import fluxes_to_magnitudes
 from microlens.jlu.model import PSPL_Phot_Par_Param1
@@ -344,9 +345,11 @@ def calculate_eta_values():
     total_eta_residuals = comm.gather(my_eta_residuals, root=0)
 
     if rank == 0:
-        print(rank, total_etas)
+        etas = list(itertools.chain(*total_etas))
+        eta_residuals = list(itertools.chain(*total_eta_residuals))
+        print(rank, etas)
         fname = f'{data_dir}/ulens_sample_etas.total.npz'
-        np.savez(fname, eta=total_etas, eta_residual=total_eta_residuals)
+        np.savez(fname, eta=total_etas[0], eta_residual=total_eta_residuals[0])
 
 
 if __name__ == '__main__':
