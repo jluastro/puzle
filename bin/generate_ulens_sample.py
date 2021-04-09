@@ -286,6 +286,7 @@ def generate_random_lightcurves():
 
 
 def consolidate_lightcurves():
+    # run generate_random_lightcurves
     data_dir = return_data_dir()
     ulens_sample_fnames = glob.glob(f'{data_dir}/ulens_sample.??.npz')
     ulens_sample_fnames.sort()
@@ -313,6 +314,8 @@ def consolidate_lightcurves():
 
 
 def calculate_eta_values():
+    # run consolidate lightcurves first
+
     if 'SLURMD_NODENAME' in os.environ:
         from mpi4py import MPI
         comm = MPI.COMM_WORLD
@@ -350,4 +353,6 @@ def calculate_eta_values():
 
 
 if __name__ == '__main__':
+    # generate_random_lightcurves()
+    # consolidate_lightcurves()
     calculate_eta_values()
