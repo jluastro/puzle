@@ -8,7 +8,7 @@ import os
 import pickle
 import numpy as np
 from puzle.models import SourceIngestJob, StarProcessJob
-from puzle.utils import return_figures_dir, return_DR4_dir, return_data_dir
+from puzle.utils import return_figures_dir, return_DR5_dir, return_data_dir
 from puzle import db
 
 
@@ -47,7 +47,7 @@ def save_star_process_progress(process_progress):
 
 
 def plot_star_process_progress():
-    DR4_dir = return_DR4_dir()
+    DR5_dir = return_DR5_dir()
     jobs = db.session.query(SourceIngestJob, StarProcessJob).\
         filter(SourceIngestJob.id == StarProcessJob.source_ingest_job_id).\
         filter(StarProcessJob.finished == True).all()
@@ -69,7 +69,7 @@ def plot_star_process_progress():
         else:
             ra = (job[0].ra_start + job[0].ra_end) / 2
             dec = (job[0].dec_start + job[0].dec_end) / 2
-            dir = '%s/stars_%s' % (DR4_dir, str(job_id)[:3])
+            dir = '%s/stars_%s' % (DR5_dir, str(job_id)[:3])
             fname = f'{dir}/stars.{job_id:06}.txt'
             N_stars = file_len(fname)
             star_process_progress[job_id] = (ra, dec, N_stars)

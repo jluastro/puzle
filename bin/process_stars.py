@@ -11,7 +11,7 @@ from collections import defaultdict, namedtuple
 import pickle
 
 from puzle.models import Source, StarIngestJob, Star, StarProcessJob, Candidate
-from puzle.utils import fetch_job_enddate, return_DR4_dir, get_logger
+from puzle.utils import fetch_job_enddate, return_DR5_dir, get_logger
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle.stats import calculate_eta_on_daily_avg, \
     RF_THRESHOLD, calculate_eta_on_daily_avg_residuals
@@ -114,8 +114,8 @@ def csv_line_to_source(line, lightcurve_file_pointers):
 
 def fetch_stars_and_sources(source_job_id):
 
-    DR4_dir = return_DR4_dir()
-    dir = '%s/stars_%s' % (DR4_dir, str(source_job_id)[:3])
+    DR5_dir = return_DR5_dir()
+    dir = '%s/stars_%s' % (DR5_dir, str(source_job_id)[:3])
 
     if not os.path.exists(dir):
         logger.error('Source directory missing!')

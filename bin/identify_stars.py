@@ -11,7 +11,7 @@ from zort.radec import return_shifted_ra
 from scipy.spatial import cKDTree
 
 from puzle.models import Source, SourceIngestJob, Star, StarIngestJob
-from puzle.utils import fetch_job_enddate, return_DR4_dir, \
+from puzle.utils import fetch_job_enddate, return_DR5_dir, \
     lightcurve_file_to_field_id, get_logger
 from puzle.ulensdb import insert_db_id, remove_db_id, get_logger
 from puzle import db
@@ -101,8 +101,8 @@ def csv_line_to_source(line):
 
 
 def fetch_sources(source_job_id):
-    DR4_dir = return_DR4_dir()
-    dir = '%s/sources_%s' % (DR4_dir, str(source_job_id)[:3])
+    DR5_dir = return_DR5_dir()
+    dir = '%s/sources_%s' % (DR5_dir, str(source_job_id)[:3])
 
     if not os.path.exists(dir):
         logger.error('Source directory missing!')
@@ -120,8 +120,8 @@ def fetch_sources(source_job_id):
 
 
 def _export_stars(source_job_id, stars):
-    DR4_dir = return_DR4_dir()
-    dir = '%s/stars_%s' % (DR4_dir, str(source_job_id)[:3])
+    DR5_dir = return_DR5_dir()
+    dir = '%s/stars_%s' % (DR5_dir, str(source_job_id)[:3])
 
     if not os.path.exists(dir):
         os.makedirs(dir)

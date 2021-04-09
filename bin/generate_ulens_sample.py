@@ -14,7 +14,7 @@ from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle import db
 from puzle.models import Source, SourceIngestJob
-from puzle.utils import return_data_dir, save_stacked_array, return_DR4_dir, load_stacked_array
+from puzle.utils import return_data_dir, save_stacked_array, return_DR5_dir, load_stacked_array
 from puzle.stats import calculate_eta_on_daily_avg, \
     calculate_eta_on_daily_avg_residuals, average_xy_on_round_x
 
@@ -94,7 +94,7 @@ def fetch_objects(ra, dec, radius, limit, n_days_min=20):
     jobs = db.session.query(SourceIngestJob).filter(cone_filter).order_by(func.random()).all()
 
     n_samples_per_source = max(1, int(10 * (limit / len(jobs))))
-    DR4_dir = return_DR4_dir()
+    DR5_dir = return_DR5_dir()
 
     lightcurve_file_pointers = {}
     objects = []
@@ -102,7 +102,7 @@ def fetch_objects(ra, dec, radius, limit, n_days_min=20):
         if i % 10 == 0:
             print('Processing job %i/%i | %i objects' % (i, len(jobs), len(objects)))
         source_job_id = job.id
-        dir = '%s/sources_%s' % (DR4_dir, str(source_job_id)[:3])
+        dir = '%s/sources_%s' % (DR5_dir, str(source_job_id)[:3])
         fname = f'{dir}/sources.{source_job_id:06}.txt'
         if not os.path.exists(fname):
             continue

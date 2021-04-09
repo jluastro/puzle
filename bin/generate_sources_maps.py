@@ -5,12 +5,12 @@ generate_sources_maps.py
 import glob
 import pickle
 
-from puzle.utils import return_DR4_dir
+from puzle.utils import return_DR5_dir
 
 
 def generate_sources_maps():
-    dr4_dir = return_DR4_dir()
-    folders = glob.glob(f'{dr4_dir}/sources_*')
+    DR5_dir = return_DR5_dir()
+    folders = glob.glob(f'{DR5_dir}/sources_*')
     source_fnames = []
     for folder in folders:
         source_fnames += glob.glob(folder + '/sources.*.txt')

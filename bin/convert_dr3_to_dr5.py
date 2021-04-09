@@ -1,10 +1,10 @@
 #! /usr/bin/env python
 """
-convert_dr3_to_dr4.py
+convert_dr3_to_dr5.py
 """
 
 """
-ZTF DR4 extends the public observations to 1/29/2021,
+ZTF DR5 extends the public observations to 1/29/2021,
 including another the last summer of data that could include microlensing
 events in the galactic plane. However sources have already been
 identified using DR3. This script converts those results into DR5.
@@ -48,7 +48,7 @@ def fetch_unconverted_files_dr3(file_type):
 
 
 def construct_lightcurve_filenames_dr5_dict():
-    # grab DR4 lightcurve filenames sorted by field_ID
+    # grab DR5 lightcurve filenames sorted by field_ID
     # these can be slightly different than DR3 due to ra, dec bounds
     lightcurve_filenames_dr5_dict = {}
     for fi in glob.glob(f'{ulens_ztf_dir}/DR5/field*txt'):
@@ -109,35 +109,35 @@ def convert_sources_dr3_to_dr5():
                     lightcurve_position_dr5 = str(lightcurveFile.objects_map[int(object_id_dr3)])
                 except KeyError:
                     source_id = line_split[0]
-                    print('---- source %s missing from DR4 lightcurve file' % source_id)
+                    print('---- source %s missing from DR5 lightcurve file' % source_id)
                     line_split[object_id_idx] = 'None'
                     line_split[lightcurve_position_idx] = 'None'
                     num_missing += 1
                     continue
 
-                # replace the DR3 lightcurve position with DR4
+                # replace the DR3 lightcurve position with DR5
                 line_split[lightcurve_position_idx] = lightcurve_position_dr5
 
             # join together new converted line
             new_line = ','.join(line_split)
 
-            # replace the DR3 lightcurve filename with DR4
+            # replace the DR3 lightcurve filename with DR5
             new_line = new_line.replace(lightcurve_filename_dr3,
                                         lightcurve_filename_dr5)
 
-            # keep the line for DR4 source file
+            # keep the line for DR5 source file
             lines_dr5.append(new_line)
 
         if skipFlag:
             continue
 
-        # create the DR4 source folder (if DNE)
+        # create the DR5 source folder (if DNE)
         source_file_dr5 = source_file_dr3.replace('DR3', 'DR5')
         source_folder = os.path.dirname(source_file_dr5)
         if not os.path.exists(source_folder):
             os.makedirs(source_folder)
 
-        # write the DR4 sources out to disk
+        # write the DR5 sources out to disk
         with open(source_file_dr5, 'w') as f:
             f.write(header)
             for line in lines_dr5:
