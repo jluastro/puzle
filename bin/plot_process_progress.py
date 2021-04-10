@@ -95,6 +95,8 @@ def plot_star_process_progress():
     cbar.set_label('log(num stars)', fontsize=12)
     ax.set_xlabel('ra', fontsize=12)
     ax.set_ylabel('dec', fontsize=12)
+    ax.set_xlim(0, 360)
+    ax.set_ylim(-30, 90)
     fig.tight_layout()
 
     fname = '%s/stars_process_progress.png' % return_figures_dir()
