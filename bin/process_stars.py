@@ -560,6 +560,9 @@ def finish_job(source_job_id, job_stats):
 
 def process_stars(source_job_id):
     stars_and_sources = fetch_stars_and_sources(source_job_id)
+    if stars_and_sources is None:
+        logger.error(f'Job {source_job_id}: Exiting process due to failed fetch')
+        return
 
     num_stars = len(stars_and_sources)
     if num_stars > 0:
@@ -592,23 +595,10 @@ def process_stars(source_job_id):
     logger.info(f'Job {source_job_id}: Job complete')
 
 
-def process_stars_script(shutdown_time=10, single_job=False):
-    job_enddate = fetch_job_enddate()
-    if job_enddate:
-        script_enddate = job_enddate - timedelta(minutes=shutdown_time)
-        logger.info('Script End Date: %s' % script_enddate)
-
+def process_stars_script(single_job=False):
     while True:
-
         source_job_id = fetch_job()
         if source_job_id is None:
-            return
-
-        if job_enddate and datetime.now() >= script_enddate:
-            logger.info(f'Within {shutdown_time} minutes of job end, '
-                        f'shutting down...')
-            reset_job(source_job_id)
-            time.sleep(2 * 60 * shutdown_time)
             return
 
         process_stars(source_job_id)
