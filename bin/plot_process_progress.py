@@ -88,9 +88,9 @@ def plot_star_process_progress():
     N_stars_arr[np.isinf(N_stars_arr)] = 0
 
     fig, ax = plt.subplots(figsize=(12, 5))
-    im = ax.scatter(ra_arr, dec_arr, c=N_stars_arr, edgecolor='None', s=5)
+    im = ax.scatter(ra_arr, dec_arr, c=N_stars_arr, edgecolor='None', s=1)
     cond = N_stars_arr == 0
-    ax.scatter(ra_arr[cond], dec_arr[cond], c='r', edgecolor='None', s=5)
+    ax.scatter(ra_arr[cond], dec_arr[cond], c='r', edgecolor='None', s=1)
     cbar = fig.colorbar(im, ax=ax)
     cbar.set_label('log(num stars)', fontsize=12)
     ax.set_xlabel('ra', fontsize=12)
