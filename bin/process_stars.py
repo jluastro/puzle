@@ -578,7 +578,7 @@ def process_stars(source_job_id):
     if num_stars > 0:
         logger.info(f'Job {source_job_id}: Processing {num_stars} stars')
         candidates, job_stats, source_ids, fit_stats_best, source_id_to_cand_id_dct = filter_stars_to_candidates(
-            source_job_id, stars_and_sources, n_days_min=10)
+            source_job_id, stars_and_sources)
         num_candidates = len(candidates)
         logger.info(f'Job {source_job_id}: Uploading {num_candidates} candidates')
         if num_candidates > 0:
