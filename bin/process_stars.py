@@ -463,7 +463,7 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
                                n_days_min=50, num_epochs_splits=3):
     job_stats = {}
     obj_data = {}
-    logger.info(f'Job {source_job_id}: Calculating eta')
+    logger.info(f'Job {source_job_id}: Calculating eta with n_days_min={n_days_min}')
     eta_dct, idxs_dct, n_days_dct = construct_eta_dct(stars_and_sources, job_stats, obj_data,
                                                         n_days_min=n_days_min)
     logger.info(f'Job {source_job_id}: '
@@ -472,6 +472,7 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
                 f'{job_stats["num_objs"]} Objects | '
                 f'{job_stats["num_objs_pass_n_days"]} Objects Past Days Cuts')
 
+    logger.info(f'Job {source_job_id}: Cutting on eta with num_epochs_splits={num_epochs_splits}')
     eta_idxs_dct, eta_threshold_low_dct, eta_threshold_high_dct = construct_eta_idxs_dct(
         eta_dct, idxs_dct, n_days_dct, job_stats, obj_data,
         n_days_min=n_days_min, num_epochs_splits=num_epochs_splits)
@@ -479,17 +480,19 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
                 f'{job_stats["num_stars_pass_eta"]} stars pass eta cut | '
                 f'{job_stats["num_objs_pass_eta"]} objects pass eta cut')
 
+    logger.info(f'Job {source_job_id}: Cutting on rf_score with RF_THRESHOLD={RF_THRESHOLD:.3f}')
     rf_idxs_dct = construct_rf_idxs_dct(stars_and_sources, eta_idxs_dct, job_stats, obj_data)
     logger.info(f'Job {source_job_id}: '
                 f'{job_stats["num_stars_pass_rf"]} stars pass rf_score cut | '
                 f'{job_stats["num_objs_pass_rf"]} objects pass rf_score cut')
 
+    logger.info(f'Job {source_job_id}: Calculating eta residuals')
     eta_residual_idxs_dct = construct_eta_residual_idxs_dct(stars_and_sources,
                                                             eta_threshold_high_dct,
                                                             rf_idxs_dct, job_stats, obj_data)
     logger.info(f'Job {source_job_id}: '
-                f'{job_stats["num_stars_pass_eta_residual"]} source pass eta_residual cut | '
-                f'{job_stats["num_objs_pass_eta_residual"]} objects pass eta_residual cut')
+                f'{job_stats["num_stars_pass_eta_residual"]} stars with successful eta_residual | '
+                f'{job_stats["num_objs_pass_eta_residual"]} objects with successful eta_residual')
 
     logger.info(f'Job {source_job_id}: Assembling candidates')
     candidates, source_ids, fit_stats_best, source_id_to_cand_id_dct = assemble_candidates(

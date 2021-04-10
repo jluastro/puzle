@@ -229,7 +229,7 @@
                     </table>
                 </td>
                 <td>
-                    <img src="{{ url_for('static', filename='source/') }}{{ source.id.split('_')[0] }}/{{ source.id }}_lightcurve.png">
+                    <img src="{{ url_for('static', filename='source/') }}{{ source.id.split('_')[0][:3] }}/{{ source.id.split('_')[0] }}/{{ source.id }}_lightcurve.png">
                 </td>
             </tr>
             {% endfor %}

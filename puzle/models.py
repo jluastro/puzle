@@ -247,7 +247,8 @@ class Source(db.Model):
 
     def load_lightcurve_plot(self):
         job_id = self.id.split('_')[0]
-        folder = f'puzle/static/source/{job_id}'
+        job_id_prefix = job_id[:3]
+        folder = f'puzle/static/source/{job_id_prefix}/{job_id}'
         if not os.path.exists(folder):
             os.makedirs(folder)
 
