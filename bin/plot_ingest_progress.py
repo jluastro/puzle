@@ -105,6 +105,7 @@ def plot_source_ingest_progress():
 
     fname = '%s/sources_ingest_progress.png' % return_figures_dir()
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    print('-- %s saved' % fname)
 
 
 def plot_star_ingest_progress():
@@ -160,6 +161,7 @@ def plot_star_ingest_progress():
 
     fname = '%s/stars_ingest_progress.png' % return_figures_dir()
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    print('-- %s saved' % fname)
 
 
 if __name__ == '__main__':

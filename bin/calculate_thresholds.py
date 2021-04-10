@@ -153,6 +153,7 @@ def generate_whelen_stats_figure(l, b, eta_norm, J_norm, chi_norm,
     fig.savefig(fname, dpi=100, bbox_inches='tight',
                 pad_inches=0.01)
     plt.close(fig)
+    print('-- %s saved' % fname)
 
 
 def generate_whelen_stats_figures():

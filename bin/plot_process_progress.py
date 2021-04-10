@@ -21,7 +21,7 @@ def file_len(fname):
 
 def _load_process_progress(type):
     data_dir = return_data_dir()
-    fname = f'{data_dir}/{type}_progress_progress.dict'
+    fname = f'{data_dir}/{type}_process_progress.dict'
     if os.path.exists(fname):
         with open(fname, 'rb') as f:
             return pickle.load(f)
@@ -35,7 +35,7 @@ def load_star_process_progress():
 
 def _save_process_progress(process_progress, type):
     data_dir = return_data_dir()
-    fname = f'{data_dir}/{type}_progress_progress.dict'
+    fname = f'{data_dir}/{type}_process_progress.dict'
     if os.path.exists(fname):
         os.remove(fname)
     with open(fname, 'wb') as f:
@@ -99,6 +99,7 @@ def plot_star_process_progress():
 
     fname = '%s/stars_process_progress.png' % return_figures_dir()
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    print('-- %s saved' % fname)
 
 
 if __name__ == '__main__':

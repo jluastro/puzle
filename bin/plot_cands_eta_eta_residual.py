@@ -429,6 +429,7 @@ def plot_ulens_tE_piE_vs_eta(eta_ulens_arr, eta_residual_ulens_arr, observable_a
     fname = '%s/ulens_tE_piE_vs_eta.png' % return_figures_dir()
     fig.savefig(fname)
     plt.close(fig)
+    print('-- %s saved' % fname)
 
 
 def plot_ulens_eta_by_mag(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr):
