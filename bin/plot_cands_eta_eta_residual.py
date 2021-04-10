@@ -169,6 +169,8 @@ def plot_ulens_samples(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actua
 
 
 def plot_eta_eta_residual(eta_arr, eta_residual_arr, eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr):
+    cands = Candidate.query.all()
+    eta_threshold_low_best = [c.eta_threshold_low_best for c in cands]
 
     cond_obs = observable_arr == True
 
@@ -177,6 +179,12 @@ def plot_eta_eta_residual(eta_arr, eta_residual_arr, eta_ulens_arr, eta_residual
     for a in ax: a.clear()
     ax[0].set_title('cands')
     ax[0].hexbin(eta_arr, eta_residual_arr, mincnt=1, gridsize=25)
+    xlim = ax[0].get_xlim()
+    ylim = ax[0].get_ylim()
+    ax[0].hist(eta_threshold_low_best, color='r',
+               bins=50, histtype='step', density=True)
+    ax[0].set_xlim(xlim)
+    ax[0].set_ylim(ylim)
     ax[1].set_title('ulens total')
     ax[1].hexbin(eta_ulens_arr, eta_residual_ulens_arr,
                  mincnt=1, gridsize=25)
@@ -205,6 +213,12 @@ def plot_eta_eta_residual(eta_arr, eta_residual_arr, eta_ulens_arr, eta_residual
     for a in ax: a.clear()
     ax[0].set_title('cands')
     ax[0].hexbin(np.log10(eta_arr), eta_residual_arr, mincnt=1, gridsize=25)
+    xlim = ax[0].get_xlim()
+    ylim = ax[0].get_ylim()
+    ax[0].hist(np.log10(eta_threshold_low_best), color='r',
+               bins=50, histtype='step', density=True)
+    ax[0].set_xlim(xlim)
+    ax[0].set_ylim(ylim)
     ax[1].set_title('ulens total')
     ax[1].hexbin(np.log10(eta_ulens_arr), eta_residual_ulens_arr,
                  mincnt=1, gridsize=25)
@@ -233,6 +247,12 @@ def plot_eta_eta_residual(eta_arr, eta_residual_arr, eta_ulens_arr, eta_residual
     for a in ax: a.clear()
     ax[0].set_title('cands')
     ax[0].hexbin(np.log10(eta_arr), np.log10(eta_residual_arr), mincnt=1, gridsize=25)
+    xlim = ax[0].get_xlim()
+    ylim = ax[0].get_ylim()
+    ax[0].hist(np.log10(eta_threshold_low_best), color='r',
+               bins=50, histtype='step', density=True)
+    ax[0].set_xlim(xlim)
+    ax[0].set_ylim(ylim)
     ax[1].set_title('ulens total')
     ax[1].hexbin(np.log10(eta_ulens_arr), np.log10(eta_residual_ulens_arr),
                  mincnt=1, gridsize=25)
@@ -253,6 +273,25 @@ def plot_eta_eta_residual(eta_arr, eta_residual_arr, eta_ulens_arr, eta_residual
 
     figures_dir = return_figures_dir()
     fname = f'{figures_dir}/ulens_cands_log-eta_log-eta_residual.png'
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    print('-- %s saved' % fname)
+
+
+def plot_eta_eta_threshold():
+    cands = Candidate.query.all()
+    eta_threshold_low_best = [c.eta_threshold_low_best for c in cands]
+    eta_arr = [c.eta_best for c in cands]
+
+    fig, ax = plt.subplots(figsize=(10, 10))
+    ax.scatter(eta_arr, eta_threshold_low_best,
+               s=1, alpha=.2)
+    ax.plot(np.arange(3), color='k', alpha=.2)
+    ax.set_xlabel('eta', fontsize=10)
+    ax.set_ylabel('eta_threshold', fontsize=10)
+    fig.tight_layout()
+
+    figures_dir = return_figures_dir()
+    fname = f'{figures_dir}/cands_eta_eta_threshold.png'
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
 
@@ -540,6 +579,7 @@ def generate_all_plots():
     plot_cands_samples(eta_arr, eta_residual_arr)
     plot_ulens_samples(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr)
     plot_eta_eta_residual(eta_arr, eta_residual_arr, eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr)
+    plot_eta_eta_threshold()
     plot_eta_residual_ulens_vs_actual(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr)
     plot_lowest_ulens_eta(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr)
     plot_ulens_tE_piE(observable_arr)
