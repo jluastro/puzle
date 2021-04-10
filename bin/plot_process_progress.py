@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import os
 import pickle
 import numpy as np
+from astropy.coordinates import SkyCoord
+
 from puzle.models import SourceIngestJob, StarProcessJob
 from puzle.utils import return_figures_dir, return_DR5_dir, return_data_dir
 from puzle import db
@@ -86,8 +88,22 @@ def plot_star_process_progress():
 
     N_stars_arr = np.log10(N_stars_arr)
     N_stars_arr[np.isinf(N_stars_arr)] = 0
+    
+    glon = np.linspace(0, 360, 10000)
+    
+    glat_low = np.zeros(len(glon)) - 20
+    coords_low = SkyCoord(glon, glat_low, frame='galactic', unit='degree')
+    ra_gal_low = coords_low.icrs.ra.value
+    dec_gal_low = coords_low.icrs.dec.value
+
+    glat_high = np.zeros(len(glon)) + 20
+    coords_high = SkyCoord(glon, glat_high, frame='galactic', unit='degree')
+    ra_gal_high = coords_high.icrs.ra.value
+    dec_gal_high = coords_high.icrs.dec.value
 
     fig, ax = plt.subplots(figsize=(12, 5))
+    ax.scatter(ra_gal_low, dec_gal_low, c='k', s=.1, alpha=.2)
+    ax.scatter(ra_gal_high, dec_gal_high, c='k', s=.1, alpha=.2)
     im = ax.scatter(ra_arr, dec_arr, c=N_stars_arr, edgecolor='None', s=1)
     cond = N_stars_arr == 0
     ax.scatter(ra_arr[cond], dec_arr[cond], c='r', edgecolor='None', s=1)
