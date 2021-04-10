@@ -242,7 +242,8 @@ class Source(db.Model):
                              lightcurve_position_g=self.lightcurve_position_g,
                              lightcurve_position_r=self.lightcurve_position_r,
                              lightcurve_position_i=self.lightcurve_position_i,
-                             lightcurve_file_pointer=lightcurve_file_pointer)
+                             lightcurve_file_pointer=lightcurve_file_pointer,
+                             check_initialization=False)
         return source
 
     def load_lightcurve_plot(self):
