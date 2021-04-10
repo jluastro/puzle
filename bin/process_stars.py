@@ -2,16 +2,15 @@
 """
 process_stars.py
 """
-import time
 import os
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime
 from scipy.stats import binned_statistic
 from collections import defaultdict, namedtuple
 import pickle
 
 from puzle.models import Source, StarIngestJob, Star, StarProcessJob, Candidate
-from puzle.utils import fetch_job_enddate, return_DR5_dir, get_logger
+from puzle.utils import return_DR5_dir, get_logger
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle.stats import calculate_eta_on_daily_avg, \
     RF_THRESHOLD, calculate_eta_on_daily_avg_residuals
@@ -145,6 +144,9 @@ def fetch_stars_and_sources(source_job_id):
             f_sources.seek(sources_map[source_id])
             line_source = f_sources.readline()
             source = csv_line_to_source(line_source, lightcurve_file_pointers)
+            # initialize lightcurves with file pointers
+            for obj in source.zort_source.objects:
+                _ = obj.lightcurve.nepochs
             source_arr.append(source)
         stars_and_sources[star.id] = (star, source_arr)
 
@@ -154,6 +156,13 @@ def fetch_stars_and_sources(source_job_id):
         file.close()
 
     return stars_and_sources
+
+
+def hmjd_to_n_days(hmjd):
+    hmjd_round = np.round(hmjd)
+    hmjd_unique = set(hmjd_round)
+    n_days = len(hmjd_unique)
+    return n_days
 
 
 def construct_eta_dct(stars_and_sources, job_stats, obj_data, n_days_min=50):
@@ -169,7 +178,8 @@ def construct_eta_dct(stars_and_sources, job_stats, obj_data, n_days_min=50):
         for j, source in enumerate(sources):
             for k, obj in enumerate(source.zort_source.objects):
                 num_objs += 1
-                n_days = len(np.unique(np.round(obj.lightcurve.hmjd)))
+                hmjd = obj.lightcurve.hmjd
+                n_days = hmjd_to_n_days(hmjd)
                 if n_days < n_days_min:
                     continue
                 num_objs_pass_n_days += 1
@@ -568,7 +578,7 @@ def process_stars(source_job_id):
     if num_stars > 0:
         logger.info(f'Job {source_job_id}: Processing {num_stars} stars')
         candidates, job_stats, source_ids, fit_stats_best, source_id_to_cand_id_dct = filter_stars_to_candidates(
-            source_job_id, stars_and_sources)
+            source_job_id, stars_and_sources, n_days_min=10)
         num_candidates = len(candidates)
         logger.info(f'Job {source_job_id}: Uploading {num_candidates} candidates')
         if num_candidates > 0:
