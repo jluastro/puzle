@@ -87,6 +87,7 @@ def insert_db_id(num_ids=50, retry_time=5):
         time.sleep(abs(np.random.normal(scale=.01 * retry_time)))
         logger.debug(f'{my_db_id}: Attempting insert to {ulensdb_file_path}')
         with lock:
+            logger.debug(f'{my_db_id}: Lock acquired')
             db_ids = load_db_ids()
             if len(db_ids) < num_ids:
                 db_ids.add(my_db_id)
