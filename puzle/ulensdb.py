@@ -83,6 +83,7 @@ def insert_db_id(num_ids=50, retry_time=1):
         return
 
     successFlag = False
+    retry_multiplier = 2
     while True:
         time.sleep(abs(np.random.normal(scale=retry_time)))
         logger.debug(f'{my_db_id}: Attempting insert to {ulensdb_file_path}')
@@ -103,4 +104,5 @@ def insert_db_id(num_ids=50, retry_time=1):
             return
         else:
             logger.debug(f'{my_db_id}: Insert fail, retry in {retry_time} seconds')
-            time.sleep(retry_time)
+            time.sleep(retry_time * retry_multiplier)
+            retry_multiplier *= 2
