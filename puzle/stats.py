@@ -262,7 +262,8 @@ def calculate_eta_on_residuals(t_obs_arr, mag_arr, magerr_arr,
     mag_model_arr, _ = fluxes_to_magnitudes(flux_model_arr, fluxerr_obs_arr)
 
     mag_residual_arr = mag_arr - mag_model_arr
-    eta = calculate_eta(mag_residual_arr)
+    cond = ~np.isnan(mag_residual_arr)
+    eta = calculate_eta(mag_residual_arr[cond])
     if return_fit_data:
         return eta, fit_data
     else:
