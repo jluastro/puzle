@@ -73,7 +73,7 @@ def remove_db_id():
     logger.debug(f'{my_db_id}: Delete success')
 
 
-def insert_db_id(num_ids=50, retry_time=1):
+def insert_db_id(num_ids=50):
     lock_path = ulensdb_file_path.replace('.txt', '.lock')
     lock = FileLock(lock_path)
 
@@ -83,7 +83,9 @@ def insert_db_id(num_ids=50, retry_time=1):
         return
 
     successFlag = False
+    retry_time = 1
     retry_multiplier = 2
+    retry_time_max = 60
     while True:
         time.sleep(abs(np.random.normal(scale=retry_time)))
         logger.debug(f'{my_db_id}: Attempting insert to {ulensdb_file_path}')
@@ -103,6 +105,7 @@ def insert_db_id(num_ids=50, retry_time=1):
             logger.debug(f'{my_db_id}: Insert success')
             return
         else:
+            retry_time = min(retry_time_max, retry_time * retry_multiplier)
             logger.debug(f'{my_db_id}: Insert fail, retry in {retry_time} seconds')
-            time.sleep(retry_time * retry_multiplier)
+            time.sleep(retry_time)
             retry_multiplier *= 2
