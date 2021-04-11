@@ -19,7 +19,7 @@
         {% if cands %}
             {% for cand in cands.items %}
 {#                <tr><td colspan="16"><hr></td></tr>#}
-                <tr>
+                <tr id="{{ "%s" % cand.id }}">
                     <th>Cand ID</th>
                     <th>Glon</th>
                     <th>Glat</th>
