@@ -11,9 +11,9 @@ else
 
   if [ -z "$job_ids" ]
   then
-    slurm_cond="and slurm_job_id=0"
+    slurm_cond="and slurm_job_id is NULL and slurm_job_rank=0"
   else
-    slurm_cond="and (slurm_job_id not in ($job_ids) OR slurm_job_id=0)"
+    slurm_cond="and (slurm_job_id not in ($job_ids) OR (slurm_job_id is NULL and slurm_job_rank=0)"
   fi
 fi
 $db_con -c "UPDATE source_ingest_job SET started='f', finished='f', datetime_started=NULL, datetime_finished=NULL, slurm_job_id=NULL, slurm_job_rank=NULL WHERE started='t' and finished='f' $slurm_cond";
