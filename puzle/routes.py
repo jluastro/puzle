@@ -386,7 +386,9 @@ def radial_search():
         dec = session['dec']
         radius = session['radius']
         query = Candidate.query.filter(Candidate.cone_search(ra, dec, radius))
-        if session['order_by'] == 'eta_best':
+        if session['order_by'] == 'eta_residual_best':
+            order_by_cond = Candidate.eta_residual_best.desc()
+        elif session['order_by'] == 'eta_best':
             order_by_cond = Candidate.eta_best.asc()
         elif session['order_by'] == 'chi_squared_delta_best':
             order_by_cond = Candidate.chi_squared_delta_best.desc()
@@ -448,7 +450,7 @@ def filter_search():
 
     query_fields = ['num_objs_pass', 't_E_best',
                     'chi_squared_delta_best', 'rf_score_best',
-                    'eta_best']
+                    'eta_best', 'eta_residual_best']
 
     form_filter = FilterSearchForm()
     if form_filter.validate_on_submit():
@@ -487,7 +489,9 @@ def filter_search():
             current_query = True
 
     if current_query:
-        if session['order_by'] == 'eta_best':
+        if session['order_by'] == 'eta_residual_best':
+            order_by_cond = Candidate.eta_residual_best.desc()
+        elif session['order_by'] == 'eta_best':
             order_by_cond = Candidate.eta_best.asc()
         elif session['order_by'] == 'chi_squared_delta_best':
             order_by_cond = Candidate.chi_squared_delta_best.desc()

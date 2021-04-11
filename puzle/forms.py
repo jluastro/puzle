@@ -85,9 +85,10 @@ class RadialSearchForm(FlaskForm):
                       validators=[Optional(), NumberRange(min=-90, max=90)])
     radius = FloatField('radius (arcseconds)',
                         validators=[DataRequired()])
-    order_by = RadioField(choices=[('eta_best', 'Order results by eta ascending'),
-                                  ('chi_squared_delta_best', 'Order results by chi_squared_delta desc')],
-                          default='eta_best')
+    order_by = RadioField(choices=[('eta_residual_best', 'Order results by eta_residual descending'),
+                                   ('eta_best', 'Order results by eta ascending'),
+                                   ('chi_squared_delta_best', 'Order results by chi_squared_delta desc')],
+                          default='eta_residual_best')
     order_by_num_objs = BooleanField('Order by number of objects descending', default=True)
     submit = SubmitField('Search')
 
@@ -113,9 +114,14 @@ class FilterSearchForm(FlaskForm):
                               validators=[Optional(), NumberRange(min=0)])
     eta_best_max = FloatField('eta_best max',
                               validators=[Optional(), NumberRange(min=0)])
-    order_by = RadioField(choices=[('eta_best', 'Order results by eta ascending'),
-                                  ('chi_squared_delta_best', 'Order results by chi_squared_delta desc')],
-                          default='eta_best')
+    eta_residual_best_min = FloatField('eta_residual_best min',
+                              validators=[Optional(), NumberRange(min=0)])
+    eta_residual_best_max = FloatField('eta_residual_best max',
+                              validators=[Optional(), NumberRange(min=0)])
+    order_by = RadioField(choices=[('eta_residual_best', 'Order results by eta_residual descending'),
+                                   ('eta_best', 'Order results by eta ascending'),
+                                   ('chi_squared_delta_best', 'Order results by chi_squared_delta desc')],
+                          default='eta_residual_best')
     order_by_num_objs = BooleanField('Order by number of objects descending', default=True)
     submit = SubmitField('Search')
 
