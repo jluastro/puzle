@@ -513,7 +513,8 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
     return candidates, job_stats, source_ids, fit_stats_best, source_id_to_cand_id_dct
 
 
-def upload_candidates(candidates, source_ids, fit_stats_best, source_id_to_cand_id_dct):
+def upload_candidates_and_finish_job(candidates, source_ids, fit_stats_best,
+                                     source_id_to_cand_id_dct, source_job_id, job_stats):
     insert_db_id()  # get permission to make a db connection
     for cand in candidates:
         db.session.add(cand)
@@ -537,13 +538,18 @@ def upload_candidates(candidates, source_ids, fit_stats_best, source_id_to_cand_
         source_db.fit_a_type = a_type
         source_db.fit_chi_squared_flat = chi_squared_flat
         source_db.fit_chi_squared_delta = chi_squared_delta
+
+    finish_job(source_job_id, job_stats, within_db_connection=True)
+
     db.session.commit()
     db.session.close()
     remove_db_id()  # release permission for this db connection
 
 
-def finish_job(source_job_id, job_stats):
-    insert_db_id()  # get permission to make a db connection
+def finish_job(source_job_id, job_stats, within_db_connection=False):
+    if not within_db_connection:
+        insert_db_id()  # get permission to make a db connection
+
     job = db.session.query(StarProcessJob).filter(
         StarProcessJob.source_ingest_job_id == source_job_id).one()
     job.finished = True
@@ -563,9 +569,11 @@ def finish_job(source_job_id, job_stats):
     job.eta_thresholds_low = job_stats['eta_thresholds_low']
     job.eta_thresholds_high = job_stats['eta_thresholds_high']
     job.num_candidates = job_stats['num_candidates']
-    db.session.commit()
-    db.session.close()
-    remove_db_id()  # release permission for this db connection
+
+    if not within_db_connection:
+        db.session.commit()
+        db.session.close()
+        remove_db_id()  # release permission for this db connection
 
 
 def process_stars(source_job_id):
@@ -582,7 +590,8 @@ def process_stars(source_job_id):
         num_candidates = len(candidates)
         logger.info(f'Job {source_job_id}: Uploading {num_candidates} candidates')
         if num_candidates > 0:
-            upload_candidates(candidates, source_ids, fit_stats_best, source_id_to_cand_id_dct)
+            upload_candidates_and_finish_job(candidates, source_ids, fit_stats_best,
+                                             source_id_to_cand_id_dct, source_job_id, job_stats)
         logger.info(f'Job {source_job_id}: Processing complete')
     else:
         logger.info(f'Job {source_job_id}: No stars, skipping process')
@@ -600,8 +609,7 @@ def process_stars(source_job_id):
                      'eta_thresholds_low': {},
                      'eta_thresholds_high': {},
                      'num_candidates': 0}
-
-    finish_job(source_job_id, job_stats)
+        finish_job(source_job_id, job_stats)
     logger.info(f'Job {source_job_id}: Job complete')
 
 
