@@ -32,8 +32,8 @@ def return_cands_sample(eta_low, eta_high, eta_residual_low, eta_residual_high, 
 
 def return_eta_arrs():
     cands = Candidate.query.all()
-    eta_arr = [c.eta_best for c in cands]
-    eta_residual_arr = [c.eta_residual_best for c in cands]
+    eta_arr = np.array([c.eta_best for c in cands])
+    eta_residual_arr = np.array([c.eta_residual_best for c in cands])
     return eta_arr, eta_residual_arr
 
 
