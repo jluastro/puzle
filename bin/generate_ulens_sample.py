@@ -100,7 +100,7 @@ def fetch_objects(ra, dec, radius, limit, n_days_min=50):
     objects = []
     for i, job in enumerate(jobs):
         if i % 10 == 0:
-            print('Processing job %i/%i | %i objects' % (i, len(jobs), len(objects)))
+            print('Fetching job %i/%i | %i objects' % (i, len(jobs), len(objects)))
         source_job_id = job.id
         dir = '%s/sources_%s' % (DR5_dir, str(source_job_id)[:3])
         fname = f'{dir}/sources.{source_job_id:06}.txt'
@@ -262,13 +262,17 @@ def generate_random_lightcurves():
     lightcurves_arr = []
     metadata_arr = []
     for i, (l, b) in enumerate(my_lb_arr):
-        print('Processing (l, b) = (%.2f, %.2f) |  %i / %i' % (l, b, i, len(my_lb_arr)))
+        print('%i) Processing (l, b) = (%.2f, %.2f) |  %i / %i' % (rank, l, b, i, len(my_lb_arr)))
         lightcurves, metadata = generate_random_lightcurves_lb(l, b,
                                                                N_samples=N_samples, tE_min=tE_min,
                                                                delta_m_min=delta_m_min, delta_m_min_cut=delta_m_min_cut,
                                                                n_days_min=n_days_min)
         lightcurves_arr += lightcurves
         metadata_arr += metadata
+
+    if len(lightcurves_arr) == 0:
+        print('%i) No lightcurves generated!' % rank)
+        return
 
     data_dir = return_data_dir()
     fname = f'{data_dir}/ulens_samples/ulens_sample.{rank:02d}.npz'
@@ -340,6 +344,9 @@ def calculate_eta_values():
     fname = f'{data_dir}/ulens_sample.total.npz'
     data = load_stacked_array(fname)
 
+    idx_check_arr = np.arange(len(data))
+    my_idx_check = np.array_split(idx_check_arr, size)[rank]
+
     my_data = np.array_split(data, size)[rank]
     my_etas = []
     my_eta_residuals = []
@@ -378,14 +385,16 @@ def calculate_eta_values():
     total_etas = comm.gather(my_etas, root=0)
     total_eta_residuals = comm.gather(my_eta_residuals, root=0)
     total_observables = comm.gather(my_observables, root=0)
+    total_idx_check = comm.gather(my_idx_check, root=0)
 
     if rank == 0:
         etas = list(itertools.chain(*total_etas))
         eta_residuals = list(itertools.chain(*total_eta_residuals))
         observables = list(itertools.chain(*total_observables))
+        idx_check = list(itertools.chain(*total_idx_check))
         fname = f'{data_dir}/ulens_sample_etas.total.npz'
-        np.savez(fname, eta=etas,
-                 eta_residual=eta_residuals, observable=observables)
+        np.savez(fname, eta=etas, eta_residual=eta_residuals,
+                 observable=observables, idx_check=idx_check)
 
 
 if __name__ == '__main__':
