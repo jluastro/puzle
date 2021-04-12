@@ -4,6 +4,7 @@ plot_cands_eta_eta_residual.py
 """
 
 import numpy as np
+import copy
 from sqlalchemy.sql.expression import func
 from puzle.models import Candidate, Source
 from puzle.stats import calculate_eta_on_daily_avg, average_xy_on_round_x
@@ -30,8 +31,8 @@ def return_cands_sample(eta_low, eta_high, eta_residual_low, eta_residual_high, 
     return cands
 
 
-def return_eta_arrs():
-    cands = Candidate.query.all()
+def return_eta_arrs(N_samples=100000):
+    cands = Candidate.query.order_by(func.random()).limit(N_samples).all()
     eta_arr = np.array([c.eta_best for c in cands])
     eta_residual_arr = np.array([c.eta_residual_best for c in cands])
     return eta_arr, eta_residual_arr

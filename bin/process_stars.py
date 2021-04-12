@@ -589,9 +589,8 @@ def process_stars(source_job_id):
             source_job_id, stars_and_sources)
         num_candidates = len(candidates)
         logger.info(f'Job {source_job_id}: Uploading {num_candidates} candidates')
-        if num_candidates > 0:
-            upload_candidates_and_finish_job(candidates, source_ids, fit_stats_best,
-                                             source_id_to_cand_id_dct, source_job_id, job_stats)
+        upload_candidates_and_finish_job(candidates, source_ids, fit_stats_best,
+                                         source_id_to_cand_id_dct, source_job_id, job_stats)
         logger.info(f'Job {source_job_id}: Processing complete')
     else:
         logger.info(f'Job {source_job_id}: No stars, skipping process')
