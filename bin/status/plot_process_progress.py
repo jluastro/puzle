@@ -61,10 +61,13 @@ def plot_star_process_progress():
     dec_arr = []
     priority_arr = []
     finished_arr = []
+    num_cands_arr = []
+    num_cands_tot = 0
     for i, job in enumerate(jobs):
         if i % 1000 == 0:
             print(i, len(jobs))
         job_id = job[0].id
+        num_cands = job[1].num_candidates
 
         if job_id in star_process_progress:
             ra = star_process_progress[job_id][0]
@@ -79,19 +82,27 @@ def plot_star_process_progress():
             star_process_progress[job_id] = (ra, dec, N_stars)
 
         N_stars_arr.append(N_stars)
+        num_cands_arr.append(num_cands)
         ra_arr.append(ra)
         dec_arr.append(dec)
         priority_arr.append(job[1].priority)
         finished_arr.append(job[1].finished)
+        if num_cands:
+            num_cands_tot += num_cands
 
     save_star_process_progress(star_process_progress)
 
     ra_arr = np.array(ra_arr)
     dec_arr = np.array(dec_arr)
     N_stars_arr = np.array(N_stars_arr)
+    num_cands_arr = np.array(num_cands_arr)
     priority_arr = np.array(priority_arr)
     finished_arr = np.array(finished_arr)
     cond_finished = finished_arr == True
+
+    num_cands_arr = num_cands_arr.astype(float)
+    log_num_cands_arr = np.log10(num_cands_arr)
+    log_num_cands_arr[np.isnan(log_num_cands_arr)] = 0
 
     N_stars_arr = np.log10(N_stars_arr)
     N_stars_arr[np.isinf(N_stars_arr)] = 0
@@ -109,7 +120,7 @@ def plot_star_process_progress():
     ra_gal_high = coords_high.icrs.ra.value
     dec_gal_high = coords_high.icrs.dec.value
 
-    fig, ax = plt.subplots(1, 2, figsize=(16, 6))
+    fig, ax = plt.subplots(1, 3, figsize=(16, 6))
     ax[0].set_title('Star Process Jobs')
     im0 = ax[0].scatter(ra_arr, dec_arr, c=priority_arr, edgecolor='None', s=2)
     cbar0 = fig.colorbar(im0, ax=ax[0])
@@ -122,6 +133,11 @@ def plot_star_process_progress():
     ax[1].scatter(ra_arr[cond_finished*cond_zero],
                   dec_arr[cond_finished*cond_zero],
                   c='r', edgecolor='None', s=2)
+    ax[2].set_title('Number of Candidates (%i)' % num_cands_tot)
+    im1 = ax[2].scatter(ra_arr[cond_finished], dec_arr[cond_finished],
+                        c=log_num_cands_arr[cond_finished], edgecolor='None', s=2)
+    cbar1 = fig.colorbar(im1, ax=ax[2])
+    cbar1.set_label('log(num candidates)', fontsize=12)
     for a in ax:
         a.scatter(ra_gal_low, dec_gal_low, c='k', s=.1, alpha=.2)
         a.scatter(ra_gal_high, dec_gal_high, c='k', s=.1, alpha=.2)
