@@ -267,6 +267,7 @@ def generate_random_lightcurves():
                                                                N_samples=N_samples, tE_min=tE_min,
                                                                delta_m_min=delta_m_min, delta_m_min_cut=delta_m_min_cut,
                                                                n_days_min=n_days_min)
+        print('%i) Processing (l, b) = (%.2f, %.2f) |  %i lightcurves' % (rank, l, b, len(lightcurves)))
         lightcurves_arr += lightcurves
         metadata_arr += metadata
 
