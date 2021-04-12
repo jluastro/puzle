@@ -14,7 +14,7 @@ from puzle import db
 import matplotlib.pyplot as plt
 
 
-def return_cands_sample(eta_low, eta_high, eta_residual_low, eta_residual_high, N_cands=5):
+def return_cands_sample(eta_low, eta_high, eta_residual_low, eta_residual_high, N_cands=9):
     cands_tmp = db.session.query(Candidate).\
         filter(Candidate.eta_best >= eta_low).\
         filter(Candidate.eta_best <= eta_high).\
@@ -31,7 +31,7 @@ def return_cands_sample(eta_low, eta_high, eta_residual_low, eta_residual_high, 
     return cands
 
 
-def return_eta_arrs(N_samples=100000):
+def return_eta_arrs(N_samples=500000):
     cands = Candidate.query.order_by(func.random()).limit(N_samples).all()
     eta_arr = np.array([c.eta_best for c in cands])
     eta_residual_arr = np.array([c.eta_residual_best for c in cands])
@@ -54,7 +54,7 @@ def return_eta_ulens_arrs():
 
 
 def plot_cands(title, eta_arr, eta_residual_arr, cands):
-    fig, ax = plt.subplots(3, 2, figsize=(10, 10))
+    fig, ax = plt.subplots(5, 2, figsize=(10, 10))
     ax = ax.flatten()
     ax[0].hexbin(eta_arr, eta_residual_arr, mincnt=1)
     ax[0].set_xlabel('eta', fontsize=10)
@@ -76,17 +76,26 @@ def plot_cands(title, eta_arr, eta_residual_arr, cands):
     fname = f'{figures_dir}/cands_region_{title}.png'
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
+    plt.close(fig)
 
 
 def plot_cands_samples(eta_arr, eta_residual_arr):
-    regions_of_interest = [(0.95, 1, 2.45, 2.5),
-                          (0.75, 0.8, 3, 3.05),
-                          (0.95, 1, 1.95, 2),
-                          (1.75, 2, 2, 2.5),
-                           (1, 1.1, 2.35, 2.55)]
+    regions_of_interest = [(1, 1.5, 1, 1.5),
+                           (1, 1.5, 1.5, 2),
+                           (1, 1.5, 2, 2.5),
+                           (0.75, 1, 0.5, 1),
+                           (0.25, 0.5, 0.5, 1),
+                           (0, 0.25, 0, 0.5),
+                           (0, 0.25, 0.5, 1),
+                           (0, 0.25, 1, 1.5),
+                           (0, 0.25, 1.5, 3),
+                           (0.25, 0.5, 1, 1.5),
+                           (0.25, 0.5, 1.5, 2),
+                           (0.5, 0.75, 1.5, 2),
+                           (0.75, 1, 1.5, 2)]
     for i, region in enumerate(regions_of_interest):
         cands = return_cands_sample(*region)
-        title = str(i)
+        title = f'{i:02d}'
         plot_cands(title, eta_arr, eta_residual_arr, cands)
 
 
@@ -120,6 +129,7 @@ def plot_ulens(title, eta_ulens_arr, eta_residual_ulens_arr, observable_arr,
     fname = f'{figures_dir}/ulens_region_{title}.png'
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
+    plt.close(fig)
 
 
 def return_ulens_sample(eta_ulens_arr, eta_residual_ulens_arr, observable_arr,
@@ -172,7 +182,7 @@ def plot_ulens_samples(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actua
                                                                       region[2],
                                                                       region[3]))
             continue
-        title = str(i)
+        title = f'{i:02d}'
         plot_ulens(title, eta_ulens_arr, eta_residual_ulens_arr, observable_arr,
                    eta_sample, eta_residual_sample, data_sample)
 
@@ -216,6 +226,7 @@ def plot_eta_eta_residual(eta_arr, eta_residual_arr, eta_ulens_arr, eta_residual
     fname = f'{figures_dir}/ulens_cands_eta_eta_residual.png'
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
+    plt.close(fig)
 
     # log-linear
     fig, ax = plt.subplots(3, 1, figsize=(10, 10))
@@ -250,6 +261,7 @@ def plot_eta_eta_residual(eta_arr, eta_residual_arr, eta_ulens_arr, eta_residual
     fname = f'{figures_dir}/ulens_cands_log-eta_eta_residual.png'
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
+    plt.close(fig)
 
     # log-log
     fig, ax = plt.subplots(3, 1, figsize=(10, 10))
@@ -284,6 +296,7 @@ def plot_eta_eta_residual(eta_arr, eta_residual_arr, eta_ulens_arr, eta_residual
     fname = f'{figures_dir}/ulens_cands_log-eta_log-eta_residual.png'
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
+    plt.close(fig)
 
 
 def plot_eta_eta_threshold():
@@ -303,6 +316,7 @@ def plot_eta_eta_threshold():
     fname = f'{figures_dir}/cands_eta_eta_threshold.png'
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
+    plt.close(fig)
 
 
 def plot_eta_residual_ulens_vs_actual(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr):
@@ -328,11 +342,11 @@ def plot_eta_residual_ulens_vs_actual(eta_ulens_arr, eta_residual_ulens_arr, eta
         a.plot(x, x, color='r', linewidth=1)
     fig.tight_layout()
 
-
     figures_dir = return_figures_dir()
     fname = f'{figures_dir}/ulens_eta_residual_vs_actual.png'
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
+    plt.close(fig)
 
 
 def plot_lowest_ulens_eta(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr):
@@ -366,6 +380,7 @@ def plot_lowest_ulens_eta(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_ac
     fname = f'{figures_dir}/ulens_lowest_eta.png'
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
+    plt.close(fig)
 
 
 def plot_ulens_tE_piE(observable_arr):
@@ -416,6 +431,7 @@ def plot_ulens_tE_piE(observable_arr):
     fname = f'{figures_dir}/ulens_tE_piE.png'
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
+    plt.close(fig)
 
 
 def plot_ulens_tE_piE_vs_eta(eta_ulens_arr, eta_residual_ulens_arr, observable_arr):
@@ -478,6 +494,7 @@ def plot_ulens_tE_piE_vs_eta(eta_ulens_arr, eta_residual_ulens_arr, observable_a
     fig.savefig(fname)
     plt.close(fig)
     print('-- %s saved' % fname)
+    plt.close(fig)
 
 
 def plot_ulens_eta_by_mag(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr):
@@ -512,6 +529,7 @@ def plot_ulens_eta_by_mag(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_ac
     fname = f'{figures_dir}/ulens_eta_by_mag.png'
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
+    plt.close(fig)
 
 
 def plot_ulens_eta_by_tE(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr):
@@ -546,6 +564,7 @@ def plot_ulens_eta_by_tE(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_act
     fname = f'{figures_dir}/ulens_eta_by_tE.png'
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
+    plt.close(fig)
 
 
 def plot_ulens_eta_by_piE(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr):
@@ -580,6 +599,7 @@ def plot_ulens_eta_by_piE(eta_ulens_arr, eta_residual_ulens_arr, eta_residual_ac
     fname = f'{figures_dir}/ulens_eta_by_piE.png'
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
+    plt.close(fig)
     
 
 def generate_all_plots():

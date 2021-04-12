@@ -230,3 +230,24 @@ def get_logger(name, level=logging.DEBUG):
     logger.addHandler(handler)
     logger.setLevel(level)
     return logger
+
+
+def sortsplit(array, size):
+    """Returns array split into different lists in round-robin order.
+
+    A fun way to split up a list in round-robin order into separate lists.
+
+    Args:
+        array : list
+            List of items to be split into separate lists.
+        size : type
+            Number of lists in which array will be split into.
+
+    Returns:
+        train : list
+            A list of lists, each a piece of the provided array
+
+    """
+    # Have some fun thinking it through! A pen and paper might help :)
+    return [[array[i] for i in range(j, len(array), size)]
+            for j in range(size)]
