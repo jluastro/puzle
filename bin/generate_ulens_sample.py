@@ -275,7 +275,7 @@ def generate_random_lightcurves():
         print('%i) No lightcurves generated!' % rank)
         return
     else:
-        print('%i) %i lightcurves generated' % len(lightcurves_arr))
+        print('%i) %i lightcurves generated' % (rank, len(lightcurves_arr)))
 
     data_dir = return_data_dir()
     fname = f'{data_dir}/ulens_samples/ulens_sample.{rank:02d}.npz'
