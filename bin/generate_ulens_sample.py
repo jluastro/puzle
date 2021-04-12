@@ -263,7 +263,6 @@ def generate_random_lightcurves():
     metadata_arr = []
     for i, (l, b) in enumerate(my_lb_arr):
         print('%i) Processing (l, b) = (%.2f, %.2f) |  %i / %i' % (rank, l, b, i, len(my_lb_arr)))
-        break
         lightcurves, metadata = generate_random_lightcurves_lb(l, b,
                                                                N_samples=N_samples, tE_min=tE_min,
                                                                delta_m_min=delta_m_min, delta_m_min_cut=delta_m_min_cut,
