@@ -122,7 +122,7 @@ def fetch_objects(ra, dec, radius, limit, n_days_min=50):
             for obj in zort_source.objects:
                 n_days = len(np.unique(np.round(obj.lightcurve.hmjd)))
                 n_days_arr.append(n_days)
-            if np.max(n_days_arr) < n_days_min:
+            if (len(n_days_arr) == 0) or (np.max(n_days_arr) < n_days_min):
                 continue
             obj = zort_source.objects[np.argmax(n_days_arr)]
             objects.append(obj)
@@ -263,6 +263,7 @@ def generate_random_lightcurves():
     metadata_arr = []
     for i, (l, b) in enumerate(my_lb_arr):
         print('%i) Processing (l, b) = (%.2f, %.2f) |  %i / %i' % (rank, l, b, i, len(my_lb_arr)))
+        break
         lightcurves, metadata = generate_random_lightcurves_lb(l, b,
                                                                N_samples=N_samples, tE_min=tE_min,
                                                                delta_m_min=delta_m_min, delta_m_min_cut=delta_m_min_cut,
