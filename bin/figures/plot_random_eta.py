@@ -21,7 +21,7 @@ def calculate_eta_arr(size, sigma, N_samples=20000):
     return eta_arr
 
 
-def generate_eta_gaussian_dist_plot():
+def plot_eta_gaussian_dist():
     fig, ax = plt.subplots(2, 1, figsize=(8, 6))
     for a in ax:
         a.clear()
@@ -40,7 +40,7 @@ def generate_eta_gaussian_dist_plot():
     fig.suptitle('eta Gaussian Distributions', fontsize=12)
 
 
-def generate_eta_gaussian_threshold_plot():
+def plot_eta_gaussian_threshold():
     fig, ax = plt.subplots(2, 1, figsize=(8, 6))
     for a in ax:
         a.clear()
@@ -77,10 +77,10 @@ def generate_eta_gaussian_threshold_plot():
     fig.suptitle('eta Gaussian Thresholds', fontsize=12)
 
 
-def generate_all_plots():
-    generate_eta_gaussian_dist_plot()
-    generate_eta_gaussian_threshold_plot()
+def generate_all_figures():
+    plot_eta_gaussian_dist()
+    plot_eta_gaussian_threshold()
 
 
 if __name__ == '__main__':
-    generate_all_plots()
+    generate_all_figures()

@@ -283,7 +283,7 @@ def plot_lowest_ulens_eta(eta_ulens_arr=None, observable_arr=None):
     plt.close(fig)
 
 
-def generate_all_plots():
+def generate_all_figures():
     eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr = return_eta_ulens_arrs()
     plot_ulens_tE_piE(observable_arr=observable_arr)
     plot_ulens_tE_piE_vs_eta(eta_ulens_arr=eta_ulens_arr,
@@ -303,4 +303,4 @@ def generate_all_plots():
 
 
 if __name__ == '__main__':
-    generate_all_plots()
+    generate_all_figures()

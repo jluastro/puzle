@@ -179,7 +179,7 @@ def plot_eta_residual_ulens_vs_actual(eta_residual_ulens_arr=None,
     plt.close(fig)
 
 
-def generate_all_plots():
+def generate_all_figures():
     eta_arr, eta_residual_arr, eta_threshold_low_best = return_eta_arrs()
     eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr = return_eta_ulens_arrs()
     plot_eta_eta_residual(eta_arr=eta_arr,
@@ -196,4 +196,4 @@ def generate_all_plots():
 
 
 if __name__ == '__main__':
-    generate_all_plots()
+    generate_all_figures()

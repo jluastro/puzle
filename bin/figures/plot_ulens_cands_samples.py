@@ -167,7 +167,7 @@ def plot_ulens_samples(eta_ulens_arr, eta_residual_ulens_arr, observable_arr):
                    eta_sample, eta_residual_sample, data_sample)
 
 
-def generate_all_plots():
+def generate_all_figures():
     eta_arr, eta_residual_arr, eta_threshold_low_best = return_eta_arrs()
     eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr = return_eta_ulens_arrs()
     plot_cands_samples(eta_arr=eta_arr,
@@ -178,4 +178,4 @@ def generate_all_plots():
 
 
 if __name__ == '__main__':
-    generate_all_plots()
+    generate_all_figures()
