@@ -246,6 +246,13 @@ def plot_eta_eta_residual_boundary(eta_arr=None, eta_residual_arr=None,
         a.set_ylabel('eta_residual', fontsize=10)
     fig.tight_layout()
 
+    figures_dir = return_figures_dir()
+    fname = f'{figures_dir}/eta_eta_residual_boundary.png'
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    print('-- %s saved' % fname)
+    plt.close(fig)
+
+
 def generate_all_figures():
     eta_arr, eta_residual_arr, eta_threshold_low_best = return_eta_arrs()
     eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, \
