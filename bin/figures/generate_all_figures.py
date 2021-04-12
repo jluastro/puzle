@@ -8,7 +8,7 @@ from plot_process_priority import plot_star_process_priority as figures1
 from plot_random_eta import generate_all_figures as figures2
 from plot_survival_rates import plot_survival_rates as figures3
 from plot_ulens_cands_samples import generate_all_figures as figures4
-from generate_all_figures import generate_all_figures as figures5
+from plot_ulens_eta_by import generate_all_figures as figures5
 
 
 if __name__ == '__main__':

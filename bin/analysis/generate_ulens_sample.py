@@ -289,7 +289,7 @@ def generate_random_lightcurves():
     metadata_arr = np.array(metadata_arr, dtype=dtype)
     metadata_dct = {k: metadata_arr[k] for k in metadata_arr.dtype.names}
 
-    fname = f'{data_dir}/ulens_sample_metadata.{rank:02d}.npz'
+    fname = f'{data_dir}/ulens_samples/ulens_sample_metadata.{rank:02d}.npz'
     np.savez(fname, **metadata_dct)
 
 
