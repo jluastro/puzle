@@ -15,6 +15,7 @@
                 <th>Glat</th>
                 <th>n<sub>objs,pass</sub></th>
                 <th>n<sub>objs,tot</sub></th>
+                <th>t<sub>0</sub></th>
                 <th>t<sub>E</sub></th>
                 <th>&#916;&#967;<super>2</super></th>
                 <th>&#951;</th>
@@ -33,16 +34,9 @@
                 <td>{{ "%.5f" % cand.glat }}</td>
                 <td>{{ "%i" % cand.num_objs_pass }}</td>
                 <td>{{ "%i" % cand.num_objs_tot }}</td>
-                {% if cand.t_E_best is float %}
-                    <td>{{ "%.2f" %  cand.t_E_best }}</td>
-                {%  else %}
-                    <td>{{ "None" }}</td>
-                {% endif %}
-                {% if cand.chi_squared_delta_best is float %}
-                    <td>{{ "%.2f" %  cand.chi_squared_delta_best }}</td>
-                {%  else %}
-                    <td>{{ "None" }}</td>
-                {% endif %}
+                <td>{{ "%.2f" %  cand.t_0_best }}</td>
+                <td>{{ "%.2f" %  cand.t_E_best }}</td>
+                <td>{{ "%.2f" %  cand.chi_squared_delta_best }}</td>
                 <td>{{ "%.2f" % cand.eta_best }}</td>
                 <td>{{ "%.2f" % cand.eta_threshold_low_best }}</td>
                 <td>{{ "%.2f" % cand.eta_residual_best }}</td>
@@ -74,6 +68,7 @@
                     {% else %}
                     <td></td>
                     {% endif %}
+                    <td></td>
                     <td></td>
                     <td></td>
                     <td></td>

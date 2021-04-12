@@ -98,10 +98,14 @@ class FilterSearchForm(FlaskForm):
                                    validators=[Optional(), NumberRange(min=1)])
     num_objs_pass_max = IntegerField('num_objs_pass max',
                                    validators=[Optional(), NumberRange(min=1)])
+    t_0_best_min = FloatField('t_0_best min (days)',
+                              validators=[Optional(), NumberRange(min=58144)])
+    t_0_best_max = FloatField('t_0_best max (days)',
+                              validators=[Optional(), NumberRange(min=59293)])
     t_E_best_min = FloatField('t_E_best min (days)',
-                              validators=[Optional(), NumberRange(min=0)])
+                              validators=[Optional(), NumberRange(min=0.01)])
     t_E_best_max = FloatField('t_E_best max (days)',
-                              validators=[Optional(), NumberRange(min=0)])
+                              validators=[Optional(), NumberRange(min=5000)])
     chi_squared_delta_best_min = FloatField('chi_squared_delta_best min',
                                             validators=[Optional(), NumberRange(min=0)])
     chi_squared_delta_best_max = FloatField('chi_squared_delta_best max',

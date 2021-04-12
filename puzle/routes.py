@@ -456,7 +456,7 @@ def filter_search():
             query = query.filter(getattr(Candidate, field) <= val_max)
         return query
 
-    query_fields = ['num_objs_pass', 't_E_best',
+    query_fields = ['num_objs_pass', 't_0_best', 't_E_best',
                     'chi_squared_delta_best', 'rf_score_best',
                     'eta_best', 'eta_residual_best']
 
@@ -536,7 +536,7 @@ def filter_search():
 @app.route('/reset_filter_search', methods=['GET'])
 @login_required
 def reset_filter_search():
-    query_fields = ['num_objs_pass', 't_E_best',
+    query_fields = ['num_objs_pass', 't_0_best', 't_E_best',
                     'chi_squared_delta_best', 'rf_score_best',
                     'eta_best', 'eta_residual_best']
 

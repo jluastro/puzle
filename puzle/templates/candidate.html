@@ -27,6 +27,7 @@
             <tr>
                 <th>n<sub>objs,pass</sub></th>
                 <th>n<sub>objs,tot</sub></th>
+                <th>t<sub>0</sub></th>
                 <th>t<sub>E</sub></th>
                 <th>&#916;&#967;<super>2</super></th>
                 <th>&#951;</th>
@@ -38,16 +39,9 @@
             <tr>
                 <td>{{ "%i" % cand.num_objs_pass }}</td>
                 <td>{{ "%i" % cand.num_objs_tot }}</td>
-                {% if cand.t_E_best is float %}
-                    <td>{{ "%.2f" %  cand.t_E_best }}</td>
-                {%  else %}
-                    <td>{{ "None" }}</td>
-                {% endif %}
-                {% if cand.chi_squared_delta_best is float %}
-                    <td>{{ "%.2f" %  cand.chi_squared_delta_best }}</td>
-                {%  else %}
-                    <td>{{ "None" }}</td>
-                {% endif %}
+                <td>{{ "%.2f" % cand.t_0_best }}</td>
+                <td>{{ "%.2f" % cand.t_E_best }}</td>
+                <td>{{ "%.2f" % cand.chi_squared_delta_best }}</td>
                 <td>{{ "%.2f" % cand.eta_best }}</td>
                 <td>{{ "%.2f" % cand.eta_threshold_low_best }}</td>
                 <td>{{ "%.2f" % cand.eta_residual_best }}</td>
@@ -61,7 +55,7 @@
             <tr class="blank_row"></tr>
             <tr>
                 <td colspan="3"><b>ZTF IDs</b></td>
-                <td colspan="3"><b>OGLE Target</b></td>
+                <td colspan="4"><b>OGLE Target</b></td>
                 <td colspan="3"><b>Follow Status</b></td>
             </tr>
             <tr>
@@ -70,7 +64,7 @@
                         <button name="ztf_ids" type="submit">Fetch ZTF IDs</button>
                     </form>
                 </td>
-                <td colspan="3">
+                <td colspan="4">
                     <form action="/fetch_candidate_ogle_target/{{ cand.id }}" method="post">
                         <button name="OGLE_target" type="submit">Fetch OGLE Target</button>
                     </form>
