@@ -154,12 +154,12 @@ class Source(db.Model):
     def __init__(self, object_id_g, object_id_r, object_id_i,
                  lightcurve_position_g, lightcurve_position_r, lightcurve_position_i,
                  ra, dec, lightcurve_filename, ingest_job_id,
-                 version='DR4', id=None, comments=None, _ztf_ids=None,
+                 version='DR5', id=None, comments=None, _ztf_ids=None,
                  fit_filter=None, fit_t_0=None,
                  fit_t_E=None, fit_f_0=None,
                  fit_f_1=None, fit_a_type=None,
                  fit_chi_squared_flat=None,
-                 fit_chi_squared_delta=None, cand_id=None):
+                 fit_chi_squared_delta=None, cand_id=None, lightcurve_file_pointer=None):
         self.object_id_g = object_id_g
         self.object_id_r = object_id_r
         self.object_id_i = object_id_i
@@ -173,7 +173,7 @@ class Source(db.Model):
         self.version = version
         self.id = id
         self.comments = comments
-        self.zort_source = self.load_zort_source()
+        self.zort_source = self.load_zort_source(lightcurve_file_pointer)
         self._ztf_ids = _ztf_ids
         self.fit_filter = fit_filter
         self.fit_t_0 = fit_t_0
@@ -233,20 +233,23 @@ class Source(db.Model):
         radius_deg = radius / 3600.
         return func.q3c_radial_query(text('ra'), text('dec'), ra, dec, radius_deg)
 
-    def load_zort_source(self):
+    def load_zort_source(self, lightcurve_file_pointer=None):
         dir_path_puzle = os.path.dirname(os.path.dirname(
             os.path.realpath(__file__)))
-        dir_path = f'{dir_path_puzle}/data/DR4'
+        dir_path = f'{dir_path_puzle}/data/DR5'
         fname = '%s/%s' % (dir_path, os.path.basename(self.lightcurve_filename))
         source = zort_source(filename=fname,
                              lightcurve_position_g=self.lightcurve_position_g,
                              lightcurve_position_r=self.lightcurve_position_r,
-                             lightcurve_position_i=self.lightcurve_position_i)
+                             lightcurve_position_i=self.lightcurve_position_i,
+                             lightcurve_file_pointer=lightcurve_file_pointer,
+                             check_initialization=False)
         return source
 
     def load_lightcurve_plot(self):
         job_id = self.id.split('_')[0]
-        folder = f'puzle/static/source/{job_id}'
+        job_id_prefix = job_id[:3]
+        folder = f'puzle/static/source/{job_id_prefix}/{job_id}'
         if not os.path.exists(folder):
             os.makedirs(folder)
 
@@ -317,6 +320,11 @@ class SourceIngestJob(db.Model):
         self.ra_end = ra_end
         self.dec_start = dec_start
         self.dec_end = dec_end
+
+    @hybrid_method
+    def cone_search(self, ra, dec, radius=2):
+        radius_deg = radius / 3600.
+        return func.q3c_radial_query(text('ra_start'), text('dec_start'), ra, dec, radius_deg)
 
 
 class StarIngestJob(db.Model):

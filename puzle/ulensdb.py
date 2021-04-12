@@ -5,9 +5,9 @@ from filelock import FileLock
 from pathlib import Path
 import logging
 
-from puzle.utils import execute
+from puzle.utils import execute, get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 ulensdb_file_path = os.getenv('ULENS_DB_FILEPATH')
 logging.getLogger('filelock').setLevel(logging.WARNING)
 
@@ -73,7 +73,7 @@ def remove_db_id():
     logger.debug(f'{my_db_id}: Delete success')
 
 
-def insert_db_id(num_ids=50, retry_time=5):
+def insert_db_id(num_ids=50):
     lock_path = ulensdb_file_path.replace('.txt', '.lock')
     lock = FileLock(lock_path)
 
@@ -83,10 +83,14 @@ def insert_db_id(num_ids=50, retry_time=5):
         return
 
     successFlag = False
+    retry_time = 1
+    retry_multiplier = 2
+    retry_time_max = 120
     while True:
-        time.sleep(abs(np.random.normal(scale=.01 * retry_time)))
+        time.sleep(abs(np.random.normal(scale=retry_time)))
         logger.debug(f'{my_db_id}: Attempting insert to {ulensdb_file_path}')
         with lock:
+            logger.debug(f'{my_db_id}: Lock acquired')
             db_ids = load_db_ids()
             if len(db_ids) < num_ids:
                 db_ids.add(my_db_id)
@@ -101,5 +105,7 @@ def insert_db_id(num_ids=50, retry_time=5):
             logger.debug(f'{my_db_id}: Insert success')
             return
         else:
+            retry_time = min(retry_time_max, retry_time * retry_multiplier)
             logger.debug(f'{my_db_id}: Insert fail, retry in {retry_time} seconds')
             time.sleep(retry_time)
+            retry_multiplier *= 2

@@ -10,6 +10,7 @@ from scipy.stats import expon
 from astropy.table import Table, vstack
 from shapely.geometry.polygon import Polygon
 import pickle
+import itertools
 
 from zort.radec import return_ZTF_RCID_corners
 from zort.photometry import fluxes_to_magnitudes, magnitudes_to_fluxes
@@ -49,7 +50,7 @@ def gather_PopSyCLE_refined_events():
     print(f'{N_samples} Samples')
 
 
-def fetch_sample_objects(lightcurve_file, n_days_min=20,
+def fetch_sample_objects(lightcurve_file, n_days_min=50,
                          rf_threshold=RF_THRESHOLD,
                          num_sources_rcid=150, rcid_radius=1250,
                          rcid_list=None):
@@ -196,34 +197,25 @@ def calculate_eta(mag):
 
 
 def average_xy_on_round_x(x, y):
-    # assumes that x is ordered
-    x_round = np.round(x)
+    data = zip(np.round(x), x, y)
+    key_func = lambda x: x[0]
     x_avg = []
     y_avg = []
-    for i in range(len(x)):
-        if i == 0 or len(x_window) == 0:
-            x_window = [x[i]]
-            y_window = [y[i]]
-        elif x_round[i] == x_prev:
-            x_window.append(x[i])
-            y_window.append(y[i])
-        else:
-            x_avg.append(np.mean(x_window))
-            y_avg.append(np.mean(y_window))
-            x_window = [x[i]]
-            y_window = [y[i]]
-
-        x_prev = x_round[i]
-
-    x_avg.append(np.mean(x_window))
-    y_avg.append(np.mean(y_window))
+    for key, group in itertools.groupby(data, key_func):
+        items = list(group)
+        num_items = len(items)
+        x_sum = sum([i[1] for i in items])
+        y_sum = sum([i[2] for i in items])
+        x_avg.append(x_sum / num_items)
+        y_avg.append(y_sum / num_items)
 
     return np.array(x_avg), np.array(y_avg)
 
 
 def calculate_eta_on_daily_avg(hmjd, mag):
     _, mag_round = average_xy_on_round_x(hmjd, mag)
-    return calculate_eta(mag_round)
+    eta = calculate_eta(mag_round)
+    return eta
 
 
 def calculate_J(mag, magerr):
@@ -270,7 +262,8 @@ def calculate_eta_on_residuals(t_obs_arr, mag_arr, magerr_arr,
     mag_model_arr, _ = fluxes_to_magnitudes(flux_model_arr, fluxerr_obs_arr)
 
     mag_residual_arr = mag_arr - mag_model_arr
-    eta = calculate_eta(mag_residual_arr)
+    cond = ~np.isnan(mag_residual_arr)
+    eta = calculate_eta(mag_residual_arr[cond])
     if return_fit_data:
         return eta, fit_data
     else:

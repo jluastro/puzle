@@ -22,9 +22,12 @@ dependencies:
   - requests
   - ipython
   - matplotlib
+  - scipy
+  - h5py
   - pip
   - pip:
       - filelock
       - python-dotenv
       - shapely
+      - greenlet
 prefix: /Users/michael/miniconda3/envs/puzle

@@ -8,7 +8,7 @@ from puzle import app, db
 from puzle.forms import LoginForm, RegistrationForm, \
     EditProfileForm, ResetPasswordRequestForm, ResetPasswordForm, \
     EditCommentForm, RadialSearchForm, EmptyForm, \
-    FilterSearchForm, CandidateOrderForm
+    FilterSearchForm
 from puzle.models import User, Source, Candidate
 from puzle.email import send_password_reset_email
 
@@ -69,6 +69,7 @@ def register():
 @app.route('/user/<username>', methods=['GET', 'POST'])
 @login_required
 def user(username):
+    form = EmptyForm()
     user = User.query.filter_by(username=username).first_or_404()
     page = request.args.get('page', 1, type=int)
     cands = user.followed_candidates().paginate(page, app.config['ITEMS_PER_PAGE'], False)
@@ -76,7 +77,7 @@ def user(username):
         if cands.has_next else None
     prev_url = url_for('user', username=username, page=cands.prev_num) \
         if cands.has_prev else None
-    return render_template('user.html', user=user, cands=cands,
+    return render_template('user.html', user=user, form=form, cands=cands,
                            next_url=next_url, prev_url=prev_url)
 
 
@@ -272,9 +273,9 @@ def follow_candidate(candid, whichpage):
         current_user.follow_candidate(cand)
         db.session.commit()
         flash('You are following Candidate {}'.format(cand.id), 'success')
-        print(whichpage)
         if whichpage == "same":
-            return redirect(request.referrer)
+            url = '%s#%s' % (request.referrer, candid)
+            return redirect(url)
         elif whichpage == "cand":
             return redirect(url_for('candidate', candid=candid))
     else:
@@ -293,9 +294,9 @@ def unfollow_candidate(candid, whichpage):
         current_user.unfollow_candidate(cand)
         db.session.commit()
         flash('You are not following Source {}'.format(cand.id), 'success')
-        print(whichpage)
         if whichpage == "same":
-            return redirect(request.referrer)
+            url = '%s#%s' % (request.referrer, candid)
+            return redirect(url)
         elif whichpage == "cand":
             return redirect(url_for('candidate', candid=candid))
     else:
@@ -386,7 +387,9 @@ def radial_search():
         dec = session['dec']
         radius = session['radius']
         query = Candidate.query.filter(Candidate.cone_search(ra, dec, radius))
-        if session['order_by'] == 'eta_best':
+        if session['order_by'] == 'eta_residual_best':
+            order_by_cond = Candidate.eta_residual_best.desc()
+        elif session['order_by'] == 'eta_best':
             order_by_cond = Candidate.eta_best.asc()
         elif session['order_by'] == 'chi_squared_delta_best':
             order_by_cond = Candidate.chi_squared_delta_best.desc()
@@ -448,7 +451,7 @@ def filter_search():
 
     query_fields = ['num_objs_pass', 't_E_best',
                     'chi_squared_delta_best', 'rf_score_best',
-                    'eta_best']
+                    'eta_best', 'eta_residual_best']
 
     form_filter = FilterSearchForm()
     if form_filter.validate_on_submit():
@@ -487,7 +490,9 @@ def filter_search():
             current_query = True
 
     if current_query:
-        if session['order_by'] == 'eta_best':
+        if session['order_by'] == 'eta_residual_best':
+            order_by_cond = Candidate.eta_residual_best.desc()
+        elif session['order_by'] == 'eta_best':
             order_by_cond = Candidate.eta_best.asc()
         elif session['order_by'] == 'chi_squared_delta_best':
             order_by_cond = Candidate.chi_squared_delta_best.desc()
@@ -526,7 +531,7 @@ def filter_search():
 def reset_filter_search():
     query_fields = ['num_objs_pass', 't_E_best',
                     'chi_squared_delta_best', 'rf_score_best',
-                    'eta_best']
+                    'eta_best', 'eta_residual_best']
 
     for field in query_fields:
         for minmax in ['min', 'max']:

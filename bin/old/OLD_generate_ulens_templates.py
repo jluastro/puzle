@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """
-generate_ulens_templates.py
+OLD_generate_ulens_templates.py
 """
 
 import matplotlib.pyplot as plt
@@ -141,6 +141,7 @@ def plot_ulens_templates(ulens_templates_with_err=None):
     fname = f'{figures_dir}/ulens_templates.png'
     fig.savefig(fname, dpi=100, bbox_inches='tight',
                 pad_inches=0.01)
+    print('-- %s saved' % fname)
 
 
 if __name__ == '__main__':

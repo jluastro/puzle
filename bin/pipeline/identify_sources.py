@@ -8,15 +8,15 @@ import numpy as np
 from datetime import datetime, timedelta
 from zort.lightcurveFile import LightcurveFile
 from sqlalchemy.sql.expression import func
-import logging
 import pickle
 
 from puzle.models import Source, SourceIngestJob
-from puzle.utils import fetch_job_enddate, return_DR4_dir, fetch_lightcurve_rcids
+from puzle.utils import fetch_job_enddate, return_DR5_dir, \
+    fetch_lightcurve_rcids, get_logger
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle import db
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def object_in_bounds(obj, ra_start, ra_end, dec_start, dec_end):
@@ -143,8 +143,8 @@ def source_to_csv_line(source, source_id):
 
 
 def export_sources(job_id, source_list):
-    DR4_dir = return_DR4_dir()
-    dir = '%s/sources_%s' % (DR4_dir, str(job_id)[:3])
+    DR5_dir = return_DR5_dir()
+    dir = '%s/sources_%s' % (DR5_dir, str(job_id)[:3])
 
     if not os.path.exists(dir):
         os.makedirs(dir)
@@ -247,5 +247,4 @@ def identify_sources_script(nepochs_min=20, shutdown_time=10, single_job=False):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
     identify_sources_script()

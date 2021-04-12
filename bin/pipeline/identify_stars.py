@@ -8,15 +8,15 @@ import numpy as np
 from datetime import datetime, timedelta
 from sqlalchemy.sql.expression import func
 from zort.radec import return_shifted_ra
-import logging
 from scipy.spatial import cKDTree
 
 from puzle.models import Source, SourceIngestJob, Star, StarIngestJob
-from puzle.utils import fetch_job_enddate, return_DR3_dir, lightcurve_file_to_field_id
-from puzle.ulensdb import insert_db_id, remove_db_id
+from puzle.utils import fetch_job_enddate, return_DR5_dir, \
+    lightcurve_file_to_field_id, get_logger
+from puzle.ulensdb import insert_db_id, remove_db_id, get_logger
 from puzle import db
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def fetch_job():
@@ -96,17 +96,16 @@ def csv_line_to_source(line):
                     lightcurve_filename=attrs[7],
                     ra=float(attrs[8]),
                     dec=float(attrs[9]),
-                    ingest_job_id=int(attrs[10]),
-                    version='DR3')
+                    ingest_job_id=int(attrs[10]))
     return source
 
 
 def fetch_sources(source_job_id):
-    DR3_dir = return_DR3_dir()
-    dir = '%s/sources_%s' % (DR3_dir, str(source_job_id)[:3])
+    DR5_dir = return_DR5_dir()
+    dir = '%s/sources_%s' % (DR5_dir, str(source_job_id)[:3])
 
     if not os.path.exists(dir):
-        logging.error('Source directory missing!')
+        logger.error('Source directory missing!')
         return
 
     fname = f'{dir}/sources.{source_job_id:06}.txt'
@@ -121,8 +120,8 @@ def fetch_sources(source_job_id):
 
 
 def _export_stars(source_job_id, stars):
-    DR3_dir = return_DR3_dir()
-    dir = '%s/stars_%s' % (DR3_dir, str(source_job_id)[:3])
+    DR5_dir = return_DR5_dir()
+    dir = '%s/stars_%s' % (DR5_dir, str(source_job_id)[:3])
 
     if not os.path.exists(dir):
         os.makedirs(dir)
@@ -194,7 +193,20 @@ def star_to_csv_line(star):
     return line
 
 
-def identify_stars(shutdown_time=10, single_job=False):
+def identify_stars(source_job_id):
+    logger.info(f'Job {source_job_id}: Fetching sources')
+    sources = fetch_sources(source_job_id)
+
+    num_sources = len(sources)
+    logger.info(f'Job {source_job_id}: Exporting {num_sources} stars to disk')
+    export_stars(source_job_id, sources)
+    logger.info(f'Job {source_job_id}: Export complete')
+
+    finish_job(source_job_id)
+    logger.info(f'Job {source_job_id}: Job complete')
+
+
+def identify_stars_script(shutdown_time=10, single_job=False):
     job_enddate = fetch_job_enddate()
     if job_enddate:
         script_enddate = job_enddate - timedelta(minutes=shutdown_time)
@@ -213,21 +225,11 @@ def identify_stars(shutdown_time=10, single_job=False):
             time.sleep(2 * 60 * shutdown_time)
             return
 
-        logger.info(f'Job {source_job_id}: Fetching sources')
-        sources = fetch_sources(source_job_id)
-
-        num_sources = len(sources)
-        logger.info(f'Job {source_job_id}: Exporting {num_sources} stars to disk')
-        export_stars(source_job_id, sources)
-        logger.info(f'Job {source_job_id}: Export complete')
-
-        finish_job(source_job_id)
-        logger.info(f'Job {source_job_id}: Job complete')
+        identify_stars(source_job_id)
 
         if single_job:
             return
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-    identify_stars()
+    identify_stars_script()

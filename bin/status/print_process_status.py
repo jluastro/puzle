@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from puzle import db
 from puzle.models import StarProcessJob
 
@@ -8,6 +10,7 @@ def print_star_processing_status():
     job_ids = [job.source_ingest_job_id for job in jobs]
     job_ids_finished = [job.source_ingest_job_id for job in jobs if job.finished == True]
 
+    print('\nDate: %s' % datetime.now())
     print('\nProcessing stars...')
     print('%04d jobs - total on db' % len(all_jobs))
     print('%04d jobs - started on db' % len(job_ids))

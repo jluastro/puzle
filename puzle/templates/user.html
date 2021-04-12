@@ -60,11 +60,18 @@
                 <td>{{ cand.best_source_id }}</td>
                 </tr>
                 <tr>
-                <td colspan="11">
+                <td colspan="10">
                 {% for source_id in cand.unique_source_id_arr %}
-                <img width="200" src="{{ url_for('static', filename='source/') }}{{ source_id.split('_')[0] }}/{{ source_id }}_lightcurve.png">
+                <img width="200" src="{{ url_for('static', filename='source/') }}{{ source_id.split('_')[0][:3] }}/{{ source_id.split('_')[0] }}/{{ source_id }}_lightcurve.png">
                 {% endfor %}
                 </td>
+                <td>
+                 <form action="{{ url_for('unfollow_candidate', candid=cand.id, whichpage="same") }}" method="post">
+                     {{ form.hidden_tag() }}
+                     {{ form.submit(value='Unfollow') }}
+                 </form>
+                </td>
+                </tr>
             {% endfor %}
         </tr>
     </table>

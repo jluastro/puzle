@@ -2,24 +2,22 @@
 """
 process_stars.py
 """
-import time
 import os
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime
 from scipy.stats import binned_statistic
-import logging
 from collections import defaultdict, namedtuple
 import pickle
 
 from puzle.models import Source, StarIngestJob, Star, StarProcessJob, Candidate
-from puzle.utils import fetch_job_enddate, return_DR4_dir
+from puzle.utils import return_DR5_dir, get_logger
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle.stats import calculate_eta_on_daily_avg, \
     RF_THRESHOLD, calculate_eta_on_daily_avg_residuals
 from puzle import catalog
 from puzle import db
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 ObjectData = namedtuple('ObjectData', 'eta eta_residual rf_score fit_data eta_threshold_low eta_threshold_high')
 
@@ -88,8 +86,16 @@ def _parse_object_int(attr):
         return int(attr)
 
 
-def csv_line_to_source(line):
+def csv_line_to_source(line, lightcurve_file_pointers):
     attrs = line.replace('\n', '').split(',')
+
+    filename = attrs[7]
+    if filename in lightcurve_file_pointers:
+        lightcurve_file_pointer = lightcurve_file_pointers[filename]
+    else:
+        lightcurve_file_pointer = open(filename, 'r')
+        lightcurve_file_pointers[filename] = lightcurve_file_pointer
+
     source = Source(id=attrs[0],
                     object_id_g=_parse_object_int(attrs[1]),
                     object_id_r=_parse_object_int(attrs[2]),
@@ -100,23 +106,23 @@ def csv_line_to_source(line):
                     lightcurve_filename=attrs[7],
                     ra=float(attrs[8]),
                     dec=float(attrs[9]),
-                    ingest_job_id=int(attrs[10]))
+                    ingest_job_id=int(attrs[10]),
+                    lightcurve_file_pointer=lightcurve_file_pointer)
     return source
 
 
 def fetch_stars_and_sources(source_job_id):
-    logger.info(f'Fetching stars and sources for job {source_job_id}')
 
-    DR4_dir = return_DR4_dir()
-    dir = '%s/stars_%s' % (DR4_dir, str(source_job_id)[:3])
+    DR5_dir = return_DR5_dir()
+    dir = '%s/stars_%s' % (DR5_dir, str(source_job_id)[:3])
 
     if not os.path.exists(dir):
-        logging.error('Source directory missing!')
+        logger.error('Source directory missing!')
         return
 
     fname = f'{dir}/stars.{source_job_id:06}.txt'
     if not os.path.exists(fname):
-        logging.error('Source file missing!')
+        logger.error('Source file missing!')
         return
 
     sources_fname = fname.replace('star', 'source')
@@ -124,22 +130,42 @@ def fetch_stars_and_sources(source_job_id):
     sources_map = pickle.load(open(sources_map_fname, 'rb'))
 
     lines_star = open(fname, 'r').readlines()[1:]
+    num_stars = len(lines_star)
+    logger.info(f'Fetching {num_stars} stars and sources for job {source_job_id}')
+
     f_sources = open(sources_fname, 'r')
 
     stars_and_sources = {}
+    lightcurve_file_pointers = {}
     for i, line_star in enumerate(lines_star):
         star = csv_line_to_star_and_sources(line_star)
         source_arr = []
         for source_id in star.source_ids:
             f_sources.seek(sources_map[source_id])
             line_source = f_sources.readline()
-            source_arr.append(csv_line_to_source(line_source))
+            source = csv_line_to_source(line_source, lightcurve_file_pointers)
+            # initialize lightcurves with file pointers
+            for obj in source.zort_source.objects:
+                _ = obj.lightcurve.nepochs
+            source_arr.append(source)
         stars_and_sources[star.id] = (star, source_arr)
+
+    f_sources.close()
+
+    for file in lightcurve_file_pointers.values():
+        file.close()
 
     return stars_and_sources
 
 
-def construct_eta_dct(stars_and_sources, job_stats, obj_data, n_days_min=20):
+def hmjd_to_n_days(hmjd):
+    hmjd_round = np.round(hmjd)
+    hmjd_unique = set(hmjd_round)
+    n_days = len(hmjd_unique)
+    return n_days
+
+
+def construct_eta_dct(stars_and_sources, job_stats, obj_data, n_days_min=50):
     num_stars = 0
     num_objs = 0
     num_objs_pass_n_days = 0
@@ -152,7 +178,8 @@ def construct_eta_dct(stars_and_sources, job_stats, obj_data, n_days_min=20):
         for j, source in enumerate(sources):
             for k, obj in enumerate(source.zort_source.objects):
                 num_objs += 1
-                n_days = len(np.unique(np.round(obj.lightcurve.hmjd)))
+                hmjd = obj.lightcurve.hmjd
+                n_days = hmjd_to_n_days(hmjd)
                 if n_days < n_days_min:
                     continue
                 num_objs_pass_n_days += 1
@@ -182,7 +209,7 @@ def construct_eta_dct(stars_and_sources, job_stats, obj_data, n_days_min=20):
 
 
 def construct_eta_idxs_dct(eta_dct, idxs_dct, n_days_dct, job_stats, obj_data,
-                           n_days_min=20, num_epochs_splits=3):
+                           n_days_min=50, num_epochs_splits=3):
     epoch_edges_dct = {}
     eta_threshold_low_dct = defaultdict(list)
     eta_threshold_high_dct = defaultdict(list)
@@ -328,7 +355,8 @@ def construct_eta_residual_idxs_dct(stars_and_sources, eta_threshold_high_dct, r
                 magerr = obj.lightcurve.magerr
                 eta_residual, fit_data = calculate_eta_on_daily_avg_residuals(hmjd, mag, magerr,
                                                                               return_fit_data=True)
-                if eta_residual is not None and eta_residual > eta_threshold:
+                # if eta_residual is not None and eta_residual > eta_threshold:
+                if eta_residual is not None and not np.isnan(eta_residual):
                     eta_residual_idxs.append((i, j, k))
                     obj_key = (i, j, k)
                     obj_data[obj_key] = obj_data[obj_key]._replace(eta_residual=eta_residual)
@@ -442,10 +470,10 @@ def assemble_candidates(stars_and_sources, eta_residual_idxs_dct, obj_data):
 
 
 def filter_stars_to_candidates(source_job_id, stars_and_sources,
-                               n_days_min=20, num_epochs_splits=3):
+                               n_days_min=50, num_epochs_splits=3):
     job_stats = {}
     obj_data = {}
-    logger.info(f'Job {source_job_id}: Calculating eta')
+    logger.info(f'Job {source_job_id}: Calculating eta with n_days_min={n_days_min}')
     eta_dct, idxs_dct, n_days_dct = construct_eta_dct(stars_and_sources, job_stats, obj_data,
                                                         n_days_min=n_days_min)
     logger.info(f'Job {source_job_id}: '
@@ -454,6 +482,7 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
                 f'{job_stats["num_objs"]} Objects | '
                 f'{job_stats["num_objs_pass_n_days"]} Objects Past Days Cuts')
 
+    logger.info(f'Job {source_job_id}: Cutting on eta with num_epochs_splits={num_epochs_splits}')
     eta_idxs_dct, eta_threshold_low_dct, eta_threshold_high_dct = construct_eta_idxs_dct(
         eta_dct, idxs_dct, n_days_dct, job_stats, obj_data,
         n_days_min=n_days_min, num_epochs_splits=num_epochs_splits)
@@ -461,17 +490,19 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
                 f'{job_stats["num_stars_pass_eta"]} stars pass eta cut | '
                 f'{job_stats["num_objs_pass_eta"]} objects pass eta cut')
 
+    logger.info(f'Job {source_job_id}: Cutting on rf_score with RF_THRESHOLD={RF_THRESHOLD:.3f}')
     rf_idxs_dct = construct_rf_idxs_dct(stars_and_sources, eta_idxs_dct, job_stats, obj_data)
     logger.info(f'Job {source_job_id}: '
                 f'{job_stats["num_stars_pass_rf"]} stars pass rf_score cut | '
                 f'{job_stats["num_objs_pass_rf"]} objects pass rf_score cut')
 
+    logger.info(f'Job {source_job_id}: Calculating eta residuals')
     eta_residual_idxs_dct = construct_eta_residual_idxs_dct(stars_and_sources,
                                                             eta_threshold_high_dct,
                                                             rf_idxs_dct, job_stats, obj_data)
     logger.info(f'Job {source_job_id}: '
-                f'{job_stats["num_stars_pass_eta_residual"]} source pass eta_residual cut | '
-                f'{job_stats["num_objs_pass_eta_residual"]} objects pass eta_residual cut')
+                f'{job_stats["num_stars_pass_eta_residual"]} stars with successful eta_residual | '
+                f'{job_stats["num_objs_pass_eta_residual"]} objects with successful eta_residual')
 
     logger.info(f'Job {source_job_id}: Assembling candidates')
     candidates, source_ids, fit_stats_best, source_id_to_cand_id_dct = assemble_candidates(
@@ -482,7 +513,8 @@ def filter_stars_to_candidates(source_job_id, stars_and_sources,
     return candidates, job_stats, source_ids, fit_stats_best, source_id_to_cand_id_dct
 
 
-def upload_candidates(candidates, source_ids, fit_stats_best, source_id_to_cand_id_dct):
+def upload_candidates_and_finish_job(candidates, source_ids, fit_stats_best,
+                                     source_id_to_cand_id_dct, source_job_id, job_stats):
     insert_db_id()  # get permission to make a db connection
     for cand in candidates:
         db.session.add(cand)
@@ -506,13 +538,18 @@ def upload_candidates(candidates, source_ids, fit_stats_best, source_id_to_cand_
         source_db.fit_a_type = a_type
         source_db.fit_chi_squared_flat = chi_squared_flat
         source_db.fit_chi_squared_delta = chi_squared_delta
+
+    finish_job(source_job_id, job_stats, within_db_connection=True)
+
     db.session.commit()
     db.session.close()
     remove_db_id()  # release permission for this db connection
 
 
-def finish_job(source_job_id, job_stats):
-    insert_db_id()  # get permission to make a db connection
+def finish_job(source_job_id, job_stats, within_db_connection=False):
+    if not within_db_connection:
+        insert_db_id()  # get permission to make a db connection
+
     job = db.session.query(StarProcessJob).filter(
         StarProcessJob.source_ingest_job_id == source_job_id).one()
     job.finished = True
@@ -532,13 +569,18 @@ def finish_job(source_job_id, job_stats):
     job.eta_thresholds_low = job_stats['eta_thresholds_low']
     job.eta_thresholds_high = job_stats['eta_thresholds_high']
     job.num_candidates = job_stats['num_candidates']
-    db.session.commit()
-    db.session.close()
-    remove_db_id()  # release permission for this db connection
+
+    if not within_db_connection:
+        db.session.commit()
+        db.session.close()
+        remove_db_id()  # release permission for this db connection
 
 
 def process_stars(source_job_id):
     stars_and_sources = fetch_stars_and_sources(source_job_id)
+    if stars_and_sources is None:
+        logger.error(f'Job {source_job_id}: Exiting process due to failed fetch')
+        return
 
     num_stars = len(stars_and_sources)
     if num_stars > 0:
@@ -547,8 +589,8 @@ def process_stars(source_job_id):
             source_job_id, stars_and_sources)
         num_candidates = len(candidates)
         logger.info(f'Job {source_job_id}: Uploading {num_candidates} candidates')
-        if num_candidates > 0:
-            upload_candidates(candidates, source_ids, fit_stats_best, source_id_to_cand_id_dct)
+        upload_candidates_and_finish_job(candidates, source_ids, fit_stats_best,
+                                         source_id_to_cand_id_dct, source_job_id, job_stats)
         logger.info(f'Job {source_job_id}: Processing complete')
     else:
         logger.info(f'Job {source_job_id}: No stars, skipping process')
@@ -566,28 +608,14 @@ def process_stars(source_job_id):
                      'eta_thresholds_low': {},
                      'eta_thresholds_high': {},
                      'num_candidates': 0}
-
-    finish_job(source_job_id, job_stats)
+        finish_job(source_job_id, job_stats)
     logger.info(f'Job {source_job_id}: Job complete')
 
 
-def process_stars_script(shutdown_time=10, single_job=False):
-    job_enddate = fetch_job_enddate()
-    if job_enddate:
-        script_enddate = job_enddate - timedelta(minutes=shutdown_time)
-        logger.info('Script End Date: %s' % script_enddate)
-
+def process_stars_script(single_job=False):
     while True:
-
         source_job_id = fetch_job()
         if source_job_id is None:
-            return
-
-        if job_enddate and datetime.now() >= script_enddate:
-            logger.info(f'Within {shutdown_time} minutes of job end, '
-                        f'shutting down...')
-            reset_job(source_job_id)
-            time.sleep(2 * 60 * shutdown_time)
             return
 
         process_stars(source_job_id)
@@ -597,5 +625,4 @@ def process_stars_script(shutdown_time=10, single_job=False):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
     process_stars_script()

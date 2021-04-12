@@ -4,6 +4,7 @@ utils.py
 """
 import os
 import glob
+import logging
 import subprocess
 import numpy as np
 from datetime import datetime
@@ -19,6 +20,10 @@ def return_dir(folder):
     curdir = os.path.abspath(__file__)
     dir = '/'.join(curdir.split('/')[:-2]) + folder
     return dir
+
+
+def return_DR5_dir():
+    return return_dir('/data/DR5')
 
 
 def return_DR4_dir():
@@ -119,7 +124,7 @@ def lightcurve_file_to_field_id(lightcurve_file):
 def find_nearest_lightcurve_file(l, b):
     coord = SkyCoord(l, b, frame='galactic', unit='degree')
     ra, dec = coord.icrs.ra.value, coord.icrs.dec.value
-    lightcurve_files = glob.glob('/global/cfs/cdirs/uLens/ZTF/DR4/*txt')
+    lightcurve_files = glob.glob('/global/cfs/cdirs/uLens/ZTF/DR5/*txt')
     dist_min = None
     nearest_lightcurve_file = None
     for lightcurve_file in lightcurve_files:
@@ -145,8 +150,8 @@ def find_nearest_lightcurve_file(l, b):
 
 
 def fetch_lightcurve_rcids(ra_start, ra_end, dec_start, dec_end):
-    DR4_dir = return_DR4_dir()
-    lightcurve_files = glob.glob(f'{DR4_dir}/field*txt')
+    DR5_dir = return_DR5_dir()
+    lightcurve_files = glob.glob(f'{DR5_dir}/field*txt')
     lightcurve_files.sort()
 
     lightcurve_rcids_arr = []
@@ -215,3 +220,34 @@ def load_stacked_array(fname):
     idx = npzfile['stacked_index']
     stacked = npzfile['stacked_array']
     return np.split(stacked.T, idx, axis=0)
+
+
+def get_logger(name, level=logging.DEBUG):
+    logger = logging.getLogger(name)
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s [%(name)-12s] %(levelname)-8s %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    logger.setLevel(level)
+    return logger
+
+
+def sortsplit(array, size):
+    """Returns array split into different lists in round-robin order.
+
+    A fun way to split up a list in round-robin order into separate lists.
+
+    Args:
+        array : list
+            List of items to be split into separate lists.
+        size : type
+            Number of lists in which array will be split into.
+
+    Returns:
+        train : list
+            A list of lists, each a piece of the provided array
+
+    """
+    # Have some fun thinking it through! A pen and paper might help :)
+    return [[array[i] for i in range(j, len(array), size)]
+            for j in range(size)]

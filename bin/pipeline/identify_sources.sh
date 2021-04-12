@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --account=m2218
-#SBATCH --qos=premium
+#SBATCH --qos=regular
 #SBATCH --constraint=haswell
 #SBATCH --nodes=1
-#SBATCH --time=42:00:00
-#SBATCH --job-name=stars
-#SBATCH --output=stars.%j.out
+#SBATCH --time=13:00:00
+#SBATCH --job-name=sources
+#SBATCH --output=sources.%j.out
 echo "---------------------------"
 echo "Job id = $SLURM_JOBID"
 echo "Proc id = $SLURM_PROCID"
@@ -14,8 +14,8 @@ date
 echo "---------------------------"
 
 conda activate puzle
-cd /global/cfs/cdirs/uLens/ZTF/DR4
-srun -N 1 -n 32 python /global/homes/m/mmedford/puzle/bin/identify_stars.py
+cd /global/cfs/cdirs/uLens/ZTF/DR5
+srun -N 1 -n 32 python /global/homes/m/mmedford/puzle/bin/pipeline/identify_sources.py
 
 echo "---------------------------"
 date
