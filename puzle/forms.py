@@ -126,13 +126,5 @@ class FilterSearchForm(FlaskForm):
     submit = SubmitField('Search')
 
 
-class CandidateOrderForm(FlaskForm):
-    order_by = RadioField(choices=[('eta_best', 'Re-order candidates by eta ascending'),
-                                  ('chi_squared_delta_best', 'Re-order candidates by chi_squared_delta desc')],
-                          default='eta_best')
-    order_by_num_objs = BooleanField('Order by number of objects descending', default=True)
-    submit = SubmitField('Order By')
-
-
 class EmptyForm(FlaskForm):
     submit = SubmitField('Submit')

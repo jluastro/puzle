@@ -8,7 +8,7 @@ from puzle import app, db
 from puzle.forms import LoginForm, RegistrationForm, \
     EditProfileForm, ResetPasswordRequestForm, ResetPasswordForm, \
     EditCommentForm, RadialSearchForm, EmptyForm, \
-    FilterSearchForm, CandidateOrderForm
+    FilterSearchForm
 from puzle.models import User, Source, Candidate
 from puzle.email import send_password_reset_email
 
