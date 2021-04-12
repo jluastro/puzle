@@ -87,13 +87,13 @@
                 <td colspan="3">
                     {% if cand.ztf_ids|length > 0 %}
                         {% for ztf_id in cand.ztf_ids %}
-                            <p><a href="https://lasair.roe.ac.uk/object/{{ ztf_id }}/" target="_blank">{{ ztf_id }}</a></p>
+                            <p><a href="https://alerce.online/object/{{ ztf_id }}/" target="_blank">{{ ztf_id }}</a></p>
                         {% endfor %}
                     {% else %}
                         None
                     {% endif %}
                 </td>
-                <td colspan="3">
+                <td colspan="4">
                     {% if cand.ogle_target %}
                         <p><a href="http://ogle.astrouw.edu.pl/ogle4/ews/{{ cand.ogle_target.split('-')[0] }}/blg-{{ cand.ogle_target.split('-')[2] }}.html" target="_blank">{{ cand.ogle_target }}</a></p>
                     {% else %}
