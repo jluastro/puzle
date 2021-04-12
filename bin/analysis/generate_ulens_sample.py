@@ -326,10 +326,82 @@ def strictly_decreasing(L):
     return all(x>y for x, y in zip(L, L[1:]))
 
 
-def test_for_three_consecutive_decreases(arr):
-    return any([strictly_decreasing(arr[i:i+3])
-                for i in range(len(arr)-2)])
+def three_consecutive_decreases(arr):
+    return np.array([strictly_decreasing(arr[i:i+3]) for i in range(len(arr)-2)])
 
+
+def test_for_three_consecutive_decreases(arr):
+    return any(test_for_three_consecutive_decreases(arr))
+
+
+# def calculate_stats_on_lightcurves():
+#     # run consolidate lightcurves first
+#
+#     if 'SLURMD_NODENAME' in os.environ:
+#         from mpi4py import MPI
+#         comm = MPI.COMM_WORLD
+#         rank = comm.rank
+#         size = comm.size
+#     else:
+#         rank = 0
+#         size = 1
+#
+#     data_dir = return_data_dir()
+#     fname = f'{data_dir}/ulens_sample.total.npz'
+#     data = load_stacked_array(fname)
+#
+#     idx_check_arr = np.arange(len(data))
+#     my_idx_check = np.array_split(idx_check_arr, size)[rank]
+#
+#     my_data = np.array_split(data, size)[rank]
+#     my_etas = []
+#     my_eta_residuals = []
+#     my_observables = []
+#     for i, d in enumerate(my_data):
+#         hmjd = d[:, 0]
+#         mag = d[:, 1]
+#         magerr = d[:, 2]
+#
+#         eta_daily = calculate_eta_on_daily_avg(hmjd, mag)
+#         eta_residual_daily = calculate_eta_on_daily_avg_residuals(hmjd, mag, magerr)
+#         my_etas.append(eta_daily)
+#         my_eta_residuals.append(eta_residual_daily)
+#
+#
+#         hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
+#         cond_decreasing = test_for_three_consecutive_decreases(mag_round)
+#         #
+#         # zp = 21.2477
+#         # A = np.array(calc_magnification(metadata['u0'][idx]))
+#         # factor_ZP = 10 ** (zp / 2.5)
+#         # f_S = 10 ** ((metadata['mag_src'][idx] - zp) / (-2.5))
+#         # f_tot = f_S / metadata['b_sff'][idx]
+#         # lhs = (A - 1) * f_S
+#         # rhs = 3 * np.sqrt(f_tot / factor_ZP)
+#         # cond_bump = lhs > rhs
+#
+#         median = np.median(mag_round)
+#         std = np.std(mag_round)
+#         cond_three_sigma = np.sum(mag_round <= median - 3 * std) > 3
+#
+#         if cond_decreasing and cond_three_sigma:
+#             my_observables.append(True)
+#         else:
+#             my_observables.append(False)
+#
+#     total_etas = comm.gather(my_etas, root=0)
+#     total_eta_residuals = comm.gather(my_eta_residuals, root=0)
+#     total_observables = comm.gather(my_observables, root=0)
+#     total_idx_check = comm.gather(my_idx_check, root=0)
+#
+#     if rank == 0:
+#         etas = list(itertools.chain(*total_etas))
+#         eta_residuals = list(itertools.chain(*total_eta_residuals))
+#         observables = list(itertools.chain(*total_observables))
+#         idx_check = list(itertools.chain(*total_idx_check))
+#         fname = f'{data_dir}/ulens_sample_etas.total.npz'
+#         np.savez(fname, eta=etas, eta_residual=eta_residuals,
+#                  observable=observables, idx_check=idx_check)
 
 def calculate_stats_on_lightcurves():
     # run consolidate lightcurves first
@@ -353,7 +425,9 @@ def calculate_stats_on_lightcurves():
     my_data = np.array_split(data, size)[rank]
     my_etas = []
     my_eta_residuals = []
-    my_observables = []
+    my_observables1 = []
+    my_observables2 = []
+    my_observables3 = []
     for i, d in enumerate(my_data):
         hmjd = d[:, 0]
         mag = d[:, 1]
@@ -365,39 +439,52 @@ def calculate_stats_on_lightcurves():
         my_eta_residuals.append(eta_residual_daily)
 
         hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
-        cond_decreasing = test_for_three_consecutive_decreases(mag_round)
-        #
-        # zp = 21.2477
-        # A = np.array(calc_magnification(metadata['u0'][idx]))
-        # factor_ZP = 10 ** (zp / 2.5)
-        # f_S = 10 ** ((metadata['mag_src'][idx] - zp) / (-2.5))
-        # f_tot = f_S / metadata['b_sff'][idx]
-        # lhs = (A - 1) * f_S
-        # rhs = 3 * np.sqrt(f_tot / factor_ZP)
-        # cond_bump = lhs > rhs
+        n_days_in_split = int(len(mag_round) / 5)
+        mag_splits = [mag_round[i * n_days_in_split:(i + 1) * n_days_in_split] for i in range(5)]
+        median = np.median([np.median(mag) for mag in mag_splits])
+        std = np.median([np.std(mag) for mag in mag_splits])
 
-        median = np.median(mag_round)
-        std = np.std(mag_round)
-        cond_three_sigma = np.sum(mag_round <= median - 3 * std) > 3
+        cond_three_sigma = mag_round <= median - 3 * std
+        cond_descreasing = three_consecutive_decreases(mag_round)
+        count_cond = np.sum(cond_three_sigma[:-2] * cond_descreasing)
 
-        if cond_decreasing and cond_three_sigma:
-            my_observables.append(True)
+        if count_cond == 0:
+            my_observables1.append(False)
+            my_observables2.append(False)
+            my_observables3.append(False)
+        elif count_cond == 1:
+            my_observables1.append(True)
+            my_observables2.append(False)
+            my_observables3.append(False)
+        elif count_cond == 2:
+            my_observables1.append(True)
+            my_observables2.append(True)
+            my_observables3.append(False)
         else:
-            my_observables.append(False)
+            my_observables1.append(True)
+            my_observables2.append(True)
+            my_observables3.append(True)
 
     total_etas = comm.gather(my_etas, root=0)
     total_eta_residuals = comm.gather(my_eta_residuals, root=0)
-    total_observables = comm.gather(my_observables, root=0)
+    total_observables1 = comm.gather(my_observables1, root=0)
+    total_observables2 = comm.gather(my_observables2, root=0)
+    total_observables3 = comm.gather(my_observables3, root=0)
     total_idx_check = comm.gather(my_idx_check, root=0)
 
     if rank == 0:
         etas = list(itertools.chain(*total_etas))
         eta_residuals = list(itertools.chain(*total_eta_residuals))
-        observables = list(itertools.chain(*total_observables))
+        observables1 = list(itertools.chain(*total_observables1))
+        observables2 = list(itertools.chain(*total_observables2))
+        observables3 = list(itertools.chain(*total_observables3))
         idx_check = list(itertools.chain(*total_idx_check))
         fname = f'{data_dir}/ulens_sample_etas.total.npz'
         np.savez(fname, eta=etas, eta_residual=eta_residuals,
-                 observable=observables, idx_check=idx_check)
+                 observable1=observables1,
+                 observable2=observables2,
+                 observable3=observables3,
+                 idx_check=idx_check)
 
 
 def test_lightcurve_stats(N_samples=1000):
@@ -408,6 +495,8 @@ def test_lightcurve_stats(N_samples=1000):
 
     fname = f'{data_dir}/ulens_sample_etas.total.npz'
     data_etas = np.load(fname)
+    eta_arr = data_etas['eta']
+    eta_residual_arr = data_etas['eta_residual']
     observable_arr = data_etas['observable']
     assert np.all(data_etas['idx_check'] == np.arange(len(observable_arr)))
 
