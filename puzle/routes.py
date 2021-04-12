@@ -155,11 +155,18 @@ def candidate(candid):
     title = 'Candidate %s' % candid
     form = EmptyForm()
     cand = Candidate.query.filter_by(id=candid).first_or_404()
-    sources = Source.query.filter(Source.id.in_(cand.source_id_arr)).all()
-    for source in sources:
-        source.load_lightcurve_plot()
+    sources = []
+    pass_dct = {}
+    data = zip(cand.source_id_arr, cand.pass_arr, cand.color_arr)
+    for source_id, passFlag, color in data:
+        if source_id not in pass_dct:
+            source = Source.query.filter(Source.id==source_id).first_or_404()
+            source.load_lightcurve_plot()
+            sources.append(source)
+            pass_dct[source_id] = {}
+        pass_dct[source_id][color] = passFlag
     return render_template('candidate.html', cand=cand, sources=sources,
-                           form=form, title=title, zip=zip)
+                           pass_dct=pass_dct, form=form, title=title, zip=zip)
 
 
 @app.route('/edit_source_comments/<sourceid>', methods=['GET', 'POST'])
