@@ -85,7 +85,7 @@ def insert_db_id(num_ids=50):
     successFlag = False
     retry_time = 1
     retry_multiplier = 2
-    retry_time_max = 60
+    retry_time_max = 120
     while True:
         time.sleep(abs(np.random.normal(scale=retry_time)))
         logger.debug(f'{my_db_id}: Attempting insert to {ulensdb_file_path}')

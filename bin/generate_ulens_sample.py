@@ -89,7 +89,7 @@ def csv_line_to_source(line, lightcurve_file_pointers):
     return source
 
 
-def fetch_objects(ra, dec, radius, limit, n_days_min=20):
+def fetch_objects(ra, dec, radius, limit, n_days_min=50):
     cone_filter = SourceIngestJob.cone_search(ra, dec, radius)
     jobs = db.session.query(SourceIngestJob).filter(cone_filter).order_by(func.random()).all()
 
@@ -150,7 +150,7 @@ def calculate_delta_m(u0, b_sff):
 
 def generate_random_lightcurves_lb(l, b, N_samples=1000,
                                    tE_min=20, delta_m_min=0.1, delta_m_min_cut=3,
-                                   n_days_min=20):
+                                   n_days_min=50):
     popsycle_fname = f'{popsycle_base_folder}/l{l:.1f}_b{b:.1f}_refined_events_ztf_r_Damineli16.fits'
     popsycle_catalog = Table.read(popsycle_fname, format='fits')
 
@@ -271,7 +271,7 @@ def generate_random_lightcurves():
         metadata_arr += metadata
 
     data_dir = return_data_dir()
-    fname = f'{data_dir}/ulens_sample.{rank:02d}.npz'
+    fname = f'{data_dir}/ulens_samples/ulens_sample.{rank:02d}.npz'
     save_stacked_array(fname, lightcurves_arr)
 
     dtype = [('t0', float), ('u0', float),
@@ -289,7 +289,7 @@ def generate_random_lightcurves():
 def consolidate_lightcurves():
     # run generate_random_lightcurves
     data_dir = return_data_dir()
-    ulens_sample_fnames = glob.glob(f'{data_dir}/ulens_sample.??.npz')
+    ulens_sample_fnames = glob.glob(f'{data_dir}/ulens_samples/ulens_sample.??.npz')
     ulens_sample_fnames.sort()
 
     lightcurves_arr = []
@@ -358,10 +358,10 @@ def calculate_eta_values():
         cond_decreasing = test_for_three_consecutive_decreases(mag_round)
         #
         # zp = 21.2477
-        # A = np.array(calc_magnification(metadata['u0'][i]))
+        # A = np.array(calc_magnification(metadata['u0'][idx]))
         # factor_ZP = 10 ** (zp / 2.5)
-        # f_S = 10 ** ((metadata['mag_src'][i] - zp) / (-2.5))
-        # f_tot = f_S / metadata['b_sff'][i]
+        # f_S = 10 ** ((metadata['mag_src'][idx] - zp) / (-2.5))
+        # f_tot = f_S / metadata['b_sff'][idx]
         # lhs = (A - 1) * f_S
         # rhs = 3 * np.sqrt(f_tot / factor_ZP)
         # cond_bump = lhs > rhs
@@ -389,6 +389,6 @@ def calculate_eta_values():
 
 
 if __name__ == '__main__':
-    # generate_random_lightcurves()
+    generate_random_lightcurves()
     # consolidate_lightcurves()
-    calculate_eta_values()
+    # calculate_eta_values()
