@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """
-find_variable_samples.py
+OLD_find_variable_samples.py
 """
 import random
 import os

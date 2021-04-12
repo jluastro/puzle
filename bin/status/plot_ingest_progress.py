@@ -164,6 +164,10 @@ def plot_star_ingest_progress():
     print('-- %s saved' % fname)
 
 
-if __name__ == '__main__':
+def generate_all_plots():
     plot_source_ingest_progress()
     plot_star_ingest_progress()
+
+
+if __name__ == '__main__':
+    generate_all_plots()

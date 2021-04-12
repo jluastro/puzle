@@ -15,7 +15,7 @@ echo "---------------------------"
 
 conda activate puzle
 cd /global/cfs/cdirs/uLens/ZTF/DR5
-srun -N 10 -n 320 python /global/homes/m/mmedford/puzle/bin/process_stars.py
+srun -N 10 -n 320 python /global/homes/m/mmedford/puzle/bin/pipeline/process_stars.py
 
 echo "---------------------------"
 date

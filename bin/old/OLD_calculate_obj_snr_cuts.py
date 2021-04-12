@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """
-calculate_obj_snr_cuts.py
+OLD_calculate_obj_snr_cuts.py
 """
 import os
 import glob

@@ -1,3 +1,8 @@
+#! /usr/bin/env python
+"""
+plot_random_eta.py
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 from puzle.stats import calculate_eta
@@ -70,3 +75,12 @@ def generate_eta_gaussian_threshold_plot():
     fig.tight_layout()
     fig.subplots_adjust(top=.9)
     fig.suptitle('eta Gaussian Thresholds', fontsize=12)
+
+
+def generate_all_plots():
+    generate_eta_gaussian_dist_plot()
+    generate_eta_gaussian_threshold_plot()
+
+
+if __name__ == '__main__':
+    generate_all_plots()

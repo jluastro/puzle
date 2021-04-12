@@ -1,11 +1,11 @@
 #!/bin/bash
-#SBATCH --account=ulens
-#SBATCH --qos=premium
+#SBATCH --account=m2218
+#SBATCH --qos=regular
 #SBATCH --constraint=haswell
 #SBATCH --nodes=1
-#SBATCH --time=24:00:00
-#SBATCH --job-name=convert
-#SBATCH --output=convert.%j.out
+#SBATCH --time=13:00:00
+#SBATCH --job-name=sources
+#SBATCH --output=sources.%j.out
 echo "---------------------------"
 echo "Job id = $SLURM_JOBID"
 echo "Proc id = $SLURM_PROCID"
@@ -13,8 +13,9 @@ hostname
 date
 echo "---------------------------"
 
-conda activate pyarrow
-python /global/homes/m/mmedford/puzle/bin/convert_dr5_to_ascii.py
+conda activate puzle
+cd /global/cfs/cdirs/uLens/ZTF/DR5
+srun -N 1 -n 32 python /global/homes/m/mmedford/puzle/bin/pipeline/identify_sources.py
 
 echo "---------------------------"
 date
