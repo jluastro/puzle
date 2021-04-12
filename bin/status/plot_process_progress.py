@@ -67,7 +67,10 @@ def plot_star_process_progress():
         if i % 1000 == 0:
             print(i, len(jobs))
         job_id = job[0].id
-        num_cands = job[1].num_candidates
+        if job[1].num_candidates is None:
+            num_cands = 0
+        else:
+            num_cands = job[1].num_candidates
 
         if job_id in star_process_progress:
             ra = star_process_progress[job_id][0]
@@ -102,11 +105,11 @@ def plot_star_process_progress():
 
     num_cands_arr = num_cands_arr.astype(float)
     log_num_cands_arr = np.log10(num_cands_arr)
-    log_num_cands_arr[np.isnan(log_num_cands_arr)] = 0
+    cond_inf_cands = np.isinf(log_num_cands_arr)
 
     N_stars_arr = np.log10(N_stars_arr)
     N_stars_arr[np.isinf(N_stars_arr)] = 0
-    cond_zero = N_stars_arr == 0
+    cond_zero_stars = N_stars_arr == 0
     
     glon = np.linspace(0, 360, 10000)
     
@@ -130,12 +133,15 @@ def plot_star_process_progress():
                         c=N_stars_arr[cond_finished], edgecolor='None', s=2)
     cbar1 = fig.colorbar(im1, ax=ax[1])
     cbar1.set_label('log(num stars)', fontsize=12)
-    ax[1].scatter(ra_arr[cond_finished*cond_zero],
-                  dec_arr[cond_finished*cond_zero],
+    ax[1].scatter(ra_arr[cond_finished*cond_zero_stars],
+                  dec_arr[cond_finished*cond_zero_stars],
                   c='r', edgecolor='None', s=2)
     ax[2].set_title('Number of Candidates (%i)' % num_cands_tot)
     im1 = ax[2].scatter(ra_arr[cond_finished], dec_arr[cond_finished],
                         c=log_num_cands_arr[cond_finished], edgecolor='None', s=2)
+    ax[2].scatter(ra_arr[cond_finished*cond_inf_cands],
+                  dec_arr[cond_finished*cond_inf_cands],
+                  c='r', edgecolor='None', s=2)
     cbar1 = fig.colorbar(im1, ax=ax[2])
     cbar1.set_label('log(num candidates)', fontsize=12)
     for a in ax:
