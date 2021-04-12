@@ -244,7 +244,7 @@ def plot_eta_eta_residual_boundary(eta_arr=None, eta_residual_arr=None,
         a.plot((0.8, 0.8), (0.8, 2.5), color='k', alpha=0.5)
         a.contour(cands_xx, cands_yy, cands_f, cmap='autumn', levels=10)
         a.scatter(eta_arr, eta_residual_arr,
-                  color='r', alpha=0.05, s=1)
+                  color='gold', alpha=0.01, s=1)
         a.set_xlim((xmin, xmax))
         a.set_ylim((ymin, ymax))
         a.grid(True)
@@ -253,7 +253,7 @@ def plot_eta_eta_residual_boundary(eta_arr=None, eta_residual_arr=None,
     fig.tight_layout()
 
     figures_dir = return_figures_dir()
-    fname = f'{figures_dir}/eta_eta_residual_boundary.png'
+    fname = f'{figures_dir}/ulens_cands_eta_eta_residual_boundary.png'
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
     plt.close(fig)
