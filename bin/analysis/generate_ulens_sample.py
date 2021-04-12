@@ -304,7 +304,7 @@ def consolidate_lightcurves():
     for fname in ulens_sample_fnames:
         data = load_stacked_array(fname)
         for d in data:
-            lightcurves_arr.append((d[:,0], d[:,1], d[:,2]))
+            lightcurves_arr.append((d[:, 0], d[:, 1], d[:, 2]))
 
         fname_metadata = fname.replace('sample.', 'sample_metadata.')
         metadata = np.load(fname_metadata)
@@ -331,7 +331,7 @@ def test_for_three_consecutive_decreases(arr):
                 for i in range(len(arr)-2)])
 
 
-def calculate_eta_values():
+def calculate_stats_on_lightcurves():
     # run consolidate lightcurves first
 
     if 'SLURMD_NODENAME' in os.environ:
@@ -400,7 +400,38 @@ def calculate_eta_values():
                  observable=observables, idx_check=idx_check)
 
 
+def test_lightcurve_stats(N_samples=200):
+
+    data_dir = return_data_dir()
+    fname = f'{data_dir}/ulens_sample.total.npz'
+    data = load_stacked_array(fname)
+
+    idx_sample = np.random.choice(np.arange(len(data)),
+                                  size=N_samples, replace=False)
+    n_failures = 0
+    for idx in idx_sample:
+        print('Testing sample %i' % idx)
+        d = data[idx]
+        hmjd = d[:, 0]
+        mag = d[:, 1]
+
+        hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
+        cond_decreasing = test_for_three_consecutive_decreases(mag_round)
+        if not cond_decreasing:
+            print('-- cond_decreasing failed')
+            n_failures += 1
+
+        median = np.median(mag_round)
+        std = np.std(mag_round)
+        cond_three_sigma = np.sum(mag_round <= median - 3 * std) > 3
+        if not cond_three_sigma:
+            print('-- cond_three_sigma failed')
+            n_failures += 1
+
+    print('%i Failures' % n_failures)
+
+
 if __name__ == '__main__':
-    generate_random_lightcurves()
+    # generate_random_lightcurves()
     # consolidate_lightcurves()
-    # calculate_eta_values()
+    calculate_stats_on_lightcurves()
