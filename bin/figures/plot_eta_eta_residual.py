@@ -16,7 +16,7 @@ def plot_eta_eta_residual(eta_arr=None, eta_residual_arr=None, eta_threshold_low
     if eta_arr is None:
         eta_arr, eta_residual_arr, _ = return_eta_arrs()
     if eta_ulens_arr is None:
-        eta_ulens_arr, eta_residual_ulens_arr, _, observable_arr = return_eta_ulens_arrs()
+        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_eta_ulens_arrs()
 
     cond_obs = observable_arr == True
 
@@ -149,7 +149,7 @@ def plot_eta_residual_ulens_vs_actual(eta_residual_ulens_arr=None,
                                       eta_residual_actual_ulens_arr=None,
                                       observable_arr=None):
     if eta_residual_ulens_arr is None:
-        _, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr = return_eta_ulens_arrs()
+        _, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, _,_, observable_arr = return_eta_ulens_arrs()
 
     x_min = np.min([np.min(eta_residual_ulens_arr), np.min(eta_residual_actual_ulens_arr)])
     x_max = np.max([np.min(eta_residual_ulens_arr), np.max(eta_residual_actual_ulens_arr)])
@@ -196,6 +196,12 @@ def plot_eta_eta_residual_boundary(eta_arr=None, eta_residual_arr=None,
                                    observable1_arr=None,
                                    observable2_arr=None,
                                    observable3_arr=None):
+    if eta_arr is None:
+        eta_arr, eta_residual_arr, _ = return_eta_arrs()
+    if eta_ulens_arr is None:
+        eta_ulens_arr, eta_residual_ulens_arr, _, \
+        observable1_arr, observable2_arr, observable3_arr = return_eta_ulens_arrs()
+
     cond_obs1 = observable1_arr == True
     cond_obs2 = observable2_arr == True
     cond_obs3 = observable3_arr == True

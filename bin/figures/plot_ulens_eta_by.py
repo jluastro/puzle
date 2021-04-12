@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 def plot_ulens_tE_piE(observable_arr=None):
     if observable_arr is None:
-        _, _, _, observable_arr = return_eta_ulens_arrs()
+        _, _, _, _, _, observable_arr = return_eta_ulens_arrs()
 
     fname = '%s/ulens_sample_metadata.total.npz' % return_data_dir()
     metadata = np.load(fname)
@@ -67,7 +67,7 @@ def plot_ulens_tE_piE(observable_arr=None):
 
 def plot_ulens_tE_piE_vs_eta(eta_ulens_arr=None, eta_residual_ulens_arr=None, observable_arr=None):
     if eta_ulens_arr is None:
-        eta_ulens_arr, eta_residual_ulens_arr, _, observable_arr = return_eta_ulens_arrs()
+        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_eta_ulens_arrs()
 
     fname = '%s/ulens_sample_metadata.total.npz' % return_data_dir()
     metadata = np.load(fname)
@@ -134,7 +134,7 @@ def plot_ulens_tE_piE_vs_eta(eta_ulens_arr=None, eta_residual_ulens_arr=None, ob
 def plot_ulens_eta_by_mag(eta_ulens_arr=None,
                           eta_residual_ulens_arr=None, observable_arr=None):
     if eta_ulens_arr is None:
-        eta_ulens_arr, eta_residual_ulens_arr, _, observable_arr = return_eta_ulens_arrs()
+        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_eta_ulens_arrs()
 
     fname = '%s/ulens_sample_metadata.total.npz' % return_data_dir()
     metadata = np.load(fname)
@@ -172,7 +172,7 @@ def plot_ulens_eta_by_mag(eta_ulens_arr=None,
 
 def plot_ulens_eta_by_tE(eta_ulens_arr=None, eta_residual_ulens_arr=None, observable_arr=None):
     if eta_ulens_arr is None:
-        eta_ulens_arr, eta_residual_ulens_arr, _, observable_arr = return_eta_ulens_arrs()
+        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_eta_ulens_arrs()
 
     fname = '%s/ulens_sample_metadata.total.npz' % return_data_dir()
     metadata = np.load(fname)
@@ -210,7 +210,7 @@ def plot_ulens_eta_by_tE(eta_ulens_arr=None, eta_residual_ulens_arr=None, observ
 
 def plot_ulens_eta_by_piE(eta_ulens_arr=None, eta_residual_ulens_arr=None, observable_arr=None):
     if eta_ulens_arr is None:
-        eta_ulens_arr, eta_residual_ulens_arr, _, observable_arr = return_eta_ulens_arrs()
+        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_eta_ulens_arrs()
 
     fname = '%s/ulens_sample_metadata.total.npz' % return_data_dir()
     metadata = np.load(fname)
@@ -248,7 +248,7 @@ def plot_ulens_eta_by_piE(eta_ulens_arr=None, eta_residual_ulens_arr=None, obser
 
 def plot_lowest_ulens_eta(eta_ulens_arr=None, observable_arr=None):
     if eta_ulens_arr is None:
-        eta_ulens_arr, _, _, observable_arr = return_eta_ulens_arrs()
+        eta_ulens_arr, _, _, _, _, observable_arr = return_eta_ulens_arrs()
 
     cond = observable_arr == True
     cond_idx = np.where(cond == True)[0]
