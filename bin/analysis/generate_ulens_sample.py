@@ -400,35 +400,63 @@ def calculate_stats_on_lightcurves():
                  observable=observables, idx_check=idx_check)
 
 
-def test_lightcurve_stats(N_samples=200):
+def test_lightcurve_stats(N_samples=1000):
 
     data_dir = return_data_dir()
     fname = f'{data_dir}/ulens_sample.total.npz'
-    data = load_stacked_array(fname)
+    data_lightcurves = load_stacked_array(fname)
 
-    idx_sample = np.random.choice(np.arange(len(data)),
+    fname = f'{data_dir}/ulens_sample_etas.total.npz'
+    data_etas = np.load(fname)
+    observable_arr = data_etas['observable']
+    assert np.all(data_etas['idx_check'] == np.arange(len(observable_arr)))
+
+    print('Testing all lightcurves')
+    idx_sample = np.random.choice(np.arange(len(data_lightcurves)),
                                   size=N_samples, replace=False)
     n_failures = 0
     for idx in idx_sample:
-        print('Testing sample %i' % idx)
-        d = data[idx]
+        d = data_lightcurves[idx]
+        hmjd = d[:, 0]
+        mag = d[:, 1]
+        obs = observable_arr[idx]
+
+        hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
+        cond_decreasing = test_for_three_consecutive_decreases(mag_round)
+
+        median = np.median(mag_round)
+        std = np.std(mag_round)
+        cond_three_sigma = np.sum(mag_round <= median - 3 * std) > 3
+
+        try:
+            assert (cond_decreasing and cond_three_sigma) == obs
+        except AssertionError:
+            n_failures += 1
+    print('All Lightcurves: %i Failures' % n_failures)
+
+    print('Testing observable lightcurves')
+    idx_observable = np.where(observable_arr == True)[0]
+    idx_sample = np.random.choice(idx_observable,
+                                  size=N_samples, replace=False)
+    n_failures = 0
+    for idx in idx_sample:
+        d = data_lightcurves[idx]
         hmjd = d[:, 0]
         mag = d[:, 1]
 
         hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
         cond_decreasing = test_for_three_consecutive_decreases(mag_round)
         if not cond_decreasing:
-            print('-- cond_decreasing failed')
+            print('-- Sample %i: cond_decreasing failed' % idx)
             n_failures += 1
 
         median = np.median(mag_round)
         std = np.std(mag_round)
         cond_three_sigma = np.sum(mag_round <= median - 3 * std) > 3
         if not cond_three_sigma:
-            print('-- cond_three_sigma failed')
+            print('-- Sample %i: cond_three_sigma failed' % idx)
             n_failures += 1
-
-    print('%i Failures' % n_failures)
+    print('Observable Lightcurves: %i Failures' % n_failures)
 
 
 if __name__ == '__main__':
