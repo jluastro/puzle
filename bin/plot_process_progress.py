@@ -52,13 +52,15 @@ def plot_star_process_progress():
     DR5_dir = return_DR5_dir()
     jobs = db.session.query(SourceIngestJob, StarProcessJob).\
         filter(SourceIngestJob.id == StarProcessJob.source_ingest_job_id).\
-        filter(StarProcessJob.finished == True).all()
+        all()
 
     star_process_progress = load_star_process_progress()
 
     N_stars_arr = []
     ra_arr = []
     dec_arr = []
+    priority_arr = []
+    finished_arr = []
     for i, job in enumerate(jobs):
         if i % 1000 == 0:
             print(i, len(jobs))
@@ -79,15 +81,21 @@ def plot_star_process_progress():
         N_stars_arr.append(N_stars)
         ra_arr.append(ra)
         dec_arr.append(dec)
+        priority_arr.append(job[1].priority)
+        finished_arr.append(job[1].finished)
 
     save_star_process_progress(star_process_progress)
 
     ra_arr = np.array(ra_arr)
     dec_arr = np.array(dec_arr)
     N_stars_arr = np.array(N_stars_arr)
+    priority_arr = np.array(priority_arr)
+    finished_arr = np.array(finished_arr)
+    cond_finished = finished_arr == True
 
     N_stars_arr = np.log10(N_stars_arr)
     N_stars_arr[np.isinf(N_stars_arr)] = 0
+    cond_zero = N_stars_arr == 0
     
     glon = np.linspace(0, 360, 10000)
     
@@ -101,18 +109,26 @@ def plot_star_process_progress():
     ra_gal_high = coords_high.icrs.ra.value
     dec_gal_high = coords_high.icrs.dec.value
 
-    fig, ax = plt.subplots(figsize=(12, 5))
-    ax.scatter(ra_gal_low, dec_gal_low, c='k', s=.1, alpha=.2)
-    ax.scatter(ra_gal_high, dec_gal_high, c='k', s=.1, alpha=.2)
-    im = ax.scatter(ra_arr, dec_arr, c=N_stars_arr, edgecolor='None', s=1)
-    cond = N_stars_arr == 0
-    ax.scatter(ra_arr[cond], dec_arr[cond], c='r', edgecolor='None', s=1)
-    cbar = fig.colorbar(im, ax=ax)
-    cbar.set_label('log(num stars)', fontsize=12)
-    ax.set_xlabel('ra', fontsize=12)
-    ax.set_ylabel('dec', fontsize=12)
-    ax.set_xlim(0, 360)
-    ax.set_ylim(-30, 90)
+    fig, ax = plt.subplots(1, 2, figsize=(16, 6))
+    ax[0].set_title('Star Process Jobs')
+    im0 = ax[0].scatter(ra_arr, dec_arr, c=priority_arr, edgecolor='None', s=2)
+    cbar0 = fig.colorbar(im0, ax=ax[0])
+    cbar0.set_label('priority', fontsize=12)
+    ax[1].set_title('Completed Star Process Jobs')
+    im1 = ax[1].scatter(ra_arr[cond_finished], dec_arr[cond_finished],
+                        c=N_stars_arr[cond_finished], edgecolor='None', s=2)
+    cbar1 = fig.colorbar(im1, ax=ax[1])
+    cbar1.set_label('log(num stars)', fontsize=12)
+    ax[1].scatter(ra_arr[cond_finished*cond_zero],
+                  dec_arr[cond_finished*cond_zero],
+                  c='r', edgecolor='None', s=2)
+    for a in ax:
+        a.scatter(ra_gal_low, dec_gal_low, c='k', s=.1, alpha=.2)
+        a.scatter(ra_gal_high, dec_gal_high, c='k', s=.1, alpha=.2)
+        a.set_xlabel('ra', fontsize=12)
+        a.set_ylabel('dec', fontsize=12)
+        a.set_xlim(0, 360)
+        a.set_ylim(-30, 90)
     fig.tight_layout()
 
     fname = '%s/stars_process_progress.png' % return_figures_dir()
