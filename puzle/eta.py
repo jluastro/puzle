@@ -23,10 +23,13 @@ def return_eta_ulens_arrs():
     data = np.load(fname)
     eta_ulens_arr = data['eta']
     eta_residual_ulens_arr = data['eta_residual']
-    observable_arr = data['observable']
+    observable1_arr = data['observable1']
+    observable2_arr = data['observable2']
+    observable3_arr = data['observable3']
 
     fname = f'{data_dir}/ulens_sample_metadata.total.npz'
     metadata = np.load(fname)
     eta_residual_actual_ulens_arr = metadata['eta_residual']
 
-    return eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr
+    return eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, \
+           observable1_arr, observable2_arr, observable3_arr

@@ -4,6 +4,7 @@ plot_eta_eta_residual.py
 """
 
 import numpy as np
+import scipy.stats as st
 from puzle.utils import return_figures_dir
 from puzle.eta import return_eta_arrs, return_eta_ulens_arrs
 
@@ -179,20 +180,94 @@ def plot_eta_residual_ulens_vs_actual(eta_residual_ulens_arr=None,
     plt.close(fig)
 
 
+def return_kde(eta, eta_residual, xmin, xmax, ymin, ymax):
+    x = np.linspace(xmin, xmax, 100)
+    y = np.linspace(ymin, ymax, 100)
+    xx, yy = np.meshgrid(x, y)
+    positions = np.vstack([xx.ravel(), yy.ravel()])
+    values = np.vstack((eta, eta_residual))
+    kernel = st.gaussian_kde(values)
+    f = np.reshape(kernel(positions).T, xx.shape)
+    return xx, yy, f
+
+
+def plot_eta_eta_residual_boundary(eta_arr=None, eta_residual_arr=None,
+                                   eta_ulens_arr=None, eta_residual_ulens_arr=None,
+                                   observable1_arr=None,
+                                   observable2_arr=None,
+                                   observable3_arr=None):
+    cond_obs1 = observable1_arr == True
+    cond_obs2 = observable2_arr == True
+    cond_obs3 = observable3_arr == True
+    xmin, xmax, ymin, ymax = 0, 1.75, 0, 2.75
+    bounds = (xmin, xmax, ymin, ymax)
+
+    ulens1_xx, ulens1_yy, ulens1_f = return_kde(eta_ulens_arr[cond_obs1],
+                                                eta_residual_ulens_arr[cond_obs1],
+                                                *bounds)
+    ulens2_xx, ulens2_yy, ulens2_f = return_kde(eta_ulens_arr[cond_obs2],
+                                                eta_residual_ulens_arr[cond_obs2],
+                                                *bounds)
+    ulens3_xx, ulens3_yy, ulens3_f = return_kde(eta_ulens_arr[cond_obs3],
+                                                eta_residual_ulens_arr[cond_obs3],
+                                                *bounds)
+    cands_xx, cands_yy, cands_f = return_kde(eta_arr,
+                                             eta_residual_arr,
+                                             *bounds)
+
+    fig, ax = plt.subplots(3, 1, figsize=(10, 10))
+    for a in ax: a.clear()
+    ax[0].set_title('3-sigma / 3-increasing-brightness : 1 point')
+    ax[0].contour(ulens1_xx, ulens1_yy, ulens1_f, cmap='viridis', levels=10)
+    ax[0].scatter(eta_ulens_arr[cond_obs1],
+                  eta_residual_ulens_arr[cond_obs1],
+                  color='b', alpha=0.05, s=1)
+    ax[1].set_title('3-sigma / 3-increasing-brightness : 2 points')
+    ax[1].contour(ulens2_xx, ulens2_yy, ulens2_f, cmap='viridis', levels=10)
+    ax[1].scatter(eta_ulens_arr[cond_obs2],
+                  eta_residual_ulens_arr[cond_obs2],
+                  color='b', alpha=0.05, s=1)
+    ax[2].set_title('3-sigma / 3-increasing-brightness : 3 points')
+    ax[2].contour(ulens3_xx, ulens3_yy, ulens3_f, cmap='viridis', levels=10)
+    ax[2].scatter(eta_ulens_arr[cond_obs3],
+                  eta_residual_ulens_arr[cond_obs3],
+                  color='b', alpha=0.05, s=1)
+    for a in ax:
+        a.plot(np.linspace(0, 0.8),
+               np.linspace(0, 0.8), color='k', alpha=0.5)
+        a.plot((0.8, 0.8), (0.8, 2.5), color='k', alpha=0.5)
+        a.contour(cands_xx, cands_yy, cands_f, cmap='autumn', levels=10)
+        a.scatter(eta_arr, eta_residual_arr,
+                  color='r', alpha=0.05, s=1)
+        a.set_xlim((xmin, xmax))
+        a.set_ylim((ymin, ymax))
+        a.grid(True)
+        a.set_xlabel('eta', fontsize=10)
+        a.set_ylabel('eta_residual', fontsize=10)
+    fig.tight_layout()
+
 def generate_all_figures():
     eta_arr, eta_residual_arr, eta_threshold_low_best = return_eta_arrs()
-    eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr = return_eta_ulens_arrs()
+    eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, \
+    observable1_arr, observable2_arr, observable3_arr = return_eta_ulens_arrs()
     plot_eta_eta_residual(eta_arr=eta_arr,
                           eta_residual_arr=eta_residual_arr,
                           eta_threshold_low_best=eta_threshold_low_best,
                           eta_ulens_arr=eta_ulens_arr,
                           eta_residual_ulens_arr=eta_residual_ulens_arr,
-                          observable_arr=observable_arr)
+                          observable_arr=observable3_arr)
     plot_eta_eta_threshold(eta_arr=eta_arr,
                            eta_threshold_low_best=eta_threshold_low_best)
     plot_eta_residual_ulens_vs_actual(eta_residual_ulens_arr=eta_residual_ulens_arr,
                                       eta_residual_actual_ulens_arr=eta_residual_actual_ulens_arr,
-                                      observable_arr=observable_arr)
+                                      observable_arr=observable3_arr)
+    plot_eta_eta_residual_boundary(eta_arr=eta_arr,
+                                   eta_residual_arr=eta_residual_arr,
+                                   eta_ulens_arr=eta_ulens_arr,
+                                   eta_residual_ulens_arr=eta_residual_ulens_arr,
+                                   observable1_arr=observable1_arr,
+                                   observable2_arr=observable2_arr,
+                                   observable3_arr=observable3_arr)
 
 
 if __name__ == '__main__':

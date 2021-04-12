@@ -284,22 +284,23 @@ def plot_lowest_ulens_eta(eta_ulens_arr=None, observable_arr=None):
 
 
 def generate_all_figures():
-    eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, observable_arr = return_eta_ulens_arrs()
-    plot_ulens_tE_piE(observable_arr=observable_arr)
+    eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, \
+    observable1_arr, observable2_arr, observable3_arr = return_eta_ulens_arrs()
+    plot_ulens_tE_piE(observable_arr=observable3_arr)
     plot_ulens_tE_piE_vs_eta(eta_ulens_arr=eta_ulens_arr,
                              eta_residual_ulens_arr=eta_residual_ulens_arr,
-                             observable_arr=observable_arr)
+                             observable_arr=observable3_arr)
     plot_ulens_eta_by_mag(eta_ulens_arr=eta_ulens_arr,
                           eta_residual_ulens_arr=eta_residual_ulens_arr,
-                          observable_arr=observable_arr)
+                          observable_arr=observable3_arr)
     plot_ulens_eta_by_tE(eta_ulens_arr=eta_ulens_arr,
                          eta_residual_ulens_arr=eta_residual_ulens_arr,
-                         observable_arr=observable_arr)
+                         observable_arr=observable3_arr)
     plot_ulens_eta_by_piE(eta_ulens_arr=eta_ulens_arr,
                           eta_residual_ulens_arr=eta_residual_ulens_arr,
-                          observable_arr=observable_arr)
+                          observable_arr=observable3_arr)
     plot_lowest_ulens_eta(eta_ulens_arr=eta_ulens_arr,
-                          observable_arr=observable_arr)
+                          observable_arr=observable3_arr)
 
 
 if __name__ == '__main__':
