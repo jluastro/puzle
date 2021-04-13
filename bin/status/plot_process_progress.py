@@ -158,6 +158,7 @@ def plot_star_process_progress():
     fname = '%s/stars_process_progress.png' % return_figures_dir()
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
+    plt.close(fig)
 
 
 if __name__ == '__main__':
