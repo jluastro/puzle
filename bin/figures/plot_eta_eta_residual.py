@@ -408,7 +408,7 @@ def plot_eta_eta_residual_boundary(eta_arr=None, eta_residual_arr=None,
     y_thresh = eta_thresh * slope
     for i, a in enumerate(ax):
         a.plot(x, y, color='k')
-        a.plot((eta_thresh, eta_thresh), (y_thresh, 2.5), color='k')
+        a.plot((eta_thresh, eta_thresh), (y_thresh, ymax), color='k')
         a.contour(cands_xx, cands_yy, cands_f, cmap='autumn', levels=10)
         a.scatter(eta_arr, eta_residual_arr,
                   color='gold', alpha=0.01, s=1)
@@ -526,9 +526,7 @@ def generate_all_figures():
                                    eta_residual_arr=eta_residual_arr,
                                    eta_ulens_arr=eta_ulens_arr,
                                    eta_residual_ulens_arr=eta_residual_ulens_arr,
-                                   observable1_arr=observable1_arr,
-                                   observable2_arr=observable2_arr,
-                                   observable3_arr=observable3_arr)
+                                   observable_arr=observable3_arr)
     plot_eta_boundary_fracs(eta_arr=eta_arr,
                             eta_residual_arr=eta_residual_arr,
                             eta_ulens_arr=eta_ulens_arr,
