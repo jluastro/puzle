@@ -139,7 +139,7 @@ def plot_star_process_progress():
     ax[1].scatter(ra_arr[cond_finished*cond_zero_stars],
                   dec_arr[cond_finished*cond_zero_stars],
                   c='r', edgecolor='None', s=2)
-    ax[2].set_title('Number of Candidates (%i)' % num_cands_tot)
+    ax[2].set_title('%s Candidates' % format(num_cands_tot, ','))
     im1 = ax[2].scatter(ra_arr[cond_finished], dec_arr[cond_finished],
                         c=log_num_cands_arr[cond_finished],
                         edgecolor='None', s=2, vmin=1, vmax=3.2)
