@@ -123,14 +123,15 @@ def plot_star_process_progress():
     ra_gal_high = coords_high.icrs.ra.value
     dec_gal_high = coords_high.icrs.dec.value
 
-    fig, ax = plt.subplots(1, 3, figsize=(16, 6))
+    fig, ax = plt.subplots(1, 3, figsize=(16, 4.5))
     ax[0].set_title('Star Process Jobs')
     im0 = ax[0].scatter(ra_arr, dec_arr, c=priority_arr, edgecolor='None', s=2)
     cbar0 = fig.colorbar(im0, ax=ax[0])
     cbar0.set_label('priority', fontsize=12)
     ax[1].set_title('Completed Star Process Jobs')
     im1 = ax[1].scatter(ra_arr[cond_finished], dec_arr[cond_finished],
-                        c=N_stars_arr[cond_finished], edgecolor='None', s=2)
+                        c=N_stars_arr[cond_finished], edgecolor='None', s=2,
+                        vmin=2.5, vmax=5)
     cbar1 = fig.colorbar(im1, ax=ax[1])
     cbar1.set_label('log(num stars)', fontsize=12)
     ax[1].scatter(ra_arr[cond_finished*cond_zero_stars],
@@ -138,7 +139,8 @@ def plot_star_process_progress():
                   c='r', edgecolor='None', s=2)
     ax[2].set_title('Number of Candidates (%i)' % num_cands_tot)
     im1 = ax[2].scatter(ra_arr[cond_finished], dec_arr[cond_finished],
-                        c=log_num_cands_arr[cond_finished], edgecolor='None', s=2)
+                        c=log_num_cands_arr[cond_finished],
+                        edgecolor='None', s=2, vmin=1, vmax=3.2)
     ax[2].scatter(ra_arr[cond_finished*cond_inf_cands],
                   dec_arr[cond_finished*cond_inf_cands],
                   c='r', edgecolor='None', s=2)

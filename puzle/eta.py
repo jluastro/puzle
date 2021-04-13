@@ -33,3 +33,18 @@ def return_eta_ulens_arrs():
 
     return eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, \
            observable1_arr, observable2_arr, observable3_arr
+
+
+def is_observable_candidate(eta, eta_residual,
+                            eta_thresh=0.8, slope=1):
+    cond1 = eta <= eta_thresh
+    cond2 = eta_residual >= eta * slope
+    return cond1 * cond2
+
+
+def is_observable_frac(eta, eta_residual,
+                       eta_thresh=0.8, slope=1):
+    is_observable_arr = is_observable_candidate(eta, eta_residual,
+                                                eta_thresh=eta_thresh, slope=slope)
+    frac = np.sum(is_observable_arr) / len(is_observable_arr)
+    return frac
