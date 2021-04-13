@@ -257,7 +257,13 @@ def plot_eta_eta_residual_boundary(eta_arr=None, eta_residual_arr=None,
     cands_is_observable_frac = is_observable_frac(eta_arr,eta_residual_arr,slope=slope,
                                                   eta_thresh=eta_thresh)
 
-    ulens_is_observable_BH_frac_obs1 = is_observable_frac(eta_ulens_arr[cond_obs3*cond_BH],
+    ulens_is_observable_BH_frac_obs1 = is_observable_frac(eta_ulens_arr[cond_obs2*cond_BH],
+                                                          eta_residual_ulens_arr[cond_obs2*cond_BH],
+                                                          slope=slope, eta_thresh=eta_thresh)
+    ulens_is_observable_BH_frac_obs2 = is_observable_frac(eta_ulens_arr[cond_obs2*cond_BH],
+                                                          eta_residual_ulens_arr[cond_obs2*cond_BH],
+                                                          slope=slope, eta_thresh=eta_thresh)
+    ulens_is_observable_BH_frac_obs3 = is_observable_frac(eta_ulens_arr[cond_obs3*cond_BH],
                                                           eta_residual_ulens_arr[cond_obs3*cond_BH],
                                                           slope=slope, eta_thresh=eta_thresh)
 
@@ -269,23 +275,27 @@ def plot_eta_eta_residual_boundary(eta_arr=None, eta_residual_arr=None,
     fig.suptitle('ulens cond: 3-sigma / 3-increasing-brightness | slope: %.2f | eta_thresh: %.2f' %
                  (slope, eta_thresh), fontsize=10)
     for a in ax: a.clear()
-    ax[0].set_title('1 point | uLens frac: %.3f%% | cands frac: %.3f%%' %
-                    (ulens_is_observable_frac_obs1, cands_is_observable_frac),
+    ax[0].set_title('1 point | uLens frac: %.1f%% | ulens BH frac: %.1f%% | cands frac: %.1f%%' %
+                    (ulens_is_observable_frac_obs1,
+                     ulens_is_observable_BH_frac_obs1,
+                     cands_is_observable_frac),
                     fontsize=11)
     ax[0].contour(ulens1_xx, ulens1_yy, ulens1_f, cmap='viridis', levels=10)
     ax[0].scatter(eta_ulens_arr[cond_obs1],
                   eta_residual_ulens_arr[cond_obs1],
                   color='b', alpha=0.05, s=1)
-    ax[1].set_title('2 point | uLens frac: %.3f%% | cands frac: %.3f%%' %
-                    (ulens_is_observable_frac_obs2, cands_is_observable_frac),
+    ax[1].set_title('2 points | uLens frac: %.1f%% | ulens BH frac: %.1f%% | cands frac: %.1f%%' %
+                    (ulens_is_observable_frac_obs2,
+                     ulens_is_observable_BH_frac_obs2,
+                     cands_is_observable_frac),
                     fontsize=11)
     ax[1].contour(ulens2_xx, ulens2_yy, ulens2_f, cmap='viridis', levels=10)
     ax[1].scatter(eta_ulens_arr[cond_obs2],
                   eta_residual_ulens_arr[cond_obs2],
                   color='b', alpha=0.05, s=1)
-    ax[2].set_title('3 point | uLens frac: %.3f%% | ulens BH frac: %.3f%% | cands frac: %.3f%%' %
+    ax[2].set_title('3 points | uLens frac: %.1f%% | ulens BH frac: %.1f%% | cands frac: %.1f%%' %
                     (ulens_is_observable_frac_obs3,
-                     ulens_is_observable_BH_frac_obs1,
+                     ulens_is_observable_BH_frac_obs3,
                      cands_is_observable_frac),
                     fontsize=11)
     ax[2].contour(ulens3_xx, ulens3_yy, ulens3_f, cmap='viridis', levels=10)
