@@ -125,6 +125,8 @@ def plot_star_process_progress():
 
     fig, ax = plt.subplots(1, 3, figsize=(16, 4.5))
     ax[0].set_title('Star Process Jobs')
+    ax[0].scatter(ra_gal_low, dec_gal_low, c='k', s=.1, alpha=.2)
+    ax[0].scatter(ra_gal_high, dec_gal_high, c='k', s=.1, alpha=.2)
     im0 = ax[0].scatter(ra_arr, dec_arr, c=priority_arr, edgecolor='None', s=2)
     cbar0 = fig.colorbar(im0, ax=ax[0])
     cbar0.set_label('priority', fontsize=12)
@@ -147,8 +149,6 @@ def plot_star_process_progress():
     cbar1 = fig.colorbar(im1, ax=ax[2])
     cbar1.set_label('log(num candidates)', fontsize=12)
     for a in ax:
-        a.scatter(ra_gal_low, dec_gal_low, c='k', s=.1, alpha=.2)
-        a.scatter(ra_gal_high, dec_gal_high, c='k', s=.1, alpha=.2)
         a.set_xlabel('ra', fontsize=12)
         a.set_ylabel('dec', fontsize=12)
         a.set_xlim(0, 360)
