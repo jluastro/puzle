@@ -6,6 +6,8 @@ plot_cands_on_sky.py
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy.coordinates import SkyCoord
+from zort.radec import load_ZTF_fields, load_ZTF_CCD_corners
+
 
 from puzle.models import Candidate, StarProcessJob, SourceIngestJob
 from puzle.utils import return_figures_dir
@@ -56,6 +58,82 @@ def plot_cands_on_sky():
     fig.subplots_adjust(top=.9)
 
     fname = '%s/cands_on_sky.png' % return_figures_dir()
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    print('-- %s saved' % fname)
+    plt.close(fig)
+
+
+def plot_cands_ztf_ccd_on_sky():
+    slope = 3.57
+    eta_thresh = 0.6
+    cands = Candidate.query.with_entities(Candidate.ra, Candidate.dec,
+                                          Candidate.eta_best, Candidate.eta_residual_best).\
+                    filter(Candidate.eta_best<=eta_thresh, Candidate.eta_residual_best>=Candidate.eta_best*slope).\
+                    all()
+    ra_arr = np.array([c[0] for c in cands])
+    dec_arr = np.array([c[1]for c in cands])
+
+    ZTF_fields = load_ZTF_fields()
+
+    ra_cutout, dec_cutout = 295, 25
+    idx = np.argmin(np.hypot(ZTF_fields['ra']-ra_cutout,
+                             ZTF_fields['dec']-dec_cutout))
+    field_id1 = ZTF_fields['id'][idx]
+    ccd_corners1 = load_ZTF_CCD_corners(field_id1)
+
+    ra_cutout, dec_cutout = 300, 15
+    idx = np.argmin(np.hypot(ZTF_fields['ra']-ra_cutout,
+                             ZTF_fields['dec']-dec_cutout))
+    field_id2 = ZTF_fields['id'][idx]
+    ccd_corners2 = load_ZTF_CCD_corners(field_id2)
+
+    ra_cutout, dec_cutout = 280, 10
+    idx = np.argmin(np.hypot(ZTF_fields['ra']-ra_cutout,
+                             ZTF_fields['dec']-dec_cutout))
+    field_id3 = ZTF_fields['id'][idx]
+    ccd_corners3 = load_ZTF_CCD_corners(field_id3)
+
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    fig.suptitle('slope = %.2f | eta_thresh = %.2f' % (slope, eta_thresh),
+                 fontsize=10)
+    for a in ax: a.clear()
+    ax[0].set_title('Cut candidates', fontsize=12)
+    ax[0].scatter(ra_arr, dec_arr, s=1, alpha=.1)
+    ax[0].set_xlim(0, 360)
+    ax[0].set_ylim(-30, 90)
+    ax[1].set_title('Zoomed In', fontsize=12)
+    ax[1].scatter(ra_arr, dec_arr, s=1, alpha=.1)
+    for i, corners in enumerate(ccd_corners1.values()):
+        if i == 0:
+            label='ZTF Field %i' % field_id1
+        else:
+            label=None
+        ax[1].scatter(*corners.T, marker='.',
+                      color='k', alpha=.2, label=label)
+    for i, corners in enumerate(ccd_corners2.values()):
+        if i == 0:
+            label='ZTF Field %i' % field_id2
+        else:
+            label=None
+        ax[1].scatter(*corners.T, marker='.',
+                      color='g', alpha=.2, label=label)
+    for i, corners in enumerate(ccd_corners3.values()):
+        if i == 0:
+            label='ZTF Field %i' % field_id3
+        else:
+            label=None
+        ax[1].scatter(*corners.T, marker='.',
+                      color='r', alpha=.2, label=label)
+    ax[1].set_xlim(260, 330)
+    ax[1].set_ylim(5, 35)
+    ax[1].legend(markerscale=4, loc=4)
+    for a in ax:
+        a.set_xlabel('ra', fontsize=12)
+        a.set_ylabel('dec', fontsize=12)
+    fig.tight_layout()
+    fig.subplots_adjust(top=.9)
+
+    fname = '%s/cands_ztf_ccd_on_sky.png' % return_figures_dir()
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
     plt.close(fig)
