@@ -181,7 +181,7 @@ def return_outcome(ztf_id, ra, dec):
             if n_days >= n_days_min:
                 n_days_idxs.append((j, k))
             else:
-                obj.plot_lightcurve(filename=f'{ztf_id}_{source_id}_{color}_lc_days.png')
+                obj.plot_lightcurve(filename=f'{mroz_figures_dir}/{ztf_id}_{source_id}_{color}_lc_days.png')
 
     print('-- num_objs = %i' % n_objs)
     print('-- num_objs_pass_days = %i' % len(n_days_idxs))
@@ -299,7 +299,7 @@ def calculate_outcomes():
     cut_due_to_rf = [ztf_id for ztf_id, outcome in outcome_arr if 'rf'==outcome]
     cut_due_to_eta_residual = [ztf_id for ztf_id, outcome in outcome_arr if 'eta_residual'==outcome]
 
-    print('%i total mroz sources' % len(radec_mroz))
+    print('\n\n%i total mroz sources' % len(radec_mroz))
     print('-- %i sources in database' % (len(in_db_passes)+len(in_db_no_passes)))
     print('---- %i sources in database that WILL pass Level 2 cuts' % len(in_db_passes))
     print('---- %i sources in database that WILL NOT pass Level 2 cuts' % len(in_db_no_passes))
