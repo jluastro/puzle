@@ -4,8 +4,16 @@ cands.py
 """
 
 import numpy as np
+import scipy.optimize as op
+from sqlalchemy.sql.expression import func
+import matplotlib.pyplot as plt
 
-from puzle.models import Source, Candidate
+from microlens.jlu.model import PSPL_Phot_Par_Param1
+from microlens.jlu.model_fitter import PSPL_Solver
+
+from puzle.cands import fetch_cand_best_obj_by_id, apply_slope_thresh_to_query
+from puzle.models import Candidate, Source
+from puzle.utils import return_figures_dir
 from puzle import db
 
 
@@ -59,3 +67,100 @@ def return_slope_eta_thresh():
     slope = 3.61
     eta_thresh = 0.6
     return slope, eta_thresh
+
+
+def apply_slope_thresh_to_query(query):
+    slope, eta_thresh = return_slope_eta_thresh()
+    query = query.filter(Candidate.eta_best <= eta_thresh,
+                         Candidate.eta_residual_best >= Candidate.eta_best * slope)
+    return query
+
+
+def chi2(theta, params_to_fit, fitter):
+    params = {}
+    for k, v in zip(params_to_fit, theta):
+        params[k] = v
+    return fitter.calc_chi2(params=params)
+
+
+def fit_cand_to_ulens(cand_id, plotFlag=False):
+    obj = fetch_cand_best_obj_by_id(cand_id)
+    hmjd = obj.lightcurve.hmjd
+    mag = obj.lightcurve.mag
+    magerr = obj.lightcurve.magerr
+    ra = obj.ra
+    dec = obj.dec
+
+    # Setup parameter initial guess and list of params
+    params_to_fit = ['t0', 'u0_amp', 'tE', 'mag_src1',
+                     'b_sff1', 'piE_E', 'piE_N']
+    initial_guess = np.array([hmjd[np.argmin(mag)],
+                              0.5,
+                              50,
+                              np.median(mag),
+                              1.0,
+                              0.25,
+                              0.25])
+
+    # instantiate fitter
+    data_for_fitter = {'t_phot1': hmjd,
+                       'mag1': mag,
+                       'mag_err1': magerr,
+                       'raL': ra,
+                       'decL': dec}
+    fitter = PSPL_Solver(data_for_fitter, PSPL_Phot_Par_Param1)
+
+    # run the optimizer
+    result = op.minimize(chi2, x0=initial_guess,
+                         args=(params_to_fit, fitter),
+                         method='Powell')
+    if result.success:
+        print('** Fit success **')
+    else:
+        print('** Fit fail **')
+
+    # gather up best results
+    best_fit = result.x
+    best_params = {}
+    for k, v in zip(params_to_fit, best_fit):
+        best_params[k.replace('1','')] = v
+    piE = np.hypot(best_params['piE_E'], best_params['piE_N'])
+
+    # put together a model of best results for plotting
+    model = PSPL_Phot_Par_Param1(**best_params, raL=ra, decL=dec)
+    hmjd_model = np.linspace(np.min(hmjd),
+                             np.max(hmjd),
+                             2000)
+    mag_model = model.get_photometry(hmjd_model)
+
+    # plot results
+    if plotFlag:
+        fig, ax = plt.subplots()
+        ax.clear()
+        ax.set_title('tE %.1f | mag_src %.1f | b_sff %.2f | piE %.3f' % (
+            best_params['tE'], best_params['mag_src'], best_params['b_sff'], piE))
+        ax.scatter(hmjd, mag, color='b', label='data')
+        ax.plot(hmjd_model, mag_model, color='g', label='model')
+        ax.axvline(best_params['t0'], color='k', alpha=.2)
+        ax.axvline(best_params['t0'] + best_params['tE'], color='r', alpha=.2)
+        ax.axvline(best_params['t0'] - best_params['tE'], color='r', alpha=.2)
+        ax.invert_yaxis()
+        ax.set_xlabel('hmjd', fontsize=12)
+        ax.set_ylabel('mag', fontsize=12)
+        ax.legend()
+
+        fname = '%s/%s_lc.png' % (return_figures_dir(), cand_id)
+        fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+        print('-- %s saved' % fname)
+        plt.close(fig)
+
+
+def fit_random_cands_to_ulens():
+    N_samples = 50
+    query = apply_slope_thresh_to_query(Candidate.query)
+    cand_ids = query.order_by(func.random()).\
+        with_entities(Candidate.id).\
+        limit(N_samples).all()
+    cand_ids = [c[0] for c in cand_ids]
+    for cand_id in cand_ids:
+        fit_cand_to_ulens(cand_id)
