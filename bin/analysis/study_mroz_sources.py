@@ -12,9 +12,9 @@ from puzle.models import SourceIngestJob, StarProcessJob, \
     Star, Source, Candidate
 from puzle.stats import calculate_eta_on_daily_avg, \
     RF_THRESHOLD, calculate_eta_on_daily_avg_residuals
-from puzle import catalog
 from puzle.utils import return_figures_dir
-from puzle import db
+from puzle.cands import return_best_obj
+from puzle import db, catalog
 
 
 def return_source_job_id_and_eta_thresholds(ra, dec):
@@ -125,15 +125,6 @@ def hmjd_to_n_days(hmjd):
     hmjd_unique = set(hmjd_round)
     n_days = len(hmjd_unique)
     return n_days
-
-
-def return_best_obj(cand):
-    idx = cand.idx_best
-    source_id = cand.source_id_arr[idx]
-    source = Source.query.filter(Source.id==source_id).first()
-    color = cand.color_arr[idx]
-    obj = getattr(source.zort_source, f'object_{color}')
-    return obj
 
 
 def return_outcome(ztf_id, ra, dec):
