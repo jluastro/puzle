@@ -46,5 +46,5 @@ def is_observable_frac(eta, eta_residual,
                        eta_thresh=0.8, slope=1):
     is_observable_arr = is_observable_candidate(eta, eta_residual,
                                                 eta_thresh=eta_thresh, slope=slope)
-    frac = 100 * np.sum(is_observable_arr) / len(is_observable_arr)
+    frac = np.sum(is_observable_arr) / len(is_observable_arr)
     return frac

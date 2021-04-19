@@ -6,10 +6,12 @@ plot_eta_eta_residual.py
 import numpy as np
 import scipy.stats as st
 import copy
+
 from puzle.utils import return_figures_dir, return_data_dir
 from puzle.eta import return_eta_arrs, return_eta_ulens_arrs, \
     is_observable_frac
 from puzle.models import Candidate
+from puzle.cands import return_slope_eta_thresh
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -242,8 +244,7 @@ def plot_eta_eta_residual_boundary_3obs(eta_arr=None, eta_residual_arr=None,
                                                          eta_residual_ulens_arr[cond_obs3*cond_BH],
                                                          *bounds)
 
-    slope = 3.57
-    eta_thresh = 0.6
+    slope, eta_thresh = return_slope_eta_thresh()
     ulens_is_observable_frac_obs1 = is_observable_frac(eta_ulens_arr[cond_obs1],
                                                        eta_residual_ulens_arr[cond_obs1],
                                                        slope=slope, eta_thresh=eta_thresh)
@@ -362,8 +363,7 @@ def plot_eta_eta_residual_boundary(eta_arr=None, eta_residual_arr=None,
                                                       eta_residual_ulens_arr[cond_obs*cond_BH],
                                                       *bounds)
 
-    slope = 3.57
-    eta_thresh = 0.6
+    slope, eta_thresh = return_slope_eta_thresh()
     ulens_is_observable_frac_obs = is_observable_frac(eta_ulens_arr[cond_obs],
                                                       eta_residual_ulens_arr[cond_obs],
                                                       slope=slope, eta_thresh=eta_thresh)
@@ -381,21 +381,21 @@ def plot_eta_eta_residual_boundary(eta_arr=None, eta_residual_arr=None,
 
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
     fig.suptitle('%s of %s Candidates Remaining (slope = %.2f | eta_thresh = %.2f)' %
-                 (format(num_candidates_cut,','),
-                  format(num_candidates,','),
+                 (format(num_candidates_cut, ','),
+                  format(num_candidates, ','),
                   slope, eta_thresh), fontsize=10)
     for a in ax: a.clear()
-    ax[0].set_title('uLens frac = %.1f%% | cands frac = %.1f%%' %
-                    (ulens_is_observable_frac_obs,
-                     cands_is_observable_frac),
+    ax[0].set_title('uLens frac = %.1f%% | cands frac = %.2f%%' %
+                    (100*ulens_is_observable_frac_obs,
+                     100*cands_is_observable_frac),
                     fontsize=11)
     ax[0].contour(ulens_obs_xx, ulens_obs_yy, ulens_obs_f, cmap='viridis', levels=10)
     ax[0].scatter(eta_ulens_arr[cond_obs],
                   eta_residual_ulens_arr[cond_obs],
                   color='b', alpha=0.05, s=1)
-    ax[1].set_title('BH uLens frac = %.1f%% | cands frac = %.1f%%' %
-                    (ulens_is_observable_BH_frac_obs,
-                     cands_is_observable_frac),
+    ax[1].set_title('BH uLens frac = %.1f%% | cands frac = %.2f%%' %
+                    (100*ulens_is_observable_BH_frac_obs,
+                     100*cands_is_observable_frac),
                     fontsize=11)
     ax[1].contour(ulens_BH_xx, ulens_BH_yy, ulens_BH_f, cmap='plasma', levels=10)
     ax[1].scatter(eta_ulens_arr[cond_obs*cond_BH],
@@ -442,8 +442,11 @@ def plot_eta_boundary_fracs(eta_arr=None,
     piE_max = 0.08
     cond_BH = return_cond_BH(tE_min=tE_min, piE_max=piE_max)
 
-    slope_arr = np.linspace(1, 4, 50)
-    eta_thresh_arr = np.linspace(0.2, 2, 50)
+    slope, eta_thresh = return_slope_eta_thresh()
+    slope_arr = np.linspace(1, 4, 100)
+    eta_thresh_arr = np.linspace(0.2, 2, 100)
+    # slope_arr = np.linspace(3.56, 3.62, 100)
+    # eta_thresh_arr = np.linspace(0.475, 0.55, 100)
     slope_mesh, eta_thresh_mesh = np.meshgrid(slope_arr, eta_thresh_arr)
     frac_ulens_mesh = np.zeros_like(slope_mesh)
     frac_ulens_BH_mesh = np.zeros_like(slope_mesh)
@@ -493,8 +496,8 @@ def plot_eta_boundary_fracs(eta_arr=None,
     cbar2 = fig.colorbar(im2, ax=ax[2], label='LOG[fraction passed]')
     cbar2.add_lines(cont2)
     for a in ax:
-        a.axhline(0.6, color='k', linestyle='--', alpha=.5)
-        a.axvline(3.57, color='k', linestyle='--', alpha=.5)
+        a.axhline(eta_thresh, color='k', linestyle='--', alpha=.5)
+        a.axvline(slope, color='k', linestyle='--', alpha=.5)
         a.set_xlabel('slope', fontsize=10)
         a.set_ylabel('thresh', fontsize=10)
     fig.tight_layout()

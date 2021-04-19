@@ -53,3 +53,9 @@ def fetch_cand_best_obj_by_id(cand_id):
     else:
         obj = return_best_obj(cand)
     return obj
+
+
+def return_slope_eta_thresh():
+    slope = 3.61
+    eta_thresh = 0.6
+    return slope, eta_thresh

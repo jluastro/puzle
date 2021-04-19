@@ -11,6 +11,7 @@ from zort.radec import load_ZTF_fields, load_ZTF_CCD_corners
 
 from puzle.models import Candidate, StarProcessJob, SourceIngestJob
 from puzle.utils import return_figures_dir
+from puzle.cands import return_slope_eta_thresh
 from puzle import db
 
 
@@ -21,8 +22,7 @@ def plot_cands_on_sky():
     ra_arr = np.array([c.ra for c in cands])
     dec_arr = np.array([c.dec for c in cands])
 
-    slope = 3.57
-    eta_thresh = 0.6
+    slope, eta_thresh = return_slope_eta_thresh()
     cands_cut = [c for c in cands if c.eta_best <= eta_thresh and c.eta_residual_best > c.eta_best * slope]
     ra_arr_cut = np.array([c.ra for c in cands_cut])
     dec_arr_cut = np.array([c.dec for c in cands_cut])
@@ -64,8 +64,7 @@ def plot_cands_on_sky():
 
 
 def plot_cands_ztf_ccd_on_sky():
-    slope = 3.57
-    eta_thresh = 0.6
+    slope, eta_thresh = return_slope_eta_thresh()
     cands = Candidate.query.with_entities(Candidate.ra, Candidate.dec,
                                           Candidate.eta_best, Candidate.eta_residual_best).\
                     filter(Candidate.eta_best<=eta_thresh, Candidate.eta_residual_best>=Candidate.eta_best*slope).\

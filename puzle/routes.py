@@ -468,9 +468,9 @@ def filter_search():
             val_max = getattr(form_filter, f'{field}_max').data
             session[f'{field}_max'] = val_max
 
+        session['eta_residual_slope'] = form_filter.eta_residual_slope.data
         session['order_by'] = form_filter.order_by.data
         session['order_by_num_objs'] = form_filter.order_by_num_objs.data
-
 
         flash('Filter Search Results', 'info')
     else:
@@ -481,6 +481,10 @@ def filter_search():
                     getattr(form_filter, key).data = session[key]
                 else:
                     session[key] = None
+        if 'eta_residual_slope' in session:
+            form_filter.eta_residual_slope.data = session['eta_residual_slope']
+        else:
+            session['eta_residual_slope'] = None
         for order_by_type in ['order_by', 'order_by_num_objs']:
             if order_by_type in session:
                 getattr(form_filter, order_by_type).data = session[order_by_type]
@@ -495,6 +499,11 @@ def filter_search():
         query = _append_query(query, field, val_min, val_max)
         if val_min is not None or val_max is not None:
             current_query = True
+
+    eta_residual_slope = session['eta_residual_slope']
+    if eta_residual_slope:
+        query = query.filter(Candidate.eta_residual_best >= Candidate.eta_best * eta_residual_slope)
+        current_query = True
 
     if current_query:
         if session['order_by'] == 'eta_residual_best':
@@ -546,4 +555,8 @@ def reset_filter_search():
                 del session[f'{field}_{minmax}']
             except KeyError:
                 pass
+    try:
+        del session['eta_residual_slope']
+    except KeyError:
+        pass
     return redirect(url_for('filter_search'))
