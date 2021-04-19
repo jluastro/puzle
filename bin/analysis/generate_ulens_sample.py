@@ -1,3 +1,8 @@
+#! /usr/bin/env python
+"""
+generate_ulens_sample.py
+"""
+
 import os
 import glob
 import numpy as np
