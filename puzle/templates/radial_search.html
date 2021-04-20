@@ -33,7 +33,6 @@
                     <th>&#916;&#967;<super>2</super></th>
                     <th>&#951;</th>
                     <th>&#951;<sub>residual</sub></th>
-                    <th>RB</th>
                     <th>idx<sub>best</sub></th>
                     <th>Source ID</th>
                     <th>Color</th>
@@ -66,7 +65,7 @@
                         <td>{{ "None" }}</td>
                     {% endif %}
                     {% if cand.piE_best is float %}
-                        <td>{{ "%.2f" % cand.piE_best }}</td>
+                        <td>{{ "%.3f" % cand.piE_best }}</td>
                     {%  else %}
                         <td>{{ "None" }}</td>
                     {% endif %}
@@ -82,11 +81,6 @@
                     {% endif %}
                     {% if cand.eta_residual_best is float %}
                         <td>{{ "%.2f" % cand.eta_residual_best }}</td>
-                    {%  else %}
-                        <td>{{ "None" }}</td>
-                    {% endif %}
-                    {% if cand.rf_score is float %}
-                        <td>{{ "%.2f" % cand.rf_score }}</td>
                     {%  else %}
                         <td>{{ "None" }}</td>
                     {% endif %}
@@ -113,7 +107,6 @@
                         {% else %}
                         <td></td>
                         {% endif %}
-                        <td></td>
                         <td></td>
                         <td></td>
                         <td></td>

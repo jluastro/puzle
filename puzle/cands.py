@@ -134,9 +134,11 @@ def fit_cand_to_ulens(cand_id, uploadFlag=True, plotFlag=False):
     best_params = {}
     for k, v in zip(params_to_fit, best_fit):
         best_params[k.replace('1', '')] = v
+    piE = np.hypot(best_params['piE_E'],
+                   best_params['piE_N'])
 
     if uploadFlag and result.success:
-        cand = CandidateLevel3.query.filter_by(CandidateLevel3.id == cand_id).first()
+        cand = CandidateLevel3.query.filter(CandidateLevel3.id == cand_id).first()
         for param in params_to_fit:
             setattr(cand, f'{param}_best', best_params[param])
         db.session.commit()
@@ -155,7 +157,7 @@ def fit_cand_to_ulens(cand_id, uploadFlag=True, plotFlag=False):
         ax.clear()
         ax.set_title('tE %.1f | mag_src %.1f | b_sff %.2f | piE %.3f' % (
             best_params['tE'], best_params['mag_src'], best_params['b_sff'], piE))
-        ax.scatter(hmjd, mag, color='b', label='data')
+        ax.scatter(hmjd, mag, color='b', label='data', s=2)
         ax.plot(hmjd_model, mag_model, color='g', label='model')
         ax.axvline(best_params['t0'], color='k', alpha=.2)
         ax.axvline(best_params['t0'] + best_params['tE'], color='r', alpha=.2)

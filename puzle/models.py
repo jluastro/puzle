@@ -512,7 +512,7 @@ class CandidateLevel2(db.Model):
         self.ogle_target = ogle_target
 
     def __repr__(self):
-        str = 'Candidate \n'
+        str = f'Candidate {self.id}\n'
         str += f'Ra/Dec: ({self.ra:.5f}, {self.dec:.5f}) \n'
         for i, source_id in enumerate(self.source_id_arr, 1):
             str += f'Source {i} ID: {source_id} \n'
@@ -662,7 +662,7 @@ class CandidateLevel3(db.Model):
         self.ogle_target = ogle_target
 
     def __repr__(self):
-        str = 'Candidate \n'
+        str = f'Candidate {self.id}\n'
         str += f'Ra/Dec: ({self.ra:.5f}, {self.dec:.5f}) \n'
         return str
 

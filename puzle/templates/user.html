@@ -31,7 +31,6 @@
             <th>&#916;&#967;<super>2</super></th>
             <th>&#951;</th>
             <th>&#951;<sub>residual</sub></th>
-            <th>RB</th>
             <th>Source ID Best</th>
         </tr>
         <tr>
@@ -61,7 +60,7 @@
                     <td>{{ "None" }}</td>
                 {% endif %}
                 {% if cand.piE_best is float %}
-                    <td>{{ "%.2f" % cand.piE_best }}</td>
+                    <td>{{ "%.3f" % cand.piE_best }}</td>
                 {%  else %}
                     <td>{{ "None" }}</td>
                 {% endif %}
@@ -80,15 +79,10 @@
                 {%  else %}
                     <td>{{ "None" }}</td>
                 {% endif %}
-                {% if cand.rf_score is float %}
-                    <td>{{ "%.2f" % cand.rf_score }}</td>
-                {%  else %}
-                    <td>{{ "None" }}</td>
-                {% endif %}
                 <td>{{ cand.best_source_id }}</td>
                 </tr>
                 <tr>
-                <td colspan="10">
+                <td colspan="11">
                 {% for source_id in cand.unique_source_id_arr %}
                 <img width="200" src="{{ url_for('static', filename='source/') }}{{ source_id.split('_')[0][:3] }}/{{ source_id.split('_')[0] }}/{{ source_id }}_lightcurve.png">
                 {% endfor %}

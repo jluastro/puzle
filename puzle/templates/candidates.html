@@ -8,7 +8,7 @@
         <table width="100%">
         <tr>Ordered by increasing &#951;</tr>
         {% for cand in cands.items %}
-            <tr><td colspan="16"><hr></td></tr>
+            <tr><td colspan="17"><hr></td></tr>
             <tr id="{{ "%s" % cand.id }}">
                 <th>Cand ID</th>
                 <th>Glon</th>
@@ -23,7 +23,6 @@
                 <th>&#916;&#967;<super>2</super></th>
                 <th>&#951;</th>
                 <th>&#951;<sub>residual</sub></th>
-                <th>RB</th>
                 <th>idx<sub>best</sub></th>
                 <th>Source ID</th>
                 <th>Color</th>
@@ -56,7 +55,7 @@
                     <td>{{ "None" }}</td>
                 {% endif %}
                 {% if cand.piE_best is float %}
-                    <td>{{ "%.2f" % cand.piE_best }}</td>
+                    <td>{{ "%.3f" % cand.piE_best }}</td>
                 {%  else %}
                     <td>{{ "None" }}</td>
                 {% endif %}
@@ -72,11 +71,6 @@
                 {% endif %}
                 {% if cand.eta_residual_best is float %}
                     <td>{{ "%.2f" % cand.eta_residual_best }}</td>
-                {%  else %}
-                    <td>{{ "None" }}</td>
-                {% endif %}
-                {% if cand.rf_score_best is float %}
-                    <td>{{ "%.2f" % cand.rf_score_best }}</td>
                 {%  else %}
                     <td>{{ "None" }}</td>
                 {% endif %}
@@ -102,7 +96,6 @@
                     {% else %}
                     <td></td>
                     {% endif %}
-                    <td></td>
                     <td></td>
                     <td></td>
                     <td></td>
