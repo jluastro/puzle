@@ -43,7 +43,7 @@ user_star_association = db.Table(
 user_cand_association = db.Table(
     'user_candidate_association',
     db.Column('user_id', db.Integer, db.ForeignKey('puzle.user.id')),
-    db.Column('candidate_id', db.String(128), db.ForeignKey('puzle.candidate.id')),
+    db.Column('candidate_id', db.String(128), db.ForeignKey('puzle.candidate_level2.id')),
     schema='puzle'
 )
 
@@ -63,7 +63,7 @@ class User(UserMixin, db.Model):
     stars = db.relationship('Star', secondary=user_star_association,
                             lazy='dynamic',
                             backref=db.backref('users', lazy='dynamic'))
-    candidates = db.relationship('Candidate', secondary=user_cand_association,
+    candidates = db.relationship('CandidateLevel2', secondary=user_cand_association,
                                  lazy='dynamic',
                                  backref=db.backref('users', lazy='dynamic'))
 
@@ -119,10 +119,10 @@ class User(UserMixin, db.Model):
         return cand in self.candidates.all()
 
     def followed_candidates(self):
-        return Candidate.query.join(user_cand_association,
-            (user_cand_association.c.candidate_id == Candidate.id)).\
+        return CandidateLevel2.query.join(user_cand_association,
+            (user_cand_association.c.candidate_id == CandidateLevel2.id)).\
             filter(user_cand_association.c.user_id == self.id).\
-            order_by(Candidate.id.asc())
+            order_by(CandidateLevel2.id.asc())
 
 
 class Source(db.Model):
@@ -443,7 +443,8 @@ class Star(db.Model):
         return func.q3c_radial_query(text('ra'), text('dec'), ra, dec, radius_deg)
 
 
-class Candidate(db.Model):
+class CandidateLevel2(db.Model):
+    __tablename__ = 'candidate_level2'
     __table_args__ = {'schema': 'puzle'}
 
     id = db.Column(db.String(128), primary_key=True, nullable=False)

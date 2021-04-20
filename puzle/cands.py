@@ -10,13 +10,13 @@ import matplotlib.pyplot as plt
 
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
-from puzle.models import Candidate, Source
+from puzle.models import CandidateLevel2, Source
 from puzle.utils import return_figures_dir
 from puzle import db
 
 
 def fetch_cand_by_id(cand_id):
-    cands = Candidate.query.filter(Candidate.id==cand_id).all()
+    cands = CandidateLevel2.query.filter(CandidateLevel2.id==cand_id).all()
     if len(cands) == 1:
         cand = cands[0]
     else:
@@ -26,8 +26,8 @@ def fetch_cand_by_id(cand_id):
 
 
 def fetch_cand_by_radec(ra, dec, radius=2):
-    cone_filter = Candidate.cone_search(ra, dec, radius=radius)
-    cands = db.session.query(Candidate).filter(cone_filter).all()
+    cone_filter = CandidateLevel2.cone_search(ra, dec, radius=radius)
+    cands = db.session.query(CandidateLevel2).filter(cone_filter).all()
     if len(cands) == 1:
         cand = cands[0]
     elif len(cands) > 1:
@@ -69,8 +69,8 @@ def return_slope_eta_thresh():
 
 def apply_slope_thresh_to_query(query):
     slope, eta_thresh = return_slope_eta_thresh()
-    query = query.filter(Candidate.eta_best <= eta_thresh,
-                         Candidate.eta_residual_best >= Candidate.eta_best * slope)
+    query = query.filter(CandidateLevel2.eta_best <= eta_thresh,
+                         CandidateLevel2.eta_residual_best >= CandidateLevel2.eta_best * slope)
     return query
 
 
@@ -168,9 +168,9 @@ def fit_cand_to_ulens(cand_id, plotFlag=False):
 
 def fit_random_cands_to_ulens():
     N_samples = 50
-    query = apply_slope_thresh_to_query(Candidate.query)
+    query = apply_slope_thresh_to_query(CandidateLevel2.query)
     cand_ids = query.order_by(func.random()).\
-        with_entities(Candidate.id).\
+        with_entities(CandidateLevel2.id).\
         limit(N_samples).all()
     cand_ids = [c[0] for c in cand_ids]
     for cand_id in cand_ids:

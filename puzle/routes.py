@@ -9,7 +9,7 @@ from puzle.forms import LoginForm, RegistrationForm, \
     EditProfileForm, ResetPasswordRequestForm, ResetPasswordForm, \
     EditCommentForm, RadialSearchForm, EmptyForm, \
     FilterSearchForm
-from puzle.models import User, Source, Candidate
+from puzle.models import User, Source, CandidateLevel2
 from puzle.email import send_password_reset_email
 
 
@@ -154,7 +154,7 @@ def source(sourceid):
 def candidate(candid):
     title = 'Candidate %s' % candid
     form = EmptyForm()
-    cand = Candidate.query.filter_by(id=candid).first_or_404()
+    cand = CandidateLevel2.query.filter_by(id=candid).first_or_404()
     sources = []
     pass_dct = {}
     data = zip(cand.source_id_arr, cand.pass_arr, cand.color_arr)
