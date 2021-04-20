@@ -299,13 +299,31 @@ def generate_random_lightcurves():
 
 
 def consolidate_lightcurves():
-    # run generate_random_lightcurves
+    # run generate_random_lightcurves first
+
+    # get list of already existing totals
     data_dir = return_data_dir()
+    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample.??.total.npz')
+    fname_total_arr.sort()
+    idx = int(os.path.basename(fname_total_arr[-1]).split('.')[1]) + 1
+
+    # load existing totals into memory
+    lightcurves_arr = []
+    metadata_dct = defaultdict(list)
+    for fname in fname_total_arr:
+        data = load_stacked_array(fname)
+        for d in data:
+            lightcurves_arr.append((d[:, 0], d[:, 1], d[:, 2]))
+
+        fname_metadata = fname.replace('sample.', 'sample_metadata.')
+        metadata = np.load(fname_metadata)
+        for key in metadata:
+            metadata_dct[key].extend(list(metadata[key]))
+
+    # append with new samples
     ulens_sample_fnames = glob.glob(f'{data_dir}/ulens_samples/ulens_sample.??.npz')
     ulens_sample_fnames.sort()
 
-    lightcurves_arr = []
-    metadata_dct = defaultdict(list)
     for fname in ulens_sample_fnames:
         data = load_stacked_array(fname)
         for d in data:
@@ -316,11 +334,11 @@ def consolidate_lightcurves():
         for key in metadata:
             metadata_dct[key].extend(list(metadata[key]))
 
-    fname_total = f'{data_dir}/ulens_sample.total.npz'
+    fname_total = f'{data_dir}/ulens_sample.{idx:02d}.total.npz'
     save_stacked_array(fname_total, lightcurves_arr)
 
-    fname_total = f'{data_dir}/ulens_sample_metadata.total.npz'
-    np.savez(fname_total, **metadata_dct)
+    fname_metadata_total = f'{data_dir}/ulens_sample_metadata.{idx:02d}.total.npz'
+    np.savez(fname_metadata_total, **metadata_dct)
 
     num_samples = len(lightcurves_arr)
     print(f'{num_samples} Samples in Total')
@@ -352,7 +370,9 @@ def calculate_stats_on_lightcurves():
         size = 1
 
     data_dir = return_data_dir()
-    fname = f'{data_dir}/ulens_sample.total.npz'
+    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample.??.total.npz')
+    fname_total_arr.sort()
+    fname = fname_total_arr[-1]
     data = load_stacked_array(fname)
 
     idx_check_arr = np.arange(len(data))
@@ -415,8 +435,8 @@ def calculate_stats_on_lightcurves():
         observables2 = list(itertools.chain(*total_observables2))
         observables3 = list(itertools.chain(*total_observables3))
         idx_check = list(itertools.chain(*total_idx_check))
-        fname = f'{data_dir}/ulens_sample_etas.total.npz'
-        np.savez(fname, eta=etas, eta_residual=eta_residuals,
+        fname_etas = fname.replace('ulens_sample', 'ulens_sample_etas')
+        np.savez(fname_etas, eta=etas, eta_residual=eta_residuals,
                  observable1=observables1,
                  observable2=observables2,
                  observable3=observables3,
@@ -426,13 +446,13 @@ def calculate_stats_on_lightcurves():
 def test_lightcurve_stats(N_samples=1000):
 
     data_dir = return_data_dir()
-    fname = f'{data_dir}/ulens_sample.total.npz'
+    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample.??.total.npz')
+    fname_total_arr.sort()
+    fname = fname_total_arr[-1]
     data_lightcurves = load_stacked_array(fname)
 
-    fname = f'{data_dir}/ulens_sample_etas.total.npz'
-    data_etas = np.load(fname)
-    eta_arr = data_etas['eta']
-    eta_residual_arr = data_etas['eta_residual']
+    fname_etas = fname.replace('ulens_sample', 'ulens_sample_etas')
+    data_etas = np.load(fname_etas)
     observable_arr = data_etas['observable']
     assert np.all(data_etas['idx_check'] == np.arange(len(observable_arr)))
 
@@ -485,6 +505,6 @@ def test_lightcurve_stats(N_samples=1000):
 
 
 if __name__ == '__main__':
-    generate_random_lightcurves()
+    # generate_random_lightcurves()
     # consolidate_lightcurves()
-    # calculate_stats_on_lightcurves()
+    calculate_stats_on_lightcurves()
