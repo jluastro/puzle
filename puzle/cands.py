@@ -74,7 +74,6 @@ def apply_slope_thresh_to_query(query):
     return query
 
 
-# define function to minimize
 def chi2(theta, params_to_fit, model_class, data):
     params = {}
     for k, v in zip(params_to_fit, theta):
@@ -116,11 +115,11 @@ def fit_cand_to_ulens(cand_id, plotFlag=False):
                               0.25])
 
     # instantiate fitter
-    data_ = {'hmjd': hmjd,
-             'mag': mag,
-             'magerr': magerr,
-             'raL': ra,
-             'decL': dec}
+    data = {'hmjd': hmjd,
+            'mag': mag,
+            'magerr': magerr,
+            'raL': ra,
+            'decL': dec}
 
     # run the optimizer
     result = op.minimize(chi2, x0=initial_guess,
