@@ -284,6 +284,8 @@ def generate_random_lightcurves():
 
     data_dir = return_data_dir()
     fname = f'{data_dir}/ulens_samples/ulens_sample.{rank:02d}.npz'
+    if os.path.exists(fname):
+        os.remove(fname)
     save_stacked_array(fname, lightcurves_arr)
 
     dtype = [('t0', float), ('u0', float),
@@ -295,6 +297,8 @@ def generate_random_lightcurves():
     metadata_dct = {k: metadata_arr[k] for k in metadata_arr.dtype.names}
 
     fname = f'{data_dir}/ulens_samples/ulens_sample_metadata.{rank:02d}.npz'
+    if os.path.exists(fname):
+        os.remove(fname)
     np.savez(fname, **metadata_dct)
 
 
