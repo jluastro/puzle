@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
+from puzle.stats import calculate_eta, average_xy_on_round_x
 from puzle.models import CandidateLevel2, CandidateLevel3, Source
 from puzle.utils import return_figures_dir
 from puzle import db
@@ -102,21 +103,24 @@ def fit_cand_to_ulens(cand_id, uploadFlag=True, plotFlag=False):
     ra = obj.ra
     dec = obj.dec
 
+    hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
+    _, magerr_round = average_xy_on_round_x(hmjd, magerr)
+
     # Setup parameter initial guess and list of params
     params_to_fit = ['t0', 'u0_amp', 'tE', 'mag_src',
                      'b_sff', 'piE_E', 'piE_N']
-    initial_guess = np.array([hmjd[np.argmin(mag)],
+    initial_guess = np.array([hmjd[np.argmin(mag_round)],
                               0.5,
                               50,
-                              np.median(mag),
+                              np.median(mag_round),
                               1.0,
                               0.25,
                               0.25])
 
     # instantiate fitter
-    data = {'hmjd': hmjd,
-            'mag': mag,
-            'magerr': magerr,
+    data = {'hmjd': hmjd_round,
+            'mag': mag_round,
+            'magerr': magerr_round,
             'raL': ra,
             'decL': dec}
 
@@ -137,17 +141,36 @@ def fit_cand_to_ulens(cand_id, uploadFlag=True, plotFlag=False):
     piE = np.hypot(best_params['piE_E'],
                    best_params['piE_N'])
 
-    if uploadFlag and result.success:
+    model = PSPL_Phot_Par_Param1(**best_params, raL=ra, decL=dec)
+
+    if uploadFlag:
         cand = CandidateLevel3.query.filter(CandidateLevel3.id == cand_id).first()
-        for param in params_to_fit:
-            setattr(cand, f'{param}_best', best_params[param])
+        if result.success:
+            for param in params_to_fit:
+                setattr(cand, f'{param}_best', best_params[param])
+
+            eta = calculate_eta(mag_round)
+            mag_round_model = model.get_photometry(hmjd_round)
+            mag_residual_arr = mag_round - mag_round_model
+            cond = ~np.isnan(mag_residual_arr)
+            eta_residual = calculate_eta(mag_residual_arr[cond])
+
+            cand.chi_squared_delta_best = result.fun
+            cand.eta_best = eta
+            cand.eta_residual_best = eta_residual
+        else:
+            for param in params_to_fit:
+                setattr(cand, f'{param}_best', 0)
+            cand.chi_squared_delta_best = 0
+            cand.eta_best = 0
+            cand.eta_residual_best = 0
+
         db.session.commit()
         db.session.close()
 
     # plot results
     if plotFlag:
         # put together a model of best results for plotting
-        model = PSPL_Phot_Par_Param1(**best_params, raL=ra, decL=dec)
         hmjd_model = np.linspace(np.min(hmjd),
                                  np.max(hmjd),
                                  2000)
