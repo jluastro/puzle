@@ -63,8 +63,8 @@ def fetch_cand_best_obj_by_id(cand_id):
 
 
 def return_eta_residual_slope_offset():
-    slope = 3.61744966442953
-    offset = -0.011744966442953031
+    slope = 3.8187919463087248
+    offset = -0.07718120805369133
     return slope, offset
 
 

@@ -13,7 +13,7 @@ from puzle.eta import return_level2_eta_arrs, return_eta_ulens_arrs, \
 import matplotlib.pyplot as plt
 
 
-def return_cond_BH(tE_min=120, piE_max=0.1):
+def return_cond_BH(tE_min=150, piE_max=0.08):
     data_dir = return_data_dir()
     fname_total_arr = glob.glob(f'{data_dir}/ulens_sample_metadata.??.total.npz')
     fname_total_arr.sort()
