@@ -199,7 +199,7 @@ def return_kde(eta, eta_residual, xmin, xmax, ymin, ymax):
     return xx, yy, f
 
 
-def return_cond_BH(tE_min=120, piE_max=0.1):
+def return_cond_BH(tE_min=150, piE_max=0.08):
     data_dir = return_data_dir()
     fname_total_arr = glob.glob(f'{data_dir}/ulens_sample_metadata.??.total.npz')
     fname_total_arr.sort()
@@ -210,63 +210,6 @@ def return_cond_BH(tE_min=120, piE_max=0.1):
     cond_BH = tE >= tE_min
     cond_BH *= piE <= piE_max
     return cond_BH
-
-
-def calculate_eta_residual_slope_offset(eta_arr=None, eta_residual_arr=None,
-                                        eta_ulens_arr=None, eta_residual_ulens_arr=None,
-                                        observable_arr=None):
-    if eta_arr is None:
-        eta_arr, eta_residual_arr, _ = return_level2_eta_arrs()
-    if eta_ulens_arr is None:
-        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_eta_ulens_arrs()
-
-    cond = observable_arr == True
-    tE_min = 150
-    piE_max = 0.08
-    cond_BH = return_cond_BH(tE_min=tE_min, piE_max=piE_max)
-
-    slope_arr = np.linspace(1, 7, 150)
-    offset_arr = np.linspace(-0.5, 0.25, 150)
-    slope_mesh, offset_mesh = np.meshgrid(slope_arr, offset_arr)
-    frac_ulens_mesh = np.zeros((len(offset_mesh), len(slope_arr)))
-    frac_ulens_BH_mesh = np.zeros((len(offset_mesh), len(slope_arr)))
-    frac_cands_mesh = np.zeros((len(offset_mesh), len(slope_arr)))
-    for i, offset in enumerate(offset_arr):
-        for j, slope in enumerate(slope_arr):
-            frac_ulens_mesh[i, j] = is_observable_frac_slope_offset(eta_ulens_arr[cond],
-                                                                    eta_residual_ulens_arr[cond],
-                                                                    offset=offset,
-                                                                    slope=slope)
-            frac_ulens_BH_mesh[i, j] = is_observable_frac_slope_offset(eta_ulens_arr[cond * cond_BH],
-                                                                       eta_residual_ulens_arr[cond * cond_BH],
-                                                                       offset=offset,
-                                                                       slope=slope)
-            frac_cands_mesh[i, j] = is_observable_frac_slope_offset(eta_arr,
-                                                                    eta_residual_arr,
-                                                                    offset=offset,
-                                                                    slope=slope)
-    logfrac_cands_mesh = np.log10(frac_cands_mesh)
-
-    slope_idx_arr = np.argmin(np.abs(frac_ulens_BH_mesh - 0.95), axis=1)
-    offset_idx_arr = np.arange(len(offset_arr))
-
-    logfrac_cands_arr = []
-    for slope_idx, offset_idx in zip(slope_idx_arr, offset_idx_arr):
-        logfrac_cands_arr.append(logfrac_cands_mesh[offset_idx, slope_idx])
-
-    idx = np.argmin(logfrac_cands_arr)
-    slope = slope_arr[slope_idx_arr][idx]
-    offset = offset_arr[offset_idx_arr][idx]
-
-    fig, ax = plt.subplots()
-    ax.plot(logfrac_cands_arr, marker='.')
-    ax.set_xlabel('idx')
-    ax.set_ylabel('LOG [ fraction candidates passed ]')
-    ax.axvline(idx)
-    ax.set_title('slope = %.2f | offset = %.2f' % (slope, offset),
-                 fontsize=10)
-
-    return slope, offset
 
 
 def plot_eta_eta_residual_boundary_3obs(eta_arr=None, eta_residual_arr=None,
@@ -299,9 +242,7 @@ def plot_eta_eta_residual_boundary_3obs(eta_arr=None, eta_residual_arr=None,
                                              eta_residual_arr,
                                              *bounds)
 
-    tE_min = 150
-    piE_max = 0.08
-    cond_BH = return_cond_BH(tE_min=tE_min, piE_max=piE_max)
+    cond_BH = return_cond_BH()
 
     slope, offset = return_eta_residual_slope_offset()
     ulens_is_observable_frac_obs1 = is_observable_frac_slope_offset(eta_ulens_arr[cond_obs1],
@@ -411,9 +352,7 @@ def plot_eta_eta_residual_boundary(eta_arr=None, eta_residual_arr=None,
                                              eta_residual_arr,
                                              *bounds)
 
-    tE_min = 150
-    piE_max = 0.08
-    cond_BH = return_cond_BH(tE_min=tE_min, piE_max=piE_max)
+    cond_BH = return_cond_BH()
     ulens_BH_xx, ulens_BH_yy, ulens_BH_f = return_kde(eta_ulens_arr[cond_obs*cond_BH],
                                                       eta_residual_ulens_arr[cond_obs*cond_BH],
                                                       *bounds)
@@ -491,9 +430,7 @@ def plot_eta_boundary_fracs(eta_arr=None,
         eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_eta_ulens_arrs()
 
     cond = observable_arr == True
-    tE_min = 150
-    piE_max = 0.08
-    cond_BH = return_cond_BH(tE_min=tE_min, piE_max=piE_max)
+    cond_BH = return_cond_BH()
 
     slope_arr = np.linspace(1, 7, 100)
     offset_arr = np.linspace(-0.5, 0.25, 100)

@@ -405,7 +405,7 @@ def calculate_stats_on_lightcurves():
         std = np.median([np.std(mag) for mag in mag_splits])
 
         cond_three_sigma = mag_round <= median - 3 * std
-        cond_descreasing = test_for_three_consecutive_decreases(mag_round)
+        cond_descreasing = three_consecutive_decreases(mag_round)
         count_cond = np.sum(cond_three_sigma[:-2] * cond_descreasing)
 
         if count_cond == 0:
@@ -463,7 +463,7 @@ def _test_lightcurve_stats(data_lightcurves, observable_arr, idx_sample):
         std = np.median([np.std(mag) for mag in mag_splits])
 
         cond_three_sigma = mag_round <= median - 3 * std
-        cond_descreasing = test_for_three_consecutive_decreases(mag_round)
+        cond_descreasing = three_consecutive_decreases(mag_round)
         count_cond = np.sum(cond_three_sigma[:-2] * cond_descreasing)
 
         try:

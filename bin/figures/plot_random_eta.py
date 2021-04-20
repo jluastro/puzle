@@ -14,10 +14,6 @@ def calculate_eta_arr(size, sigma, N_samples=20000):
         sample = np.random.normal(0, sigma, size=size)
         eta = calculate_eta(sample)
         eta_arr.append(eta)
-    print('size: %i | sigma: %.2f' % (size, sigma))
-    print('-- median(eta): %.2f' % np.median(eta_arr))
-    print('-- std(eta): %.2f' % np.std(eta_arr))
-    print('-- thresh(eta): %.2f' % np.percentile(eta_arr, 1))
     return eta_arr
 
 
