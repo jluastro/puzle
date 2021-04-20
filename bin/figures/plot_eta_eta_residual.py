@@ -9,7 +9,7 @@ import copy
 import glob
 
 from puzle.utils import return_figures_dir, return_data_dir
-from puzle.eta import return_eta_arrs, return_eta_ulens_arrs, \
+from puzle.eta import return_level2_eta_arrs, return_eta_ulens_arrs, \
     is_observable_frac_slope_offset
 from puzle.models import CandidateLevel2
 from puzle.cands import return_eta_residual_slope_offset, \
@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 def plot_eta_eta_residual(eta_arr=None, eta_residual_arr=None, eta_threshold_low_best=None,
                           eta_ulens_arr=None, eta_residual_ulens_arr=None, observable_arr=None):
     if eta_arr is None:
-        eta_arr, eta_residual_arr, _ = return_eta_arrs()
+        eta_arr, eta_residual_arr, _ = return_level2_eta_arrs()
     if eta_ulens_arr is None:
         eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_eta_ulens_arrs()
 
@@ -136,7 +136,7 @@ def plot_eta_eta_residual(eta_arr=None, eta_residual_arr=None, eta_threshold_low
 
 def plot_eta_eta_threshold(eta_arr=None, eta_threshold_low_best=None):
     if eta_arr is None:
-        eta_arr, _, eta_threshold_low_best = return_eta_arrs()
+        eta_arr, _, eta_threshold_low_best = return_level2_eta_arrs()
 
     fig, ax = plt.subplots(figsize=(10, 10))
     ax.scatter(eta_arr, eta_threshold_low_best,
@@ -216,7 +216,7 @@ def calculate_eta_residual_slope_offset(eta_arr=None, eta_residual_arr=None,
                                         eta_ulens_arr=None, eta_residual_ulens_arr=None,
                                         observable_arr=None):
     if eta_arr is None:
-        eta_arr, eta_residual_arr, _ = return_eta_arrs()
+        eta_arr, eta_residual_arr, _ = return_level2_eta_arrs()
     if eta_ulens_arr is None:
         eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_eta_ulens_arrs()
 
@@ -225,8 +225,8 @@ def calculate_eta_residual_slope_offset(eta_arr=None, eta_residual_arr=None,
     piE_max = 0.08
     cond_BH = return_cond_BH(tE_min=tE_min, piE_max=piE_max)
 
-    slope_arr = np.linspace(1, 7, 100)
-    offset_arr = np.linspace(-0.5, 0.25, 100)
+    slope_arr = np.linspace(1, 7, 150)
+    offset_arr = np.linspace(-0.5, 0.25, 150)
     slope_mesh, offset_mesh = np.meshgrid(slope_arr, offset_arr)
     frac_ulens_mesh = np.zeros((len(offset_mesh), len(slope_arr)))
     frac_ulens_BH_mesh = np.zeros((len(offset_mesh), len(slope_arr)))
@@ -271,7 +271,7 @@ def plot_eta_eta_residual_boundary_3obs(eta_arr=None, eta_residual_arr=None,
                                         observable2_arr=None,
                                         observable3_arr=None):
     if eta_arr is None:
-        eta_arr, eta_residual_arr, _ = return_eta_arrs()
+        eta_arr, eta_residual_arr, _ = return_level2_eta_arrs()
     if eta_ulens_arr is None:
         eta_ulens_arr, eta_residual_ulens_arr, _, \
         observable1_arr, observable2_arr, observable3_arr = return_eta_ulens_arrs()
@@ -391,7 +391,7 @@ def plot_eta_eta_residual_boundary(eta_arr=None, eta_residual_arr=None,
                                    eta_ulens_arr=None, eta_residual_ulens_arr=None,
                                    observable_arr=None):
     if eta_arr is None:
-        eta_arr, eta_residual_arr, _ = return_eta_arrs()
+        eta_arr, eta_residual_arr, _ = return_level2_eta_arrs()
     if eta_ulens_arr is None:
         eta_ulens_arr, eta_residual_ulens_arr, _, \
         _, _, observable_arr = return_eta_ulens_arrs()
@@ -482,7 +482,7 @@ def plot_eta_boundary_fracs(eta_arr=None,
                             eta_residual_ulens_arr=None,
                             observable_arr=None):
     if eta_arr is None:
-        eta_arr, eta_residual_arr, _ = return_eta_arrs()
+        eta_arr, eta_residual_arr, _ = return_level2_eta_arrs()
     if eta_ulens_arr is None:
         eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_eta_ulens_arrs()
 
@@ -557,7 +557,7 @@ def plot_eta_boundary_fracs(eta_arr=None,
 
 
 def generate_all_figures():
-    eta_arr, eta_residual_arr, eta_threshold_low_best = return_eta_arrs()
+    eta_arr, eta_residual_arr, eta_threshold_low_best = return_level2_eta_arrs()
     eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, \
     observable1_arr, observable2_arr, observable3_arr = return_eta_ulens_arrs()
     plot_eta_eta_residual(eta_arr=eta_arr,
