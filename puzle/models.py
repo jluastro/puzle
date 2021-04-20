@@ -598,3 +598,151 @@ class CandidateLevel2(db.Model):
     def fetch_ogle_target(self):
         self.ogle_target = fetch_ogle_target(self.ra, self.dec)
         return self.ogle_target
+
+
+class CandidateLevel3(db.Model):
+    __tablename__ = 'candidate_level3'
+    __table_args__ = {'schema': 'puzle'}
+
+    id = db.Column(db.String(128), primary_key=True, nullable=False)
+    ra = db.Column(db.Float, nullable=False)
+    dec = db.Column(db.Float, nullable=False)
+    source_id_arr = db.Column(db.ARRAY(db.String(128)))
+    color_arr = db.Column(db.ARRAY(db.String(8)))
+    pass_arr = db.Column(db.ARRAY(db.Boolean))
+    idx_best = db.Column(db.Integer)
+    num_objs_pass = db.Column(db.Integer)
+    num_objs_tot = db.Column(db.Integer)
+    eta_best = db.Column(db.Float)
+    eta_residual_best = db.Column(db.Float)
+    t0_best = db.Column(db.Float)
+    u0_amp_best = db.Column(db.Float)
+    tE_best = db.Column(db.Float)
+    mag_src_best = db.Column(db.Float)
+    b_sff_best = db.Column(db.Float)
+    piE_E_best = db.Column(db.Float)
+    piE_N_best = db.Column(db.Float)
+    chi_squared_delta_best = db.Column(db.Float)
+    comments = db.Column(db.String(1024))
+    _ztf_ids = db.Column(db.String(256))
+    ogle_target = db.Column(db.String(128))
+
+    def __init__(self, id, ra, dec,
+                 source_id_arr, color_arr,
+                 pass_arr, idx_best,
+                 num_objs_pass, num_objs_tot,
+                 eta_best=None, eta_residual_best=None,
+                 t0_best=None, u0_amp_best=None,
+                 tE_best=None, mag_src_best=None,
+                 b_sff_best=None, piE_E_best=None, piE_N_best=None,
+                 chi_squared_delta_best=None,
+                 comments=None, _ztf_ids=None, ogle_target=None):
+        self.id = id
+        self.ra = ra
+        self.dec = dec
+        self.source_id_arr = source_id_arr
+        self.color_arr = color_arr
+        self.pass_arr = pass_arr
+        self.idx_best = idx_best
+        self.num_objs_pass = num_objs_pass
+        self.num_objs_tot = num_objs_tot
+        self.eta_best = eta_best
+        self.eta_residual_best = eta_residual_best
+        self.t0_best = t0_best
+        self.u0_amp_best = u0_amp_best
+        self.tE_best = tE_best
+        self.mag_src_best = mag_src_best
+        self.b_sff_best = b_sff_best
+        self.piE_E_best = piE_E_best
+        self.piE_N_best = piE_N_best
+        self.chi_squared_delta_best = chi_squared_delta_best
+        self.comments = comments
+        self._ztf_ids = _ztf_ids
+        self.ogle_target = ogle_target
+
+    def __repr__(self):
+        str = 'Candidate \n'
+        str += f'Ra/Dec: ({self.ra:.5f}, {self.dec:.5f}) \n'
+        return str
+
+    @hybrid_property
+    def glonlat(self):
+        try:
+            return self._glonlat
+        except AttributeError:
+            coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
+            glon, glat = coord.galactic.l.value, coord.galactic.b.value
+            if glon > 180:
+                glon -= 360
+            self._glonlat = (glon, glat)
+            return self._glonlat
+
+    @property
+    def glon(self):
+        return self.glonlat[0]
+
+    @property
+    def glat(self):
+        return self.glonlat[1]
+
+    @property
+    def ztf_ids(self):
+        return [x for x in self._ztf_ids.split(';') if len(x) != 0]
+
+    @ztf_ids.setter
+    def ztf_ids(self, ztf_id):
+        if ztf_id:
+            self._ztf_ids += ';%s' % ztf_id
+        else:
+            self._ztf_ids = ''
+
+    @hybrid_method
+    def cone_search(self, ra, dec, radius=2):
+        radius_deg = radius / 3600.
+        return func.q3c_radial_query(text('ra'), text('dec'), ra, dec, radius_deg)
+
+    def _fetch_mars_results(self):
+        radius_deg = 2. / 3600.
+        cone = '%f,%f,%f' % (self.ra, self.dec, radius_deg)
+        query = {"queries": [{"cone": cone}]}
+        results = requests.post('https://mars.lco.global/', json=query).json()
+        if results['total'] == 0:
+            return None
+        else:
+            return results
+
+    def fetch_ztf_ids(self):
+        results = self._fetch_mars_results()
+        if results is None:
+            return 0
+        ztf_ids = [str(r['objectId']) for r in
+                   results['results'][0]['results']]
+        ztf_ids = list(set(ztf_ids))
+        self.ztf_ids = None
+        for ztf_id in ztf_ids:
+            self.ztf_ids = ztf_id
+
+        return len(ztf_ids)
+
+    @hybrid_method
+    def return_source_dct(self):
+        source_dct = defaultdict(list)
+        for source_id, color, pass_id, idx in zip(self.source_id_arr, self.color_arr, self.pass_arr, range(self.num_objs_tot)):
+            source_dct[source_id].append((color, pass_id, idx))
+        return source_dct
+
+    @property
+    def best_source_id(self):
+        best_source_id = None
+        for i, (source_id, color) in enumerate(zip(self.source_id_arr, self.color_arr)):
+            if i == self.idx_best:
+                best_source_id = source_id
+        return best_source_id
+
+    @property
+    def unique_source_id_arr(self):
+        return list(set(self.source_id_arr))
+
+    def fetch_ogle_target(self):
+        self.ogle_target = fetch_ogle_target(self.ra, self.dec)
+        return self.ogle_target

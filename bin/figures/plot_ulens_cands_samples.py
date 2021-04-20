@@ -5,7 +5,7 @@ plot_ulens_cands_samples.py
 
 import numpy as np
 from sqlalchemy.sql.expression import func
-from puzle.models import Candidate, Source
+from puzle.models import CandidateLevel2, Source
 from puzle.stats import calculate_eta_on_daily_avg, average_xy_on_round_x
 from puzle.utils import load_stacked_array, return_data_dir, return_figures_dir
 from puzle.eta import return_eta_arrs, return_eta_ulens_arrs
@@ -15,11 +15,11 @@ import matplotlib.pyplot as plt
 
 
 def return_cands_sample(eta_low, eta_high, eta_residual_low, eta_residual_high, N_cands=9):
-    cands_tmp = db.session.query(Candidate).\
-        filter(Candidate.eta_best >= eta_low).\
-        filter(Candidate.eta_best <= eta_high).\
-        filter(Candidate.eta_residual_best >= eta_residual_low).\
-        filter(Candidate.eta_residual_best <= eta_residual_high).\
+    cands_tmp = db.session.query(CandidateLevel2).\
+        filter(CandidateLevel2.eta_best >= eta_low).\
+        filter(CandidateLevel2.eta_best <= eta_high).\
+        filter(CandidateLevel2.eta_residual_best >= eta_residual_low).\
+        filter(CandidateLevel2.eta_residual_best <= eta_residual_high).\
         order_by(func.random()).limit(N_cands).all()
     cands = []
     for cand in cands_tmp:

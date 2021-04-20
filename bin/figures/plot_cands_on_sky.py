@@ -9,15 +9,15 @@ from astropy.coordinates import SkyCoord
 from zort.radec import load_ZTF_fields, load_ZTF_CCD_corners
 
 
-from puzle.models import Candidate, StarProcessJob, SourceIngestJob
+from puzle.models import CandidateLevel2, StarProcessJob, SourceIngestJob
 from puzle.utils import return_figures_dir
 from puzle.cands import return_slope_eta_thresh
 from puzle import db
 
 
 def plot_cands_on_sky():
-    cands = Candidate.query.with_entities(Candidate.ra, Candidate.dec,
-                                          Candidate.eta_best, Candidate.eta_residual_best).\
+    cands = CandidateLevel2.query.with_entities(CandidateLevel2.ra, CandidateLevel2.dec,
+                                          CandidateLevel2.eta_best, CandidateLevel2.eta_residual_best).\
                       all()
     ra_arr = np.array([c.ra for c in cands])
     dec_arr = np.array([c.dec for c in cands])
@@ -65,9 +65,9 @@ def plot_cands_on_sky():
 
 def plot_cands_ztf_ccd_on_sky():
     slope, eta_thresh = return_slope_eta_thresh()
-    cands = Candidate.query.with_entities(Candidate.ra, Candidate.dec,
-                                          Candidate.eta_best, Candidate.eta_residual_best).\
-                    filter(Candidate.eta_best<=eta_thresh, Candidate.eta_residual_best>=Candidate.eta_best*slope).\
+    cands = CandidateLevel2.query.with_entities(CandidateLevel2.ra, CandidateLevel2.dec,
+                                          CandidateLevel2.eta_best, CandidateLevel2.eta_residual_best).\
+                    filter(CandidateLevel2.eta_best<=eta_thresh, CandidateLevel2.eta_residual_best>=CandidateLevel2.eta_best*slope).\
                     all()
     ra_arr = np.array([c[0] for c in cands])
     dec_arr = np.array([c[1]for c in cands])

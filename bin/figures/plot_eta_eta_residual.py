@@ -10,7 +10,7 @@ import copy
 from puzle.utils import return_figures_dir, return_data_dir
 from puzle.eta import return_eta_arrs, return_eta_ulens_arrs, \
     is_observable_frac
-from puzle.models import Candidate
+from puzle.models import CandidateLevel2
 from puzle.cands import return_slope_eta_thresh
 
 import matplotlib
@@ -268,8 +268,8 @@ def plot_eta_eta_residual_boundary_3obs(eta_arr=None, eta_residual_arr=None,
                                                           eta_residual_ulens_arr[cond_obs3*cond_BH],
                                                           slope=slope, eta_thresh=eta_thresh)
 
-    num_candidates_cut = Candidate.query.filter(Candidate.eta_best <= eta_thresh,
-                                                Candidate.eta_residual_best >= Candidate.eta_best * slope).\
+    num_candidates_cut = CandidateLevel2.query.filter(CandidateLevel2.eta_best <= eta_thresh,
+                                                CandidateLevel2.eta_residual_best >= CandidateLevel2.eta_best * slope).\
                                                 count()
 
     fig, ax = plt.subplots(3, 1, figsize=(10, 10))
@@ -374,13 +374,13 @@ def plot_eta_eta_residual_boundary(eta_arr=None, eta_residual_arr=None,
                                                          eta_residual_ulens_arr[cond_obs*cond_BH],
                                                          slope=slope, eta_thresh=eta_thresh)
 
-    num_candidates = Candidate.query.count()
-    num_candidates_cut = Candidate.query.filter(Candidate.eta_best <= eta_thresh,
-                                                Candidate.eta_residual_best >= Candidate.eta_best * slope).\
+    num_candidates = CandidateLevel2.query.count()
+    num_candidates_cut = CandidateLevel2.query.filter(CandidateLevel2.eta_best <= eta_thresh,
+                                                CandidateLevel2.eta_residual_best >= CandidateLevel2.eta_best * slope).\
                                                 count()
 
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    fig.suptitle('%s of %s Candidates Remaining (slope = %.2f | eta_thresh = %.2f)' %
+    fig.suptitle('%s of %s CandidateLevel2s Remaining (slope = %.2f | eta_thresh = %.2f)' %
                  (format(num_candidates_cut, ','),
                   format(num_candidates, ','),
                   slope, eta_thresh), fontsize=10)
@@ -488,7 +488,7 @@ def plot_eta_boundary_fracs(eta_arr=None,
                           colors=['r', 'g', 'b', 'blueviolet', 'k'], origin='lower', extent=extent)
     cbar1 = fig.colorbar(im1, ax=ax[1], label='fraction passed')
     cbar1.add_lines(cont1)
-    ax[2].set_title('All Candidates', fontsize=12)
+    ax[2].set_title('All CandidateLevel2s', fontsize=12)
     im2 = ax[2].imshow(logfrac_cands_mesh, origin='lower',
                        extent=extent, cmap=cmap, aspect='auto')
     cont2 = ax[2].contour(logfrac_cands_mesh, levels=[-2, -1.5, -1],
