@@ -10,6 +10,7 @@ from puzle import db
 
 def populate_candidate_level3():
     cands_level2 = apply_eta_residual_slope_offset_to_query(CandidateLevel2.query).all()
+    print('%i candidates identified' % len(cands_level2))
 
     for cand_level2 in cands_level2:
         cand_level3 = CandidateLevel3(id=cand_level2.id,
@@ -24,6 +25,8 @@ def populate_candidate_level3():
         db.session.add(cand_level3)
     db.session.commit()
     db.session.close()
+
+    print('Upload to candidate_level3 complete')
 
 
 if __name__ == '__main__':
