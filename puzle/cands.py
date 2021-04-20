@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
-from puzle.cands import fetch_cand_best_obj_by_id, apply_slope_thresh_to_query
 from puzle.models import Candidate, Source
 from puzle.utils import return_figures_dir
 from puzle import db
