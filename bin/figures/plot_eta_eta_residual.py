@@ -468,7 +468,7 @@ def plot_eta_boundary_fracs(eta_arr=None,
                           colors=['r', 'g', 'b', 'blueviolet', 'k'], origin='lower', extent=extent)
     cbar0 = fig.colorbar(im0, ax=ax[0], label='fraction passed')
     cbar0.add_lines(cont0)
-    ax[1].set_title('BH ulens Events (tE >= %.1f | piE <= %.2f)' % (tE_min, piE_max), fontsize=12)
+    ax[1].set_title('BH ulens Events (tE >= 150 | piE <= 0.08)', fontsize=12)
     im1 = ax[1].imshow(frac_ulens_BH_mesh, origin='lower',
                        extent=extent, cmap=cmap, aspect='auto')
     cont1 = ax[1].contour(frac_ulens_BH_mesh, levels=[0.75, 0.8, 0.9, 0.95, 0.99],

@@ -61,8 +61,10 @@ def calculate_eta_residual_slope_offset():
     offset_idx_arr = np.arange(len(offset_arr))
 
     logfrac_cands_arr = []
+    frac_ulens_BH_arr = []
     for slope_idx, offset_idx in zip(slope_idx_arr, offset_idx_arr):
         logfrac_cands_arr.append(logfrac_cands_mesh[offset_idx, slope_idx])
+        frac_ulens_BH_arr.append(frac_ulens_BH_mesh[offset_idx, slope_idx])
 
     idx = np.argmin(logfrac_cands_arr)
     slope = slope_arr[slope_idx_arr][idx]
