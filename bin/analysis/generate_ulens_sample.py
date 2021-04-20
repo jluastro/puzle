@@ -383,20 +383,30 @@ def calculate_stats_on_lightcurves():
     my_idx_check = np.array_split(idx_check_arr, size)[rank]
 
     my_data = np.array_split(data, size)[rank]
-    my_etas = []
-    my_eta_residuals = []
-    my_observables1 = []
-    my_observables2 = []
-    my_observables3 = []
+    my_eta_arr = []
+    my_eta_residual_arr = []
+    my_tE_arr = []
+    my_chi_squared_delta_arr = []
+    my_chi_squared_flat_arr = []
+    my_atype_arr = []
+    my_observable_arr1 = []
+    my_observable_arr2 = []
+    my_observable_arr3 = []
     for i, d in enumerate(my_data):
         hmjd = d[:, 0]
         mag = d[:, 1]
         magerr = d[:, 2]
 
         eta_daily = calculate_eta_on_daily_avg(hmjd, mag)
-        eta_residual_daily = calculate_eta_on_daily_avg_residuals(hmjd, mag, magerr)
-        my_etas.append(eta_daily)
-        my_eta_residuals.append(eta_residual_daily)
+        eta_residual_daily, fit_data = calculate_eta_on_daily_avg_residuals(hmjd, mag, magerr,
+                                                                            return_fit_data=True)
+        my_eta_arr.append(eta_daily)
+        my_eta_residual_arr.append(eta_residual_daily)
+        _, tE, _, _, chi_squared_delta, chi_squared_flat, atype = fit_data
+        my_tE_arr.append(tE)
+        my_chi_squared_delta_arr.append(chi_squared_delta)
+        my_chi_squared_flat_arr.append(chi_squared_flat)
+        my_atype_arr.append(atype)
 
         hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
         n_days_in_split = int(len(mag_round) / 5)
@@ -409,41 +419,53 @@ def calculate_stats_on_lightcurves():
         count_cond = np.sum(cond_three_sigma[:-2] * cond_descreasing)
 
         if count_cond == 0:
-            my_observables1.append(False)
-            my_observables2.append(False)
-            my_observables3.append(False)
+            my_observable_arr1.append(False)
+            my_observable_arr2.append(False)
+            my_observable_arr3.append(False)
         elif count_cond == 1:
-            my_observables1.append(True)
-            my_observables2.append(False)
-            my_observables3.append(False)
+            my_observable_arr1.append(True)
+            my_observable_arr2.append(False)
+            my_observable_arr3.append(False)
         elif count_cond == 2:
-            my_observables1.append(True)
-            my_observables2.append(True)
-            my_observables3.append(False)
+            my_observable_arr1.append(True)
+            my_observable_arr2.append(True)
+            my_observable_arr3.append(False)
         else:
-            my_observables1.append(True)
-            my_observables2.append(True)
-            my_observables3.append(True)
+            my_observable_arr1.append(True)
+            my_observable_arr2.append(True)
+            my_observable_arr3.append(True)
 
-    total_etas = comm.gather(my_etas, root=0)
-    total_eta_residuals = comm.gather(my_eta_residuals, root=0)
-    total_observables1 = comm.gather(my_observables1, root=0)
-    total_observables2 = comm.gather(my_observables2, root=0)
-    total_observables3 = comm.gather(my_observables3, root=0)
+    total_eta_arr = comm.gather(my_eta_arr, root=0)
+    total_eta_residual_arr = comm.gather(my_eta_residual_arr, root=0)
+    total_observable_arr1 = comm.gather(my_observable_arr1, root=0)
+    total_observable_arr2 = comm.gather(my_observable_arr2, root=0)
+    total_observable_arr3 = comm.gather(my_observable_arr3, root=0)
+    total_tE_arr = comm.gather(my_tE_arr, root=0)
+    total_chi_squared_delta_arr = comm.gather(my_chi_squared_delta_arr, root=0)
+    total_chi_squared_flat_arr = comm.gather(my_chi_squared_flat_arr, root=0)
+    total_atype_arr = comm.gather(my_atype_arr, root=0)
     total_idx_check = comm.gather(my_idx_check, root=0)
 
     if rank == 0:
-        etas = list(itertools.chain(*total_etas))
-        eta_residuals = list(itertools.chain(*total_eta_residuals))
-        observables1 = list(itertools.chain(*total_observables1))
-        observables2 = list(itertools.chain(*total_observables2))
-        observables3 = list(itertools.chain(*total_observables3))
+        eta_arr = list(itertools.chain(*total_eta_arr))
+        eta_residual_arr = list(itertools.chain(*total_eta_residual_arr))
+        observable_arr1 = list(itertools.chain(*total_observable_arr1))
+        observable_arr2 = list(itertools.chain(*total_observable_arr2))
+        observable_arr3 = list(itertools.chain(*total_observable_arr3))
+        tE_arr = list(itertools.chain(*total_tE_arr))
+        chi_squared_delta_arr = list(itertools.chain(*total_chi_squared_delta_arr))
+        chi_squared_flat_arr = list(itertools.chain(*total_chi_squared_flat_arr))
+        atype_arr = list(itertools.chain(*total_atype_arr))
         idx_check = list(itertools.chain(*total_idx_check))
         fname_etas = fname.replace('ulens_sample', 'ulens_sample_stats')
-        np.savez(fname_etas, eta=etas, eta_residual=eta_residuals,
-                 observable1=observables1,
-                 observable2=observables2,
-                 observable3=observables3,
+        np.savez(fname_etas, eta=eta_arr, eta_residual=eta_residual_arr,
+                 observable1=observable_arr1,
+                 observable2=observable_arr2,
+                 observable3=observable_arr3,
+                 tE=tE_arr,
+                 chi_squared_delta=chi_squared_delta_arr,
+                 chi_squared_flat=chi_squared_flat_arr,
+                 atype=atype_arr,
                  idx_check=idx_check)
 
 
