@@ -117,15 +117,11 @@ class FilterSearchForm(FlaskForm):
     eta_best_min = FloatField('eta_best min',
                               validators=[Optional(), NumberRange(min=0)])
     eta_best_max = FloatField('eta_best max',
-                              validators=[Optional(), NumberRange(min=0)],
-                              default=0.6)
+                              validators=[Optional(), NumberRange(min=0)])
     eta_residual_best_min = FloatField('eta_residual_best min',
                               validators=[Optional(), NumberRange(min=0)])
     eta_residual_best_max = FloatField('eta_residual_best max',
                               validators=[Optional(), NumberRange(min=0)])
-    eta_residual_slope = FloatField('eta_residual_slope',
-                                    validators=[Optional(), NumberRange(min=0)],
-                                    default=3.57)
     order_by = RadioField(choices=[('eta_residual_best', 'Order results by eta_residual descending'),
                                    ('eta_best', 'Order results by eta ascending'),
                                    ('chi_squared_delta_best', 'Order results by chi_squared_delta desc')],

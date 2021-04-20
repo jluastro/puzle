@@ -9,7 +9,7 @@ from puzle.forms import LoginForm, RegistrationForm, \
     EditProfileForm, ResetPasswordRequestForm, ResetPasswordForm, \
     EditCommentForm, RadialSearchForm, EmptyForm, \
     FilterSearchForm
-from puzle.models import User, Source, CandidateLevel2
+from puzle.models import User, Source, CandidateLevel3
 from puzle.email import send_password_reset_email
 
 
@@ -154,7 +154,7 @@ def source(sourceid):
 def candidate(candid):
     title = 'Candidate %s' % candid
     form = EmptyForm()
-    cand = CandidateLevel2.query.filter_by(id=candid).first_or_404()
+    cand = CandidateLevel3.query.filter_by(id=candid).first_or_404()
     sources = []
     pass_dct = {}
     data = zip(cand.source_id_arr, cand.pass_arr, cand.color_arr)
@@ -188,7 +188,7 @@ def edit_source_comments(sourceid):
 @app.route('/edit_candidate_comments/<candid>', methods=['GET', 'POST'])
 @login_required
 def edit_candidate_comments(candid):
-    cand = Candidate.query.filter_by(id=candid).first_or_404()
+    cand = CandidateLevel3.query.filter_by(id=candid).first_or_404()
     form = EditCommentForm()
     if form.validate_on_submit():
         cand.comments = form.comments.data
@@ -214,7 +214,7 @@ def fetch_source_ztf_ids(sourceid):
 @app.route('/fetch_candidate_ztf_ids/<candid>', methods=['POST'])
 @login_required
 def fetch_candidate_ztf_ids(candid):
-    cand = Candidate.query.filter_by(id=candid).first_or_404()
+    cand = CandidateLevel3.query.filter_by(id=candid).first_or_404()
     n_ids = cand.fetch_ztf_ids()
     flash('%i ZTF IDs Found' % n_ids, 'success')
     db.session.commit()
@@ -224,7 +224,7 @@ def fetch_candidate_ztf_ids(candid):
 @app.route('/fetch_candidate_ogle_target/<candid>', methods=['POST'])
 @login_required
 def fetch_candidate_ogle_target(candid):
-    cand = Candidate.query.filter_by(id=candid).first_or_404()
+    cand = CandidateLevel3.query.filter_by(id=candid).first_or_404()
     ogle_target = cand.fetch_ogle_target()
     if ogle_target:
         flash('OGLE Target Found', 'success')
@@ -273,7 +273,7 @@ def unfollow_source(sourceid):
 def follow_candidate(candid, whichpage):
     form = EmptyForm()
     if form.validate_on_submit():
-        cand = Candidate.query.filter_by(id=candid).first()
+        cand = CandidateLevel3.query.filter_by(id=candid).first()
         if user is None:
             flash('Candidate {} not found.'.format(cand.id), 'danger')
             return redirect(url_for('candidate', candid=candid))
@@ -294,7 +294,7 @@ def follow_candidate(candid, whichpage):
 def unfollow_candidate(candid, whichpage):
     form = EmptyForm()
     if form.validate_on_submit():
-        cand = Candidate.query.filter_by(id=candid).first()
+        cand = CandidateLevel3.query.filter_by(id=candid).first()
         if user is None:
             flash('Source {} not found.'.format(cand.id), 'danger')
             return redirect(url_for('candidate', candidateid=candid))
@@ -329,7 +329,7 @@ def sources():
 def candidates():
     form = EmptyForm()
     page = request.args.get('page', 1, type=int)
-    cands = Candidate.query.order_by(Candidate.eta_best.asc()).\
+    cands = CandidateLevel3.query.order_by(CandidateLevel3.eta_best.asc()).\
         paginate(page, app.config['ITEMS_PER_PAGE'], False)
     next_url = url_for('candidates', page=cands.next_num) \
         if cands.has_next else None
@@ -393,16 +393,16 @@ def radial_search():
         ra = session['ra']
         dec = session['dec']
         radius = session['radius']
-        query = Candidate.query.filter(Candidate.cone_search(ra, dec, radius))
+        query = CandidateLevel3.query.filter(CandidateLevel3.cone_search(ra, dec, radius))
         if session['order_by'] == 'eta_residual_best':
-            order_by_cond = Candidate.eta_residual_best.desc()
+            order_by_cond = CandidateLevel3.eta_residual_best.desc()
         elif session['order_by'] == 'eta_best':
-            order_by_cond = Candidate.eta_best.asc()
+            order_by_cond = CandidateLevel3.eta_best.asc()
         elif session['order_by'] == 'chi_squared_delta_best':
-            order_by_cond = Candidate.chi_squared_delta_best.desc()
+            order_by_cond = CandidateLevel3.chi_squared_delta_best.desc()
 
         if session['order_by_num_objs']:
-            query = query.order_by(Candidate.num_objs_pass.desc(), order_by_cond)
+            query = query.order_by(CandidateLevel3.num_objs_pass.desc(), order_by_cond)
         else:
             query = query.order_by(order_by_cond)
 
@@ -451,9 +451,9 @@ def filter_search():
                 flash(f'{field} minimum must be less than {field} maximum', 'danger')
                 return None
         if val_min:
-            query = query.filter(getattr(Candidate, field) >= val_min)
+            query = query.filter(getattr(CandidateLevel3, field) >= val_min)
         if val_max:
-            query = query.filter(getattr(Candidate, field) <= val_max)
+            query = query.filter(getattr(CandidateLevel3, field) <= val_max)
         return query
 
     query_fields = ['num_objs_pass', 't_0_best', 't_E_best',
@@ -468,7 +468,6 @@ def filter_search():
             val_max = getattr(form_filter, f'{field}_max').data
             session[f'{field}_max'] = val_max
 
-        session['eta_residual_slope'] = form_filter.eta_residual_slope.data
         session['order_by'] = form_filter.order_by.data
         session['order_by_num_objs'] = form_filter.order_by_num_objs.data
 
@@ -481,17 +480,13 @@ def filter_search():
                     getattr(form_filter, key).data = session[key]
                 else:
                     session[key] = None
-        if 'eta_residual_slope' in session:
-            form_filter.eta_residual_slope.data = session['eta_residual_slope']
-        else:
-            session['eta_residual_slope'] = None
         for order_by_type in ['order_by', 'order_by_num_objs']:
             if order_by_type in session:
                 getattr(form_filter, order_by_type).data = session[order_by_type]
             else:
                 session[order_by_type] = None
 
-    query = Candidate.query
+    query = CandidateLevel3.query
     current_query = False
     for field in query_fields:
         val_min = session[f'{field}_min']
@@ -500,21 +495,16 @@ def filter_search():
         if val_min is not None or val_max is not None:
             current_query = True
 
-    eta_residual_slope = session['eta_residual_slope']
-    if eta_residual_slope:
-        query = query.filter(Candidate.eta_residual_best >= Candidate.eta_best * eta_residual_slope)
-        current_query = True
-
     if current_query:
         if session['order_by'] == 'eta_residual_best':
-            order_by_cond = Candidate.eta_residual_best.desc()
+            order_by_cond = CandidateLevel3.eta_residual_best.desc()
         elif session['order_by'] == 'eta_best':
-            order_by_cond = Candidate.eta_best.asc()
+            order_by_cond = CandidateLevel3.eta_best.asc()
         elif session['order_by'] == 'chi_squared_delta_best':
-            order_by_cond = Candidate.chi_squared_delta_best.desc()
+            order_by_cond = CandidateLevel3.chi_squared_delta_best.desc()
 
         if session['order_by_num_objs']:
-            query = query.order_by(Candidate.num_objs_pass.desc(), order_by_cond)
+            query = query.order_by(CandidateLevel3.num_objs_pass.desc(), order_by_cond)
         else:
             query = query.order_by(order_by_cond)
 
@@ -555,8 +545,4 @@ def reset_filter_search():
                 del session[f'{field}_{minmax}']
             except KeyError:
                 pass
-    try:
-        del session['eta_residual_slope']
-    except KeyError:
-        pass
     return redirect(url_for('filter_search'))
