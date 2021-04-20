@@ -485,6 +485,6 @@ def test_lightcurve_stats(N_samples=1000):
 
 
 if __name__ == '__main__':
-    # generate_random_lightcurves()
+    generate_random_lightcurves()
     # consolidate_lightcurves()
-    calculate_stats_on_lightcurves()
+    # calculate_stats_on_lightcurves()
