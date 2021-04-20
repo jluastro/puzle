@@ -254,14 +254,18 @@ def calculate_eta_residual_slope_offset(eta_arr=None, eta_residual_arr=None,
     for slope_idx, offset_idx in zip(slope_idx_arr, offset_idx_arr):
         logfrac_cands_arr.append(logfrac_cands_mesh[offset_idx, slope_idx])
 
+    idx = np.argmin(logfrac_cands_arr)
+    slope = slope_arr[slope_idx_arr][idx]
+    offset = offset_arr[offset_idx_arr][idx]
+
     fig, ax = plt.subplots()
     ax.plot(logfrac_cands_arr, marker='.')
     ax.set_xlabel('idx')
     ax.set_ylabel('LOG [ fraction candidates passed ]')
+    ax.axvline(idx)
+    ax.set_title('slope = %.2f | offset = %.2f' % (slope, offset),
+                 fontsize=10)
 
-    idx = np.argmin(logfrac_cands_arr)
-    slope = slope_arr[slope_idx_arr][idx]
-    offset = offset_arr[offset_idx_arr][idx]
     return slope, offset
 
 
