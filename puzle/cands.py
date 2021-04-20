@@ -9,7 +9,6 @@ from sqlalchemy.sql.expression import func
 import matplotlib.pyplot as plt
 
 from microlens.jlu.model import PSPL_Phot_Par_Param1
-from microlens.jlu.model_fitter import PSPL_Solver
 
 from puzle.cands import fetch_cand_best_obj_by_id, apply_slope_thresh_to_query
 from puzle.models import Candidate, Source
@@ -76,11 +75,26 @@ def apply_slope_thresh_to_query(query):
     return query
 
 
-def chi2(theta, params_to_fit, fitter):
+# define function to minimize
+def chi2(theta, params_to_fit, model_class, data):
     params = {}
     for k, v in zip(params_to_fit, theta):
         params[k] = v
-    return fitter.calc_chi2(params=params)
+    model = model_class(**params,
+                        raL=data['raL'], decL=data['decL'])
+
+    mag_model = model.get_photometry(data['hmjd'])
+
+    lnL_term1 = -0.5 * ((data['mag'] - mag_model) / data['magerr']) ** 2
+    lnL_term2 = -0.5 * np.log(2.0 * np.pi * data['magerr'] ** 2)
+    lnL_phot = np.sum(lnL_term1 + lnL_term2)
+
+    lnL_const_phot = -0.5 * np.log(2.0 * np.pi * data['magerr'] ** 2)
+    lnL_const_phot = lnL_const_phot.sum()
+
+    # Calculate chi2.
+    chi2 = (lnL_phot - lnL_const_phot) / -0.5
+    return chi2
 
 
 def fit_cand_to_ulens(cand_id, plotFlag=False):
@@ -92,8 +106,8 @@ def fit_cand_to_ulens(cand_id, plotFlag=False):
     dec = obj.dec
 
     # Setup parameter initial guess and list of params
-    params_to_fit = ['t0', 'u0_amp', 'tE', 'mag_src1',
-                     'b_sff1', 'piE_E', 'piE_N']
+    params_to_fit = ['t0', 'u0_amp', 'tE', 'mag_src',
+                     'b_sff', 'piE_E', 'piE_N']
     initial_guess = np.array([hmjd[np.argmin(mag)],
                               0.5,
                               50,
@@ -103,16 +117,15 @@ def fit_cand_to_ulens(cand_id, plotFlag=False):
                               0.25])
 
     # instantiate fitter
-    data_for_fitter = {'t_phot1': hmjd,
-                       'mag1': mag,
-                       'mag_err1': magerr,
-                       'raL': ra,
-                       'decL': dec}
-    fitter = PSPL_Solver(data_for_fitter, PSPL_Phot_Par_Param1)
+    data_ = {'hmjd': hmjd,
+             'mag': mag,
+             'magerr': magerr,
+             'raL': ra,
+             'decL': dec}
 
     # run the optimizer
     result = op.minimize(chi2, x0=initial_guess,
-                         args=(params_to_fit, fitter),
+                         args=(params_to_fit, PSPL_Phot_Par_Param1, data),
                          method='Powell')
     if result.success:
         print('** Fit success **')
