@@ -135,9 +135,12 @@ def fit_cand_to_ulens(cand_id, uploadFlag=True, plotFlag=False):
     for k, v in zip(params_to_fit, best_fit):
         best_params[k.replace('1', '')] = v
 
-    cand = CandidateLevel3.query.filter_by(CandidateLevel3.id==cand_id).first()
-    for param in params_to_fit:
-        setattr(cand, f'{param}_best', best_params[param])
+    if uploadFlag and result.success:
+        cand = CandidateLevel3.query.filter_by(CandidateLevel3.id == cand_id).first()
+        for param in params_to_fit:
+            setattr(cand, f'{param}_best', best_params[param])
+        db.session.commit()
+        db.session.close()
 
     # plot results
     if plotFlag:
