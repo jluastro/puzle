@@ -447,6 +447,32 @@ def calculate_stats_on_lightcurves():
                  idx_check=idx_check)
 
 
+def _test_lightcurve_stats(data_lightcurves, observable_arr, idx_sample):
+    print('-- %i lightcurves' % len(idx_sample))
+    n_failures = 0
+    for idx in idx_sample:
+        d = data_lightcurves[idx]
+        hmjd = d[:, 0]
+        mag = d[:, 1]
+        obs = observable_arr[idx]
+
+        hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
+        n_days_in_split = int(len(mag_round) / 5)
+        mag_splits = [mag_round[i * n_days_in_split:(i + 1) * n_days_in_split] for i in range(5)]
+        median = np.median([np.median(mag) for mag in mag_splits])
+        std = np.median([np.std(mag) for mag in mag_splits])
+
+        cond_three_sigma = mag_round <= median - 3 * std
+        cond_descreasing = test_for_three_consecutive_decreases(mag_round)
+        count_cond = np.sum(cond_three_sigma[:-2] * cond_descreasing)
+
+        try:
+            assert (count_cond >= 3) == obs
+        except AssertionError:
+            n_failures += 1
+    print('-- %i Failures' % n_failures)
+
+
 def test_lightcurve_stats(N_samples=1000):
 
     data_dir = return_data_dir()
@@ -460,52 +486,16 @@ def test_lightcurve_stats(N_samples=1000):
     observable_arr = data_etas['observable3']
     assert np.all(data_etas['idx_check'] == np.arange(len(observable_arr)))
 
-    print('Testing %i lightcurves' % N_samples)
+    print('Testing all lightcurves')
     idx_sample = np.random.choice(np.arange(len(data_lightcurves)),
                                   size=N_samples, replace=False)
-    n_failures = 0
-    for idx in idx_sample:
-        d = data_lightcurves[idx]
-        hmjd = d[:, 0]
-        mag = d[:, 1]
-        obs = observable_arr[idx]
-
-        hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
-        cond_decreasing = test_for_three_consecutive_decreases(mag_round)
-
-        median = np.median(mag_round)
-        std = np.std(mag_round)
-        cond_three_sigma = np.sum(mag_round <= median - 3 * std) > 3
-
-        try:
-            assert (cond_decreasing and cond_three_sigma) == obs
-        except AssertionError:
-            n_failures += 1
-    print('-- %i Failures' % n_failures)
+    _test_lightcurve_stats(data_lightcurves, observable_arr, idx_sample)
 
     print('Testing observable lightcurves')
     idx_observable = np.where(observable_arr == True)[0]
-    idx_sample = np.random.choice(idx_observable,
-                                  size=N_samples, replace=False)
-    n_failures = 0
-    for idx in idx_sample:
-        d = data_lightcurves[idx]
-        hmjd = d[:, 0]
-        mag = d[:, 1]
-
-        hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
-        cond_decreasing = test_for_three_consecutive_decreases(mag_round)
-        if not cond_decreasing:
-            print('-- Sample %i: cond_decreasing failed' % idx)
-            n_failures += 1
-
-        median = np.median(mag_round)
-        std = np.std(mag_round)
-        cond_three_sigma = np.sum(mag_round <= median - 3 * std) > 3
-        if not cond_three_sigma:
-            print('-- Sample %i: cond_three_sigma failed' % idx)
-            n_failures += 1
-    print('Observable Lightcurves: %i Failures' % n_failures)
+    idx_sample_obs = np.random.choice(idx_observable,
+                                      size=N_samples, replace=False)
+    _test_lightcurve_stats(data_lightcurves, observable_arr, idx_sample_obs)
 
 
 if __name__ == '__main__':
