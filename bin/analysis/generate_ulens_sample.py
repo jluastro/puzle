@@ -439,7 +439,7 @@ def calculate_stats_on_lightcurves():
         observables2 = list(itertools.chain(*total_observables2))
         observables3 = list(itertools.chain(*total_observables3))
         idx_check = list(itertools.chain(*total_idx_check))
-        fname_etas = fname.replace('ulens_sample', 'ulens_sample_etas')
+        fname_etas = fname.replace('ulens_sample', 'ulens_sample_stats')
         np.savez(fname_etas, eta=etas, eta_residual=eta_residuals,
                  observable1=observables1,
                  observable2=observables2,
@@ -481,7 +481,7 @@ def test_lightcurve_stats(N_samples=1000):
     fname = fname_total_arr[-1]
     data_lightcurves = load_stacked_array(fname)
 
-    fname_etas = fname.replace('ulens_sample', 'ulens_sample_etas')
+    fname_etas = fname.replace('ulens_sample', 'ulens_sample_stats')
     data_etas = np.load(fname_etas)
     observable_arr = data_etas['observable3']
     assert np.all(data_etas['idx_check'] == np.arange(len(observable_arr)))

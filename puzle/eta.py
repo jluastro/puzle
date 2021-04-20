@@ -20,7 +20,7 @@ def return_level2_eta_arrs(N_samples=500000):
 
 def return_eta_ulens_arrs():
     data_dir = return_data_dir()
-    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample_etas.??.total.npz')
+    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample_stats.??.total.npz')
     fname_total_arr.sort()
     fname = fname_total_arr[-1]
     data = np.load(fname)
