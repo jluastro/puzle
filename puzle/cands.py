@@ -114,8 +114,8 @@ def fit_cand_to_ulens(cand_id, uploadFlag=True, plotFlag=False):
                               50,
                               np.median(mag_round),
                               1.0,
-                              0.25,
-                              0.25])
+                              0.1,
+                              0.1])
 
     # instantiate fitter
     data = {'hmjd': hmjd_round,
