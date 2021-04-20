@@ -395,7 +395,7 @@ def plot_eta_eta_residual_boundary(eta_arr=None, eta_residual_arr=None,
     ax[1].scatter(eta_ulens_arr[cond_obs*cond_BH],
                   eta_residual_ulens_arr[cond_obs*cond_BH],
                   color='darkgreen', alpha=0.5, s=1,
-                  label='tE >= %.1f, piE <= %.2f' % (tE_min, piE_max))
+                  label='tE >= 150, piE <= 0.08')
     ax[1].legend(markerscale=10, loc=4, fontsize=12)
     x = np.linspace(0, xmax)
     y = x * slope + offset
