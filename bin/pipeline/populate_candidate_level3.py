@@ -4,16 +4,12 @@ populate_candidate_level3.py
 """
 
 from puzle.models import CandidateLevel2, CandidateLevel3
-from puzle.cands import return_slope_eta_thresh
+from puzle.cands import apply_slope_thresh_to_query
 from puzle import db
 
 
 def populate_candidate_level3():
-    slope, eta_thresh = return_slope_eta_thresh()
-    cands_level2 = CandidateLevel2.query.\
-        filter(CandidateLevel2.eta_best <= eta_thresh,
-               CandidateLevel2.eta_residual_best >= CandidateLevel2.eta_best * slope). \
-        all()
+    cands_level2 = apply_slope_thresh_to_query(CandidateLevel2.query).all()
 
     for cand_level2 in cands_level2:
         cand_level3 = CandidateLevel3(id=cand_level2.id,
