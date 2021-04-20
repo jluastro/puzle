@@ -9,6 +9,7 @@ from time import time
 import jwt
 import os
 import requests
+import numpy as np
 from collections import defaultdict
 from astropy.coordinates import SkyCoord
 import astropy.units as u
@@ -664,6 +665,13 @@ class CandidateLevel3(db.Model):
         str = 'Candidate \n'
         str += f'Ra/Dec: ({self.ra:.5f}, {self.dec:.5f}) \n'
         return str
+
+    @property
+    def piE_best(self):
+        if self.piE_E_best is None:
+            return None
+        else:
+            return np.hypot(self.piE_E_best, self.piE_N_best)
 
     @hybrid_property
     def glonlat(self):

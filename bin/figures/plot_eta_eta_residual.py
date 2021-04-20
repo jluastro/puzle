@@ -6,6 +6,7 @@ plot_eta_eta_residual.py
 import numpy as np
 import scipy.stats as st
 import copy
+import glob
 
 from puzle.utils import return_figures_dir, return_data_dir
 from puzle.eta import return_eta_arrs, return_eta_ulens_arrs, \
@@ -199,7 +200,10 @@ def return_kde(eta, eta_residual, xmin, xmax, ymin, ymax):
 
 
 def return_cond_BH(tE_min=120, piE_max=0.1):
-    fname = '%s/ulens_sample_metadata.total.npz' % return_data_dir()
+    data_dir = return_data_dir()
+    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample_metadata.??.total.npz')
+    fname_total_arr.sort()
+    fname = fname_total_arr[-1]
     metadata = np.load(fname)
     tE = metadata['tE']
     piE = np.hypot(metadata['piE_E'], metadata['piE_N'])

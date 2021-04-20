@@ -4,6 +4,7 @@ eta.py
 """
 
 import numpy as np
+import glob
 from sqlalchemy.sql.expression import func
 from puzle.models import CandidateLevel2
 from puzle.utils import return_data_dir
@@ -19,15 +20,21 @@ def return_eta_arrs(N_samples=500000):
 
 def return_eta_ulens_arrs():
     data_dir = return_data_dir()
-    fname = f'{data_dir}/ulens_sample_etas.total.npz'
+    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample_etas.??.total.npz')
+    fname_total_arr.sort()
+    fname = fname_total_arr[-1]
     data = np.load(fname)
+
     eta_ulens_arr = data['eta']
     eta_residual_ulens_arr = data['eta_residual']
     observable1_arr = data['observable1']
     observable2_arr = data['observable2']
     observable3_arr = data['observable3']
 
-    fname = f'{data_dir}/ulens_sample_metadata.total.npz'
+    data_dir = return_data_dir()
+    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample_metadata.??.total.npz')
+    fname_total_arr.sort()
+    fname = fname_total_arr[-1]
     metadata = np.load(fname)
     eta_residual_actual_ulens_arr = metadata['eta_residual']
 

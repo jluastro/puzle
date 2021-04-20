@@ -1,5 +1,6 @@
 from scipy.optimize import curve_fit
 import numpy as np
+import glob
 from zort.photometry import magnitudes_to_fluxes
 
 from puzle.utils import return_data_dir, load_stacked_array, get_logger
@@ -128,7 +129,11 @@ def fit_event(t_obs_arr, mag_arr, magerr_arr):
 
 
 def main():
-    fname = '%s/ulens_sample.npz' % return_data_dir()
+    data_dir = return_data_dir()
+    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample.??.total.npz')
+    fname_total_arr.sort()
+    fname = fname_total_arr[-1]
+
     lightcurves_arr = load_stacked_array(fname)
     chi_squared_delta_arr = []
     for i, lightcurve in enumerate(lightcurves_arr):

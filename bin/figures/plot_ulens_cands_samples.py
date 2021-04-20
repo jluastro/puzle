@@ -4,6 +4,7 @@ plot_ulens_cands_samples.py
 """
 
 import numpy as np
+import glob
 from sqlalchemy.sql.expression import func
 from puzle.models import CandidateLevel2, Source
 from puzle.stats import calculate_eta_on_daily_avg, average_xy_on_round_x
@@ -115,11 +116,11 @@ def _plot_ulens(title, eta_ulens_arr, eta_residual_ulens_arr, observable_arr,
 def return_ulens_sample(eta_ulens_arr, eta_residual_ulens_arr, observable_arr,
                         eta_low, eta_high, eta_residual_low, eta_residual_high,
                         N_sample=9):
-    fname = '%s/ulens_sample.total.npz' % return_data_dir()
+    data_dir = return_data_dir()
+    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample.??.total.npz')
+    fname_total_arr.sort()
+    fname = fname_total_arr[-1]
     data = load_stacked_array(fname)
-
-    fname = '%s/ulens_sample_metadata.total.npz' % return_data_dir()
-    metadata = np.load(fname)
 
     cond = observable_arr == True
     cond *= eta_ulens_arr >= eta_low

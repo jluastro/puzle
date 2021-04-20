@@ -15,6 +15,7 @@ def populate_process_jobs():
         star_process_job = StarProcessJob(source_ingest_job_id=source_ingest_job_id)
         db.session.add(star_process_job)
     db.session.commit()
+    db.session.close()
 
 
 if __name__ == '__main__':

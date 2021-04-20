@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
-from puzle.models import CandidateLevel2, Source
+from puzle.models import CandidateLevel2, CandidateLevel3, Source
 from puzle.utils import return_figures_dir
 from puzle import db
 
@@ -94,7 +94,7 @@ def chi2(theta, params_to_fit, model_class, data):
     return chi2
 
 
-def fit_cand_to_ulens(cand_id, plotFlag=False):
+def fit_cand_to_ulens(cand_id, uploadFlag=True, plotFlag=False):
     obj = fetch_cand_best_obj_by_id(cand_id)
     hmjd = obj.lightcurve.hmjd
     mag = obj.lightcurve.mag
@@ -133,18 +133,21 @@ def fit_cand_to_ulens(cand_id, plotFlag=False):
     best_fit = result.x
     best_params = {}
     for k, v in zip(params_to_fit, best_fit):
-        best_params[k.replace('1','')] = v
-    piE = np.hypot(best_params['piE_E'], best_params['piE_N'])
+        best_params[k.replace('1', '')] = v
 
-    # put together a model of best results for plotting
-    model = PSPL_Phot_Par_Param1(**best_params, raL=ra, decL=dec)
-    hmjd_model = np.linspace(np.min(hmjd),
-                             np.max(hmjd),
-                             2000)
-    mag_model = model.get_photometry(hmjd_model)
+    cand = CandidateLevel3.query.filter_by(CandidateLevel3.id==cand_id).first()
+    for param in params_to_fit:
+        setattr(cand, f'{param}_best', best_params[param])
 
     # plot results
     if plotFlag:
+        # put together a model of best results for plotting
+        model = PSPL_Phot_Par_Param1(**best_params, raL=ra, decL=dec)
+        hmjd_model = np.linspace(np.min(hmjd),
+                                 np.max(hmjd),
+                                 2000)
+        mag_model = model.get_photometry(hmjd_model)
+
         fig, ax = plt.subplots()
         ax.clear()
         ax.set_title('tE %.1f | mag_src %.1f | b_sff %.2f | piE %.3f' % (

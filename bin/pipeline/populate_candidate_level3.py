@@ -23,6 +23,7 @@ def populate_candidate_level3():
                                       num_objs_tot=cand_level2.num_objs_tot)
         db.session.add(cand_level3)
     db.session.commit()
+    db.session.close()
 
 
 if __name__ == '__main__':

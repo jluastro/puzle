@@ -48,6 +48,7 @@ def calculate_process_priority():
         star_process_job.priority = priority
         db.session.add(star_process_job)
     db.session.commit()
+    db.session.close()
 
 
 def plot_process_priority():
