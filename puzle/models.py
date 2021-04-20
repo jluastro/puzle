@@ -108,15 +108,15 @@ class User(UserMixin, db.Model):
             order_by(Source.id.asc())
     
     def follow_candidate(self, cand):
-        if not self.is_following_candidate(cand):
+        if not self.is_following_candidate(cand.id):
             self.candidates.append(cand)
 
     def unfollow_candidate(self, cand):
-        if self.is_following_candidate(cand):
+        if self.is_following_candidate(cand.id):
             self.candidates.remove(cand)
 
-    def is_following_candidate(self, cand):
-        return cand in self.candidates.all()
+    def is_following_candidate(self, candid):
+        return candid in [c.id for c in self.candidates.all()]
 
     def followed_candidates(self):
         return CandidateLevel2.query.join(user_cand_association,

@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 
 {% block styles %}
@@ -20,66 +21,33 @@
        	<col style="width:55%">
         <table width="100%">
             <tr>
-                <h1>Candidate {{ cand.id }}</h1>
+                <h1>Level 2 Candidate {{ cand.id }}</h1>
                 <h4>Glon Glat &nbsp; &nbsp;{{ "%.5f" % cand.glon }} , {{ "%.5f" % cand.glat }}</h4>
                 <h4>RA Dec &nbsp; &nbsp; &nbsp; {{ "%.5f" % cand.ra }} , {{ "%.5f" % cand.dec }}</h4>
+                <p><a href="{{ url_for('candidate_level3', candid=cand.id) }}">Level 3 Candidate Page</a></p>
             </tr>
             <tr>
                 <th>n<sub>objs,pass</sub></th>
                 <th>n<sub>objs,tot</sub></th>
                 <th>t<sub>0</sub></th>
                 <th>t<sub>E</sub></th>
-                <th>mag<sub>src</sub></th>
-                <th>b<sub>sff</sub></th>
-                <th>&pi;<sub>E</sub></th>
                 <th>&#916;&#967;<super>2</super></th>
                 <th>&#951;</th>
+                <th>&#951;<sub>thresh,low</sub></th>
                 <th>&#951;<sub>residual</sub></th>
+                <th>&#951;<sub>thresh,high</sub></th>
                 <th>RB</th>
             </tr>
             <tr>
                 <td>{{ "%i" % cand.num_objs_pass }}</td>
                 <td>{{ "%i" % cand.num_objs_tot }}</td>
-                {% if cand.t0_best is float %}
-                    <td>{{ "%.2f" % cand.t0_best }}</td>
-                {%  else %}
-                    <td>{{ "None" }}</td>
-                {% endif %}
-                {% if cand.tE_best is float %}
-                    <td>{{ "%.2f" % cand.tE_best }}</td>
-                {%  else %}
-                    <td>{{ "None" }}</td>
-                {% endif %}
-                {% if cand.mag_src_best is float %}
-                    <td>{{ "%.2f" % cand.mag_src_best }}</td>
-                {%  else %}
-                    <td>{{ "None" }}</td>
-                {% endif %}
-                {% if cand.b_sff_best is float %}
-                    <td>{{ "%.2f" % cand.b_sff_best }}</td>
-                {%  else %}
-                    <td>{{ "None" }}</td>
-                {% endif %}
-                {% if cand.piE_best is float %}
-                    <td>{{ "%.2f" % cand.piE_best }}</td>
-                {%  else %}
-                    <td>{{ "None" }}</td>
-                {% endif %}
-                {% if cand.chi_squared_delta_best is float %}
-                    <td>{{ "%.2f" % cand.chi_squared_delta_best }}</td>
-                {%  else %}
-                    <td>{{ "None" }}</td>
-                {% endif %}
-                {% if cand.eta_best is float %}
-                    <td>{{ "%.2f" % cand.eta_best }}</td>
-                {%  else %}
-                    <td>{{ "None" }}</td>
-                {% endif %}
-                {% if cand.eta_residual_best is float %}
-                    <td>{{ "%.2f" % cand.eta_residual_best }}</td>
-                {%  else %}
-                    <td>{{ "None" }}</td>
-                {% endif %}
+                <td>{{ "%.2f" % cand.t_0_best }}</td>
+                <td>{{ "%.2f" % cand.t_E_best }}</td>
+                <td>{{ "%.2f" % cand.chi_squared_delta_best }}</td>
+                <td>{{ "%.2f" % cand.eta_best }}</td>
+                <td>{{ "%.2f" % cand.eta_threshold_low_best }}</td>
+                <td>{{ "%.2f" % cand.eta_residual_best }}</td>
+                <td>{{ "%.2f" % cand.eta_threshold_high_best }}</td>
                 {% if cand.rf_score is float %}
                     <td>{{ "%.2f" % cand.rf_score }}</td>
                 {%  else %}
@@ -90,7 +58,7 @@
             <tr>
                 <td colspan="3"><b>ZTF IDs</b></td>
                 <td colspan="4"><b>OGLE Target</b></td>
-                <td colspan="4"><b>Follow Status</b></td>
+                <td colspan="3"><b>Follow Status</b></td>
             </tr>
             <tr>
                 <td colspan="3">
@@ -103,8 +71,8 @@
                         <button name="OGLE_target" type="submit">Fetch OGLE Target</button>
                     </form>
                 </td>
-                <td colspan="4">
-                    {% if current_user.is_following_candidate(cand) %}
+                <td colspan="3">
+                    {% if current_user.is_following_candidate(cand.id) %}
                          <form action="{{ url_for('unfollow_candidate', candid=cand.id, whichpage="cand") }}" method="post">
                              {{ form.hidden_tag() }}
                              {{ form.submit(value='Unfollow') }}
@@ -134,7 +102,7 @@
                         None
                     {% endif %}
                 </td>
-                <td colspan="4">
+                <td colspan="3">
                     {% for user in cand.users %}
                         <p><a href="{{ url_for('user', username=user.username) }}">{{ user.username }}</a></p>
                     {% endfor %}
@@ -150,7 +118,7 @@
                 </td>
             </tr>
             <tr>
-                <td colspace="6">
+                <td colspace="5">
                     <p><a href="{{ url_for('edit_candidate_comments', candid=cand.id) }}">Edit comments</a></p>
                 </td>
             </tr>

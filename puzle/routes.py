@@ -9,7 +9,8 @@ from puzle.forms import LoginForm, RegistrationForm, \
     EditProfileForm, ResetPasswordRequestForm, ResetPasswordForm, \
     EditCommentForm, RadialSearchForm, EmptyForm, \
     FilterSearchForm
-from puzle.models import User, Source, CandidateLevel3
+from puzle.models import User, Source, \
+    CandidateLevel2, CandidateLevel3
 from puzle.email import send_password_reset_email
 
 
@@ -149,15 +150,16 @@ def source(sourceid):
                            form=form, title=title)
 
 
-@app.route('/candidate/<candid>')
+@app.route('/candidate_level3/<candid>')
 @login_required
-def candidate(candid):
+def candidate_level3(candid):
     title = 'Candidate %s' % candid
     form = EmptyForm()
-    cand = CandidateLevel3.query.filter_by(id=candid).first_or_404()
+    cand2 = CandidateLevel2.query.filter_by(id=candid).first()
+    cand3 = CandidateLevel3.query.filter_by(id=candid).first()
     sources = []
     pass_dct = {}
-    data = zip(cand.source_id_arr, cand.pass_arr, cand.color_arr)
+    data = zip(cand3.source_id_arr, cand3.pass_arr, cand3.color_arr)
     for source_id, passFlag, color in data:
         if source_id not in pass_dct:
             source = Source.query.filter(Source.id==source_id).first_or_404()
@@ -165,7 +167,28 @@ def candidate(candid):
             sources.append(source)
             pass_dct[source_id] = {}
         pass_dct[source_id][color] = passFlag
-    return render_template('candidate.html', cand=cand, sources=sources,
+    return render_template('candidate_level3.html', cand=cand3, cand2=cand2,
+                           sources=sources, pass_dct=pass_dct,
+                           form=form, title=title, zip=zip)
+
+
+@app.route('/candidate_level2/<candid>')
+@login_required
+def candidate_level2(candid):
+    title = 'Candidate2 %s' % candid
+    form = EmptyForm()
+    cand2 = CandidateLevel2.query.filter_by(id=candid).first_or_404()
+    sources = []
+    pass_dct = {}
+    data = zip(cand2.source_id_arr, cand2.pass_arr, cand2.color_arr)
+    for source_id, passFlag, color in data:
+        if source_id not in pass_dct:
+            source = Source.query.filter(Source.id==source_id).first_or_404()
+            source.load_lightcurve_plot()
+            sources.append(source)
+            pass_dct[source_id] = {}
+        pass_dct[source_id][color] = passFlag
+    return render_template('candidate_level2.html', cand=cand2, sources=sources,
                            pass_dct=pass_dct, form=form, title=title, zip=zip)
 
 
@@ -273,20 +296,25 @@ def unfollow_source(sourceid):
 def follow_candidate(candid, whichpage):
     form = EmptyForm()
     if form.validate_on_submit():
-        cand = CandidateLevel3.query.filter_by(id=candid).first()
+        cand2 = CandidateLevel2.query.filter_by(id=candid).first()
+        cand3 = CandidateLevel3.query.filter_by(id=candid).first()
+        if cand3 is None:
+            cand_pagename = 'candidate_level2'
+        else:
+            cand_pagename = 'candidate_level3'
         if user is None:
-            flash('Candidate {} not found.'.format(cand.id), 'danger')
-            return redirect(url_for('candidate', candid=candid))
-        current_user.follow_candidate(cand)
+            flash('Candidate {} not found.'.format(cand2.id), 'danger')
+            return redirect(url_for(cand_pagename, candid=candid))
+        current_user.follow_candidate(cand2)
         db.session.commit()
-        flash('You are following Candidate {}'.format(cand.id), 'success')
+        flash('You are following Candidate {}'.format(cand2.id), 'success')
         if whichpage == "same":
             url = '%s#%s' % (request.referrer, candid)
             return redirect(url)
         elif whichpage == "cand":
-            return redirect(url_for('candidate', candid=candid))
+            return redirect(url_for(cand_pagename, candid=candid))
     else:
-        return redirect(url_for('candidate', candid=candid))
+        return redirect(url_for('candidate_level2', candid=candid))
 
 
 @app.route('/unfollow_candidate/<candid>_<whichpage>', methods=['POST'])
@@ -294,20 +322,25 @@ def follow_candidate(candid, whichpage):
 def unfollow_candidate(candid, whichpage):
     form = EmptyForm()
     if form.validate_on_submit():
-        cand = CandidateLevel3.query.filter_by(id=candid).first()
+        cand2 = CandidateLevel2.query.filter_by(id=candid).first()
+        cand3 = CandidateLevel3.query.filter_by(id=candid).first()
+        if cand3 is None:
+            cand_pagename = 'candidate_level2'
+        else:
+            cand_pagename = 'candidate_level3'
         if user is None:
-            flash('Source {} not found.'.format(cand.id), 'danger')
-            return redirect(url_for('candidate', candidateid=candid))
-        current_user.unfollow_candidate(cand)
+            flash('Candidate {} not found.'.format(cand2.id), 'danger')
+            return redirect(url_for(cand_pagename, candidateid=candid))
+        current_user.unfollow_candidate(cand2)
         db.session.commit()
-        flash('You are not following Source {}'.format(cand.id), 'success')
+        flash('You are not following Candidate {}'.format(cand2.id), 'success')
         if whichpage == "same":
             url = '%s#%s' % (request.referrer, candid)
             return redirect(url)
         elif whichpage == "cand":
-            return redirect(url_for('candidate', candid=candid))
+            return redirect(url_for(cand_pagename, candid=candid))
     else:
-        return redirect(url_for('candidate', candid=candid))
+        return redirect(url_for('candidate_level2', candid=candid))
 
 
 @app.route('/sources', methods=['GET', 'POST'])

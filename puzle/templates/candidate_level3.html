@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block styles %}
+    {{super()}}
+    <style>
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+        .blank_row
+        {
+            height: 10px !important; /* overwrites any other rules */
+        }
+    </style>
+{% endblock %}
+
+{% block app_content %}
+    <table class="table table-hover" width="auto">
+        <col style="width:45%">
+       	<col style="width:55%">
+        <table width="100%">
+            <tr>
+                <h1>Level 3 Candidate {{ cand.id }}</h1>
+                <h4>Glon Glat &nbsp; &nbsp;{{ "%.5f" % cand.glon }} , {{ "%.5f" % cand.glat }}</h4>
+                <h4>RA Dec &nbsp; &nbsp; &nbsp; {{ "%.5f" % cand.ra }} , {{ "%.5f" % cand.dec }}</h4>
+                <p><a href="{{ url_for('candidate_level2', candid=cand.id) }}">Level 2 Candidate Page</a></p>
+            </tr>
+            <tr>
+                <th>n<sub>objs,pass</sub></th>
+                <th>n<sub>objs,tot</sub></th>
+                <th>t<sub>0</sub></th>
+                <th>t<sub>E</sub></th>
+                <th>mag<sub>src</sub></th>
+                <th>b<sub>sff</sub></th>
+                <th>&pi;<sub>E</sub></th>
+                <th>&#916;&#967;<super>2</super></th>
+                <th>&#951;</th>
+                <th>&#951;<sub>residual</sub></th>
+                <th>RB</th>
+            </tr>
+            <tr>
+                <td>{{ "%i" % cand.num_objs_pass }}</td>
+                <td>{{ "%i" % cand.num_objs_tot }}</td>
+                {% if cand.t0_best is float %}
+                    <td>{{ "%.2f" % cand.t0_best }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+                {% if cand.tE_best is float %}
+                    <td>{{ "%.2f" % cand.tE_best }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+                {% if cand.mag_src_best is float %}
+                    <td>{{ "%.2f" % cand.mag_src_best }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+                {% if cand.b_sff_best is float %}
+                    <td>{{ "%.2f" % cand.b_sff_best }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+                {% if cand.piE_best is float %}
+                    <td>{{ "%.2f" % cand.piE_best }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+                {% if cand.chi_squared_delta_best is float %}
+                    <td>{{ "%.2f" % cand.chi_squared_delta_best }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+                {% if cand.eta_best is float %}
+                    <td>{{ "%.2f" % cand.eta_best }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+                {% if cand.eta_residual_best is float %}
+                    <td>{{ "%.2f" % cand.eta_residual_best }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+                {% if cand.rf_score is float %}
+                    <td>{{ "%.2f" % cand.rf_score }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+            </tr>
+            <tr class="blank_row"></tr>
+            <tr>
+                <td colspan="3"><b>ZTF IDs</b></td>
+                <td colspan="4"><b>OGLE Target</b></td>
+                <td colspan="4"><b>Follow Status</b></td>
+            </tr>
+            <tr>
+                <td colspan="3">
+                    <form action="/fetch_candidate_ztf_ids/{{ cand.id }}" method="post">
+                        <button name="ztf_ids" type="submit">Fetch ZTF IDs</button>
+                    </form>
+                </td>
+                <td colspan="4">
+                    <form action="/fetch_candidate_ogle_target/{{ cand.id }}" method="post">
+                        <button name="OGLE_target" type="submit">Fetch OGLE Target</button>
+                    </form>
+                </td>
+                <td colspan="4">
+                    {% if current_user.is_following_candidate(cand.id) %}
+                         <form action="{{ url_for('unfollow_candidate', candid=cand.id, whichpage="cand") }}" method="post">
+                             {{ form.hidden_tag() }}
+                             {{ form.submit(value='Unfollow') }}
+                     </form>
+                     {% else %}
+                         <form action="{{ url_for('follow_candidate', candid=cand.id, whichpage="cand") }}" method="post">
+                             {{ form.hidden_tag() }}
+                             {{ form.submit(value='Follow') }}
+                         </form>
+                     {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td colspan="3">
+                    {% if cand.ztf_ids|length > 0 %}
+                        {% for ztf_id in cand.ztf_ids %}
+                            <p><a href="https://alerce.online/object/{{ ztf_id }}/" target="_blank">{{ ztf_id }}</a></p>
+                        {% endfor %}
+                    {% else %}
+                        None
+                    {% endif %}
+                </td>
+                <td colspan="4">
+                    {% if cand.ogle_target %}
+                        <p><a href="http://ogle.astrouw.edu.pl/ogle4/ews/{{ cand.ogle_target.split('-')[0] }}/blg-{{ cand.ogle_target.split('-')[2] }}.html" target="_blank">{{ cand.ogle_target }}</a></p>
+                    {% else %}
+                        None
+                    {% endif %}
+                </td>
+                <td colspan="4">
+                    {% for user in cand2.users %}
+                        <p><a href="{{ url_for('user', username=user.username) }}">{{ user.username }}</a></p>
+                    {% endfor %}
+                </td>
+            </tr>
+            <tr class="blank_row"></tr>
+            <tr>
+                <th>Comments</th>
+            </tr>
+            <tr>
+                <td colspan="5">
+                    <p>{{ cand.comments }}</p>
+                </td>
+            </tr>
+            <tr>
+                <td colspace="6">
+                    <p><a href="{{ url_for('edit_candidate_comments', candid=cand.id) }}">Edit comments</a></p>
+                </td>
+            </tr>
+        </table>
+    <hr>
+        <table class="table table-hover" width="auto">
+            <col style="width:45%">
+            <col style="width:55%">
+            {% for source in sources %}
+            <tr>
+                <td>
+                    <table width="100%">
+                    <tr>
+                        <th>Source ID</th>
+{#                        <td><a href="{{ url_for('source', sourceid=source.id) }}">{{ source.id }}</a></td>#}
+                        <td>{{ source.id }}</td>
+                    </tr>
+                    <tr>
+                        <th>Field</th>
+                    {% if source.zort_source.object_g %}
+                        <td>{{ source.zort_source.object_g.fieldid }}</td>
+                    {% elif source.zort_source.object_id_r %}
+                        <td>{{ source.zort_source.object_r.fieldid }}</td>
+                    {% else %}
+                        <td>{{ source.zort_source.object_i.fieldid }}</td>
+                    {% endif %}
+                    </tr>
+                    <tr>
+                        <th>RCID</th>
+                    {% if source.zort_source.object_g %}
+                        <td>{{ source.zort_source.object_g.rcid }}</td>
+                    {% elif source.zort_source.object_id_r %}
+                        <td>{{ source.zort_source.object_r.rcid }}</td>
+                    {% else %}
+                        <td>{{ source.zort_source.object_i.rcid }}</td>
+                    {% endif %}
+                    </tr>
+                    <tr>
+                        <th>Is Best</th>
+                        {% if source.id == cand.best_source_id %}
+                            <td>True</td>
+                        {% else %}
+                            <td>False</td>
+                        {% endif %}
+                    </tr>
+                    <tr>
+                        <th>Fit Filter</th>
+                        {% if source.fit_filter is string %}
+                            <td>{{ "%s" % source.fit_filter }}</td>
+                        {% else %}
+                            <td>{{ "None" }}</td>
+                        {% endif %}
+                    </tr>
+                    <tr>
+                        <th>t<sub>0</sub></th>
+                        {% if source.fit_t_0 is float %}
+                            <td>{{ "%.2f" % source.fit_t_0 }}</td>
+                        {% else %}
+                            <td></td>
+                        {% endif %}
+                    </tr>
+                    <tr>
+                        <th>t<sub>E</sub></th>
+                        {% if source.fit_t_E is float %}
+                            <td>{{ "%.2f" % source.fit_t_E }}</td>
+                        {% else %}
+                            <td></td>
+                        {% endif %}
+                    </tr>
+                    <tr>
+                        <th>Chi Squared Flat</th>
+                        {% if source.fit_chi_squared_flat is float %}
+                            <td>{{ "%.2f" % source.fit_chi_squared_flat }}</td>
+                        {% else %}
+                            <td></td>
+                        {% endif %}
+                    </tr>
+                    <tr>
+                       <th>Chi Squared Delta</th>
+                        {% if source.fit_chi_squared_delta is float %}
+                            <td>{{ "%.2f" % source.fit_chi_squared_delta }}</td>
+                        {% else %}
+                            <td></td>
+                        {% endif %}
+                    </tr>
+                    {% if source.zort_source.object_g %}
+                        <tr>
+                            <th>N<sub>epochs,g</sub></th><td>{{ source.zort_source.object_g.nepochs }}</td>
+                            <th>ID<sub>g</sub></th><td>{{ source.zort_source.object_g.object_id }}</td>
+                            <th>Pass</th><td>{{ pass_dct[source.id]["g"] }}</td>
+                        </tr>
+                    {% endif %}
+                   {% if source.zort_source.object_r %}
+                        <tr>
+                            <th>N<sub>epochs,r</sub></th><td>{{ source.zort_source.object_r.nepochs }}</td>
+                            <th>ID<sub>r</sub></th><td>{{ source.zort_source.object_r.object_id }}</td>
+                            <th>Pass</th><td>{{ pass_dct[source.id]["r"] }}</td>
+                        </tr>
+                    {% endif %}
+                   {% if source.zort_source.object_i %}
+                        <tr>
+                            <th>N<sub>epochs,i</sub></th><td>{{ source.zort_source.object_i.nepochs }}</td>
+                            <th>ID<sub>i</sub></th><td>{{ source.zort_source.object_i.object_id }}</td>
+                            <th>Pass</th><td>{{ pass_dct[source.id]["i"] }}</td>
+                        </tr>
+                    {% endif %}
+                    </table>
+                </td>
+                <td>
+                    <img src="{{ url_for('static', filename='source/') }}{{ source.id.split('_')[0][:3] }}/{{ source.id.split('_')[0] }}/{{ source.id }}_lightcurve.png">
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </table>
+{% endblock %}

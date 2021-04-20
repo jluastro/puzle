@@ -37,7 +37,7 @@
         <tr>
             {% for cand in cands.items %}
                 <tr>
-                <td><a href="{{ url_for('candidate', candid=cand.id) }}">Candidate {{ cand.id }}</a></td>
+                <td><a href="{{ url_for('candidate_level3', candid=cand.id) }}">Candidate {{ cand.id }}</a></td>
                 <td>{{ "%i" % cand.num_objs_pass }}</td>
                 <td>{{ "%i" % cand.num_objs_tot }}</td>
                 {% if cand.t0_best is float %}
