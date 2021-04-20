@@ -7,20 +7,16 @@ import numpy as np
 import glob
 from puzle.stats import calculate_eta_on_daily_avg, average_xy_on_round_x
 from puzle.utils import load_stacked_array, return_data_dir, return_figures_dir
-from puzle.eta import return_eta_ulens_arrs
+from puzle.ulens import return_ulens_eta_arrs, return_ulens_metadata
 
 import matplotlib.pyplot as plt
 
 
 def plot_ulens_tE_piE(observable_arr=None):
     if observable_arr is None:
-        _, _, _, _, _, observable_arr = return_eta_ulens_arrs()
+        _, _, _, _, _, observable_arr = return_ulens_eta_arrs()
 
-    data_dir = return_data_dir()
-    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample_metadata.??.total.npz')
-    fname_total_arr.sort()
-    fname = fname_total_arr[-1]
-    metadata = np.load(fname)
+    metadata = return_ulens_metadata()
 
     cond = observable_arr == True
 
@@ -71,13 +67,9 @@ def plot_ulens_tE_piE(observable_arr=None):
 
 def plot_ulens_tE_piE_vs_eta(eta_ulens_arr=None, eta_residual_ulens_arr=None, observable_arr=None):
     if eta_ulens_arr is None:
-        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_eta_ulens_arrs()
+        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_ulens_eta_arrs()
 
-    data_dir = return_data_dir()
-    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample_metadata.??.total.npz')
-    fname_total_arr.sort()
-    fname = fname_total_arr[-1]
-    metadata = np.load(fname)
+    metadata = return_ulens_metadata()
 
     cond = observable_arr == True
 
@@ -141,13 +133,9 @@ def plot_ulens_tE_piE_vs_eta(eta_ulens_arr=None, eta_residual_ulens_arr=None, ob
 def plot_ulens_eta_by_mag(eta_ulens_arr=None,
                           eta_residual_ulens_arr=None, observable_arr=None):
     if eta_ulens_arr is None:
-        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_eta_ulens_arrs()
+        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_ulens_eta_arrs()
 
-    data_dir = return_data_dir()
-    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample_metadata.??.total.npz')
-    fname_total_arr.sort()
-    fname = fname_total_arr[-1]
-    metadata = np.load(fname)
+    metadata = return_ulens_metadata()
     mag_src = metadata['mag_src']
 
     cond_obs = observable_arr == True
@@ -182,13 +170,9 @@ def plot_ulens_eta_by_mag(eta_ulens_arr=None,
 
 def plot_ulens_eta_by_tE(eta_ulens_arr=None, eta_residual_ulens_arr=None, observable_arr=None):
     if eta_ulens_arr is None:
-        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_eta_ulens_arrs()
+        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_ulens_eta_arrs()
 
-    data_dir = return_data_dir()
-    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample_metadata.??.total.npz')
-    fname_total_arr.sort()
-    fname = fname_total_arr[-1]
-    metadata = np.load(fname)
+    metadata = return_ulens_metadata()
     tE = metadata['tE']
 
     cond_obs = observable_arr == True
@@ -223,13 +207,9 @@ def plot_ulens_eta_by_tE(eta_ulens_arr=None, eta_residual_ulens_arr=None, observ
 
 def plot_ulens_eta_by_piE(eta_ulens_arr=None, eta_residual_ulens_arr=None, observable_arr=None):
     if eta_ulens_arr is None:
-        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_eta_ulens_arrs()
+        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_ulens_eta_arrs()
 
-    data_dir = return_data_dir()
-    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample_metadata.??.total.npz')
-    fname_total_arr.sort()
-    fname = fname_total_arr[-1]
-    metadata = np.load(fname)
+    metadata = return_ulens_metadata()
     piE = np.hypot(metadata['piE_E'], metadata['piE_N'])
 
     cond_obs = observable_arr == True
@@ -264,7 +244,7 @@ def plot_ulens_eta_by_piE(eta_ulens_arr=None, eta_residual_ulens_arr=None, obser
 
 def plot_lowest_ulens_eta(eta_ulens_arr=None, observable_arr=None):
     if eta_ulens_arr is None:
-        eta_ulens_arr, _, _, _, _, observable_arr = return_eta_ulens_arrs()
+        eta_ulens_arr, _, _, _, _, observable_arr = return_ulens_eta_arrs()
 
     cond = observable_arr == True
     cond_idx = np.where(cond == True)[0]
@@ -304,7 +284,7 @@ def plot_lowest_ulens_eta(eta_ulens_arr=None, observable_arr=None):
 
 def generate_all_figures():
     eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, \
-    observable1_arr, observable2_arr, observable3_arr = return_eta_ulens_arrs()
+    observable1_arr, observable2_arr, observable3_arr = return_ulens_eta_arrs()
     plot_ulens_tE_piE(observable_arr=observable3_arr)
     plot_ulens_tE_piE_vs_eta(eta_ulens_arr=eta_ulens_arr,
                              eta_residual_ulens_arr=eta_residual_ulens_arr,

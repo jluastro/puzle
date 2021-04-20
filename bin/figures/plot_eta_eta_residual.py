@@ -6,11 +6,11 @@ plot_eta_eta_residual.py
 import numpy as np
 import scipy.stats as st
 import copy
-import glob
 
-from puzle.utils import return_figures_dir, return_data_dir
-from puzle.eta import return_level2_eta_arrs, return_eta_ulens_arrs, \
+from puzle.utils import return_figures_dir
+from puzle.eta import return_level2_eta_arrs, \
     is_observable_frac_slope_offset
+from puzle.ulens import return_ulens_eta_arrs, return_cond_BH
 from puzle.models import CandidateLevel2
 from puzle.cands import return_eta_residual_slope_offset, \
     apply_eta_residual_slope_offset_to_query
@@ -24,7 +24,7 @@ def plot_eta_eta_residual(eta_arr=None, eta_residual_arr=None, eta_threshold_low
     if eta_arr is None:
         eta_arr, eta_residual_arr, _ = return_level2_eta_arrs()
     if eta_ulens_arr is None:
-        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_eta_ulens_arrs()
+        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_ulens_eta_arrs()
 
     cond_obs = observable_arr == True
 
@@ -157,7 +157,7 @@ def plot_eta_residual_ulens_vs_actual(eta_residual_ulens_arr=None,
                                       eta_residual_actual_ulens_arr=None,
                                       observable_arr=None):
     if eta_residual_ulens_arr is None:
-        _, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, _,_, observable_arr = return_eta_ulens_arrs()
+        _, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, _,_, observable_arr = return_ulens_eta_arrs()
 
     x_min = np.min([np.min(eta_residual_ulens_arr), np.min(eta_residual_actual_ulens_arr)])
     x_max = np.max([np.min(eta_residual_ulens_arr), np.max(eta_residual_actual_ulens_arr)])
@@ -199,19 +199,6 @@ def return_kde(eta, eta_residual, xmin, xmax, ymin, ymax):
     return xx, yy, f
 
 
-def return_cond_BH(tE_min=150, piE_max=0.08):
-    data_dir = return_data_dir()
-    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample_metadata.??.total.npz')
-    fname_total_arr.sort()
-    fname = fname_total_arr[-1]
-    metadata = np.load(fname)
-    tE = metadata['tE']
-    piE = np.hypot(metadata['piE_E'], metadata['piE_N'])
-    cond_BH = tE >= tE_min
-    cond_BH *= piE <= piE_max
-    return cond_BH
-
-
 def plot_eta_eta_residual_boundary_3obs(eta_arr=None, eta_residual_arr=None,
                                         eta_ulens_arr=None, eta_residual_ulens_arr=None,
                                         observable1_arr=None,
@@ -221,7 +208,7 @@ def plot_eta_eta_residual_boundary_3obs(eta_arr=None, eta_residual_arr=None,
         eta_arr, eta_residual_arr, _ = return_level2_eta_arrs()
     if eta_ulens_arr is None:
         eta_ulens_arr, eta_residual_ulens_arr, _, \
-        observable1_arr, observable2_arr, observable3_arr = return_eta_ulens_arrs()
+        observable1_arr, observable2_arr, observable3_arr = return_ulens_eta_arrs()
 
     cond_obs1 = observable1_arr == True
     cond_obs2 = observable2_arr == True
@@ -339,7 +326,7 @@ def plot_eta_eta_residual_boundary(eta_arr=None, eta_residual_arr=None,
         eta_arr, eta_residual_arr, _ = return_level2_eta_arrs()
     if eta_ulens_arr is None:
         eta_ulens_arr, eta_residual_ulens_arr, _, \
-        _, _, observable_arr = return_eta_ulens_arrs()
+        _, _, observable_arr = return_ulens_eta_arrs()
 
     cond_obs = observable_arr == True
     xmin, xmax, ymin, ymax = 0, 1.75, 0, 2.75
@@ -427,7 +414,7 @@ def plot_eta_boundary_fracs(eta_arr=None,
     if eta_arr is None:
         eta_arr, eta_residual_arr, _ = return_level2_eta_arrs()
     if eta_ulens_arr is None:
-        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_eta_ulens_arrs()
+        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_ulens_eta_arrs()
 
     cond = observable_arr == True
     cond_BH = return_cond_BH()
@@ -500,7 +487,7 @@ def plot_eta_boundary_fracs(eta_arr=None,
 def generate_all_figures():
     eta_arr, eta_residual_arr, eta_threshold_low_best = return_level2_eta_arrs()
     eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, \
-    observable1_arr, observable2_arr, observable3_arr = return_eta_ulens_arrs()
+    observable1_arr, observable2_arr, observable3_arr = return_ulens_eta_arrs()
     plot_eta_eta_residual(eta_arr=eta_arr,
                           eta_residual_arr=eta_residual_arr,
                           eta_threshold_low_best=eta_threshold_low_best,

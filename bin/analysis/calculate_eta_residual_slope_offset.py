@@ -4,31 +4,17 @@ calculate_eta_residual_slope_offset.py
 """
 
 import numpy as np
-import glob
 
-from puzle.utils import return_data_dir
-from puzle.eta import return_level2_eta_arrs, return_eta_ulens_arrs, \
+from puzle.eta import return_level2_eta_arrs, \
     is_observable_frac_slope_offset
+from puzle.ulens import return_ulens_eta_arrs, return_cond_BH
 
 import matplotlib.pyplot as plt
 
 
-def return_cond_BH(tE_min=150, piE_max=0.08):
-    data_dir = return_data_dir()
-    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample_metadata.??.total.npz')
-    fname_total_arr.sort()
-    fname = fname_total_arr[-1]
-    metadata = np.load(fname)
-    tE = metadata['tE']
-    piE = np.hypot(metadata['piE_E'], metadata['piE_N'])
-    cond_BH = tE >= tE_min
-    cond_BH *= piE <= piE_max
-    return cond_BH
-
-
 def calculate_eta_residual_slope_offset():
     eta_arr, eta_residual_arr, _ = return_level2_eta_arrs()
-    eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_eta_ulens_arrs()
+    eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_ulens_eta_arrs()
 
     cond = observable_arr == True
     tE_min = 150
