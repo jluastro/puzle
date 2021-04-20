@@ -9,9 +9,10 @@ import copy
 
 from puzle.utils import return_figures_dir, return_data_dir
 from puzle.eta import return_eta_arrs, return_eta_ulens_arrs, \
-    is_observable_frac
+    is_observable_frac_slope_offset
 from puzle.models import CandidateLevel2
-from puzle.cands import return_slope_eta_thresh
+from puzle.cands import return_eta_residual_slope_offset, \
+    apply_eta_residual_slope_offset_to_query
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -207,6 +208,59 @@ def return_cond_BH(tE_min=120, piE_max=0.1):
     return cond_BH
 
 
+def calculate_eta_residual_slope_offset(eta_arr=None, eta_residual_arr=None,
+                                        eta_ulens_arr=None, eta_residual_ulens_arr=None,
+                                        observable_arr=None):
+    if eta_arr is None:
+        eta_arr, eta_residual_arr, _ = return_eta_arrs()
+    if eta_ulens_arr is None:
+        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_eta_ulens_arrs()
+
+    cond = observable_arr == True
+    tE_min = 150
+    piE_max = 0.08
+    cond_BH = return_cond_BH(tE_min=tE_min, piE_max=piE_max)
+
+    slope_arr = np.linspace(1, 7, 100)
+    offset_arr = np.linspace(-0.5, 0.25, 100)
+    slope_mesh, offset_mesh = np.meshgrid(slope_arr, offset_arr)
+    frac_ulens_mesh = np.zeros((len(offset_mesh), len(slope_arr)))
+    frac_ulens_BH_mesh = np.zeros((len(offset_mesh), len(slope_arr)))
+    frac_cands_mesh = np.zeros((len(offset_mesh), len(slope_arr)))
+    for i, offset in enumerate(offset_arr):
+        for j, slope in enumerate(slope_arr):
+            frac_ulens_mesh[i, j] = is_observable_frac_slope_offset(eta_ulens_arr[cond],
+                                                                    eta_residual_ulens_arr[cond],
+                                                                    offset=offset,
+                                                                    slope=slope)
+            frac_ulens_BH_mesh[i, j] = is_observable_frac_slope_offset(eta_ulens_arr[cond * cond_BH],
+                                                                       eta_residual_ulens_arr[cond * cond_BH],
+                                                                       offset=offset,
+                                                                       slope=slope)
+            frac_cands_mesh[i, j] = is_observable_frac_slope_offset(eta_arr,
+                                                                    eta_residual_arr,
+                                                                    offset=offset,
+                                                                    slope=slope)
+    logfrac_cands_mesh = np.log10(frac_cands_mesh)
+
+    slope_idx_arr = np.argmin(np.abs(frac_ulens_BH_mesh - 0.95), axis=1)
+    offset_idx_arr = np.arange(len(offset_arr))
+
+    logfrac_cands_arr = []
+    for slope_idx, offset_idx in zip(slope_idx_arr, offset_idx_arr):
+        logfrac_cands_arr.append(logfrac_cands_mesh[offset_idx, slope_idx])
+
+    fig, ax = plt.subplots()
+    ax.plot(logfrac_cands_arr, marker='.')
+    ax.set_xlabel('idx')
+    ax.set_ylabel('LOG [ fraction candidates passed ]')
+
+    idx = np.argmin(logfrac_cands_arr)
+    slope = slope_arr[slope_idx_arr][idx]
+    offset = offset_arr[offset_idx_arr][idx]
+    return slope, offset
+
+
 def plot_eta_eta_residual_boundary_3obs(eta_arr=None, eta_residual_arr=None,
                                         eta_ulens_arr=None, eta_residual_ulens_arr=None,
                                         observable1_arr=None,
@@ -240,41 +294,36 @@ def plot_eta_eta_residual_boundary_3obs(eta_arr=None, eta_residual_arr=None,
     tE_min = 150
     piE_max = 0.08
     cond_BH = return_cond_BH(tE_min=tE_min, piE_max=piE_max)
-    ulens3_BH_xx, ulens3_BH_yy, ulens3_BH_f = return_kde(eta_ulens_arr[cond_obs3*cond_BH],
-                                                         eta_residual_ulens_arr[cond_obs3*cond_BH],
-                                                         *bounds)
 
-    slope, eta_thresh = return_slope_eta_thresh()
-    ulens_is_observable_frac_obs1 = is_observable_frac(eta_ulens_arr[cond_obs1],
+    slope, offset = return_eta_residual_slope_offset()
+    ulens_is_observable_frac_obs1 = is_observable_frac_slope_offset(eta_ulens_arr[cond_obs1],
                                                        eta_residual_ulens_arr[cond_obs1],
-                                                       slope=slope, eta_thresh=eta_thresh)
-    ulens_is_observable_frac_obs2 = is_observable_frac(eta_ulens_arr[cond_obs2],
+                                                       slope=slope, offset=offset)
+    ulens_is_observable_frac_obs2 = is_observable_frac_slope_offset(eta_ulens_arr[cond_obs2],
                                                        eta_residual_ulens_arr[cond_obs2],
-                                                       slope=slope, eta_thresh=eta_thresh)
-    ulens_is_observable_frac_obs3 = is_observable_frac(eta_ulens_arr[cond_obs3],
+                                                       slope=slope, offset=offset)
+    ulens_is_observable_frac_obs3 = is_observable_frac_slope_offset(eta_ulens_arr[cond_obs3],
                                                        eta_residual_ulens_arr[cond_obs3],
-                                                       slope=slope, eta_thresh=eta_thresh)
+                                                       slope=slope, offset=offset)
 
-    cands_is_observable_frac = is_observable_frac(eta_arr,eta_residual_arr,slope=slope,
-                                                  eta_thresh=eta_thresh)
+    cands_is_observable_frac = is_observable_frac_slope_offset(eta_arr, eta_residual_arr,
+                                                               slope=slope, offset=offset)
 
-    ulens_is_observable_BH_frac_obs1 = is_observable_frac(eta_ulens_arr[cond_obs2*cond_BH],
+    ulens_is_observable_BH_frac_obs1 = is_observable_frac_slope_offset(eta_ulens_arr[cond_obs2*cond_BH],
                                                           eta_residual_ulens_arr[cond_obs2*cond_BH],
-                                                          slope=slope, eta_thresh=eta_thresh)
-    ulens_is_observable_BH_frac_obs2 = is_observable_frac(eta_ulens_arr[cond_obs2*cond_BH],
+                                                          slope=slope, offset=offset)
+    ulens_is_observable_BH_frac_obs2 = is_observable_frac_slope_offset(eta_ulens_arr[cond_obs2*cond_BH],
                                                           eta_residual_ulens_arr[cond_obs2*cond_BH],
-                                                          slope=slope, eta_thresh=eta_thresh)
-    ulens_is_observable_BH_frac_obs3 = is_observable_frac(eta_ulens_arr[cond_obs3*cond_BH],
+                                                          slope=slope, offset=offset)
+    ulens_is_observable_BH_frac_obs3 = is_observable_frac_slope_offset(eta_ulens_arr[cond_obs3*cond_BH],
                                                           eta_residual_ulens_arr[cond_obs3*cond_BH],
-                                                          slope=slope, eta_thresh=eta_thresh)
+                                                          slope=slope, offset=offset)
 
-    num_candidates_cut = CandidateLevel2.query.filter(CandidateLevel2.eta_best <= eta_thresh,
-                                                CandidateLevel2.eta_residual_best >= CandidateLevel2.eta_best * slope).\
-                                                count()
+    num_candidates_cut = apply_eta_residual_slope_offset_to_query(CandidateLevel2.query).count()
 
     fig, ax = plt.subplots(3, 1, figsize=(10, 10))
-    fig.suptitle('ulens cond: 3-sigma / 3-increasing-brightness | slope: %.2f | eta_thresh: %.2f' %
-                 (slope, eta_thresh), fontsize=10)
+    fig.suptitle('ulens cond: 3-sigma / 3-increasing-brightness | slope: %.2f | offset: %.2f' %
+                 (slope, offset), fontsize=10)
     for a in ax: a.clear()
     ax[0].set_title('1 point | uLens frac: %.1f%% | ulens BH frac: %.1f%% | cands frac: %.1f%%' %
                     (ulens_is_observable_frac_obs1,
@@ -306,12 +355,10 @@ def plot_eta_eta_residual_boundary_3obs(eta_arr=None, eta_residual_arr=None,
     ax[2].scatter(eta_ulens_arr[cond_obs3*cond_BH],
                   eta_residual_ulens_arr[cond_obs3*cond_BH],
                   color='darkgreen', alpha=0.3, s=2)
-    x = np.linspace(0, eta_thresh)
-    y = x * slope
-    y_thresh = eta_thresh * slope
+    x = np.linspace(0, xmax)
+    y = x * slope + offset
     for i, a in enumerate(ax):
         a.plot(x, y, color='k')
-        a.plot((eta_thresh, eta_thresh), (y_thresh, 2.5), color='k')
         a.contour(cands_xx, cands_yy, cands_f, cmap='autumn', levels=10)
         if i != 2:
             a.scatter(eta_arr, eta_residual_arr,
@@ -363,27 +410,27 @@ def plot_eta_eta_residual_boundary(eta_arr=None, eta_residual_arr=None,
                                                       eta_residual_ulens_arr[cond_obs*cond_BH],
                                                       *bounds)
 
-    slope, eta_thresh = return_slope_eta_thresh()
-    ulens_is_observable_frac_obs = is_observable_frac(eta_ulens_arr[cond_obs],
+    slope, offset = return_eta_residual_slope_offset()
+    ulens_is_observable_frac_obs = is_observable_frac_slope_offset(eta_ulens_arr[cond_obs],
                                                       eta_residual_ulens_arr[cond_obs],
-                                                      slope=slope, eta_thresh=eta_thresh)
-    cands_is_observable_frac = is_observable_frac(eta_arr,eta_residual_arr,slope=slope,
-                                                  eta_thresh=eta_thresh)
+                                                      slope=slope, offset=offset)
+    cands_is_observable_frac = is_observable_frac_slope_offset(eta_arr,eta_residual_arr,
+                                                               slope=slope, offset=offset)
 
-    ulens_is_observable_BH_frac_obs = is_observable_frac(eta_ulens_arr[cond_obs*cond_BH],
+    ulens_is_observable_BH_frac_obs = is_observable_frac_slope_offset(eta_ulens_arr[cond_obs*cond_BH],
                                                          eta_residual_ulens_arr[cond_obs*cond_BH],
-                                                         slope=slope, eta_thresh=eta_thresh)
+                                                         slope=slope, offset=offset)
 
     num_candidates = CandidateLevel2.query.count()
-    num_candidates_cut = CandidateLevel2.query.filter(CandidateLevel2.eta_best <= eta_thresh,
-                                                CandidateLevel2.eta_residual_best >= CandidateLevel2.eta_best * slope).\
-                                                count()
+    num_candidates_cut = CandidateLevel2.query.filter(CandidateLevel2.eta_residual_best >=
+                                                      CandidateLevel2.eta_best * slope + offset).\
+                                            count()
 
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    fig.suptitle('%s of %s CandidateLevel2s Remaining (slope = %.2f | eta_thresh = %.2f)' %
+    fig.suptitle('%s of %s CandidateLevel2s Remaining (slope = %.2f | offset = %.2f)' %
                  (format(num_candidates_cut, ','),
                   format(num_candidates, ','),
-                  slope, eta_thresh), fontsize=10)
+                  slope, offset), fontsize=10)
     for a in ax: a.clear()
     ax[0].set_title('uLens frac = %.1f%% | cands frac = %.2f%%' %
                     (100*ulens_is_observable_frac_obs,
@@ -403,12 +450,10 @@ def plot_eta_eta_residual_boundary(eta_arr=None, eta_residual_arr=None,
                   color='darkgreen', alpha=0.5, s=1,
                   label='tE >= %.1f, piE <= %.2f' % (tE_min, piE_max))
     ax[1].legend(markerscale=10, loc=4, fontsize=12)
-    x = np.linspace(0, eta_thresh)
-    y = x * slope
-    y_thresh = eta_thresh * slope
+    x = np.linspace(0, xmax)
+    y = x * slope + offset
     for i, a in enumerate(ax):
         a.plot(x, y, color='k')
-        a.plot((eta_thresh, eta_thresh), (y_thresh, ymax), color='k')
         a.contour(cands_xx, cands_yy, cands_f, cmap='autumn', levels=10)
         a.scatter(eta_arr, eta_residual_arr,
                   color='gold', alpha=0.01, s=1)
@@ -442,29 +487,26 @@ def plot_eta_boundary_fracs(eta_arr=None,
     piE_max = 0.08
     cond_BH = return_cond_BH(tE_min=tE_min, piE_max=piE_max)
 
-    slope, eta_thresh = return_slope_eta_thresh()
-    slope_arr = np.linspace(1, 4, 100)
-    eta_thresh_arr = np.linspace(0.2, 2, 100)
-    # slope_arr = np.linspace(3.56, 3.62, 100)
-    # eta_thresh_arr = np.linspace(0.475, 0.55, 100)
-    slope_mesh, eta_thresh_mesh = np.meshgrid(slope_arr, eta_thresh_arr)
-    frac_ulens_mesh = np.zeros_like(slope_mesh)
-    frac_ulens_BH_mesh = np.zeros_like(slope_mesh)
-    frac_cands_mesh = np.zeros_like(slope_mesh)
-    for i, eta_thresh in enumerate(eta_thresh_arr):
+    slope_arr = np.linspace(1, 7, 100)
+    offset_arr = np.linspace(-0.5, 0.25, 100)
+    slope_mesh, offset_mesh = np.meshgrid(slope_arr, offset_arr)
+    frac_ulens_mesh = np.zeros((len(offset_mesh), len(slope_arr)))
+    frac_ulens_BH_mesh = np.zeros((len(offset_mesh), len(slope_arr)))
+    frac_cands_mesh = np.zeros((len(offset_mesh), len(slope_arr)))
+    for i, offset in enumerate(offset_arr):
         for j, slope in enumerate(slope_arr):
-            frac_ulens_mesh[i, j] = is_observable_frac(eta_ulens_arr[cond],
-                                                       eta_residual_ulens_arr[cond],
-                                                       eta_thresh=eta_thresh,
-                                                       slope=slope)
-            frac_ulens_BH_mesh[i, j] = is_observable_frac(eta_ulens_arr[cond*cond_BH],
-                                                          eta_residual_ulens_arr[cond*cond_BH],
-                                                          eta_thresh=eta_thresh,
-                                                          slope=slope)
-            frac_cands_mesh[i, j] = is_observable_frac(eta_arr,
-                                                       eta_residual_arr,
-                                                       eta_thresh=eta_thresh,
-                                                       slope=slope)
+            frac_ulens_mesh[i, j] = is_observable_frac_slope_offset(eta_ulens_arr[cond],
+                                                                    eta_residual_ulens_arr[cond],
+                                                                    offset=offset,
+                                                                    slope=slope)
+            frac_ulens_BH_mesh[i, j] = is_observable_frac_slope_offset(eta_ulens_arr[cond*cond_BH],
+                                                                       eta_residual_ulens_arr[cond*cond_BH],
+                                                                       offset=offset,
+                                                                       slope=slope)
+            frac_cands_mesh[i, j] = is_observable_frac_slope_offset(eta_arr,
+                                                                    eta_residual_arr,
+                                                                    offset=offset,
+                                                                    slope=slope)
     logfrac_cands_mesh = np.log10(frac_cands_mesh)
 
     fig, ax = plt.subplots(3, 1, figsize=(10, 10))
@@ -473,7 +515,7 @@ def plot_eta_boundary_fracs(eta_arr=None,
     cmap.set_bad(color='red')
     for a in ax: a.clear()
     extent = (np.min(slope_arr), np.max(slope_arr),
-              np.min(eta_thresh_arr), np.max(eta_thresh_arr))
+              np.min(offset_arr), np.max(offset_arr))
     ax[0].set_title('All ulens Events', fontsize=12)
     im0 = ax[0].imshow(frac_ulens_mesh, origin='lower',
                        extent=extent, cmap=cmap, aspect='auto')
@@ -482,7 +524,7 @@ def plot_eta_boundary_fracs(eta_arr=None,
     cbar0 = fig.colorbar(im0, ax=ax[0], label='fraction passed')
     cbar0.add_lines(cont0)
     ax[1].set_title('BH ulens Events (tE >= %.1f | piE <= %.2f)' % (tE_min, piE_max), fontsize=12)
-    im1 = ax[1].imshow(frac_ulens_mesh, origin='lower',
+    im1 = ax[1].imshow(frac_ulens_BH_mesh, origin='lower',
                        extent=extent, cmap=cmap, aspect='auto')
     cont1 = ax[1].contour(frac_ulens_BH_mesh, levels=[0.75, 0.8, 0.9, 0.95, 0.99],
                           colors=['r', 'g', 'b', 'blueviolet', 'k'], origin='lower', extent=extent)
@@ -493,18 +535,18 @@ def plot_eta_boundary_fracs(eta_arr=None,
                        extent=extent, cmap=cmap, aspect='auto')
     cont2 = ax[2].contour(logfrac_cands_mesh, levels=[-2, -1.5, -1],
                           colors=['orange', 'tomato', 'orchid'], origin='lower', extent=extent)
+    ax[1].contour(logfrac_cands_mesh, levels=[-2, -1.5, -1],
+                  colors=['orange', 'tomato', 'orchid'], origin='lower', extent=extent)
     cbar2 = fig.colorbar(im2, ax=ax[2], label='LOG[fraction passed]')
     cbar2.add_lines(cont2)
     for a in ax:
-        a.axhline(eta_thresh, color='k', linestyle='--', alpha=.5)
-        a.axvline(slope, color='k', linestyle='--', alpha=.5)
         a.set_xlabel('slope', fontsize=10)
-        a.set_ylabel('thresh', fontsize=10)
+        a.set_ylabel('offset', fontsize=10)
     fig.tight_layout()
     fig.subplots_adjust(top=.92)
 
     figures_dir = return_figures_dir()
-    fname = f'{figures_dir}/ulens_cands_eta_boundary_frac.png'
+    fname = f'{figures_dir}/ulens_cands_eta_boundary_frac_v2.png'
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
     plt.close(fig)

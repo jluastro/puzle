@@ -61,16 +61,15 @@ def fetch_cand_best_obj_by_id(cand_id):
     return obj
 
 
-def return_slope_eta_thresh():
-    slope = 3.61
-    eta_thresh = 0.6
-    return slope, eta_thresh
+def return_eta_residual_slope_offset():
+    slope = 3.9696969696969697
+    offset = -0.09090909090909088
+    return slope, offset
 
 
-def apply_slope_thresh_to_query(query):
-    slope, eta_thresh = return_slope_eta_thresh()
-    query = query.filter(CandidateLevel2.eta_best <= eta_thresh,
-                         CandidateLevel2.eta_residual_best >= CandidateLevel2.eta_best * slope)
+def apply_eta_residual_slope_offset_to_query(query):
+    slope, offset = return_eta_residual_slope_offset()
+    query = query.filter(CandidateLevel2.eta_residual_best >= CandidateLevel2.eta_best * slope + offset)
     return query
 
 
@@ -168,7 +167,7 @@ def fit_cand_to_ulens(cand_id, plotFlag=False):
 
 def fit_random_cands_to_ulens():
     N_samples = 50
-    query = apply_slope_thresh_to_query(CandidateLevel2.query)
+    query = apply_eta_residual_slope_offset_to_query(CandidateLevel2.query)
     cand_ids = query.order_by(func.random()).\
         with_entities(CandidateLevel2.id).\
         limit(N_samples).all()

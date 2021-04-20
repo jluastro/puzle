@@ -11,7 +11,7 @@ from zort.radec import load_ZTF_fields, load_ZTF_CCD_corners
 
 from puzle.models import CandidateLevel2, StarProcessJob, SourceIngestJob
 from puzle.utils import return_figures_dir
-from puzle.cands import return_slope_eta_thresh
+from puzle.cands import return_eta_residual_slope_offset
 from puzle import db
 
 
@@ -22,8 +22,8 @@ def plot_cands_on_sky():
     ra_arr = np.array([c.ra for c in cands])
     dec_arr = np.array([c.dec for c in cands])
 
-    slope, eta_thresh = return_slope_eta_thresh()
-    cands_cut = [c for c in cands if c.eta_best <= eta_thresh and c.eta_residual_best > c.eta_best * slope]
+    slope, offset = return_eta_residual_slope_offset()
+    cands_cut = [c for c in cands if c.eta_residual_best > c.eta_best * slope + offset]
     ra_arr_cut = np.array([c.ra for c in cands_cut])
     dec_arr_cut = np.array([c.dec for c in cands_cut])
 
@@ -40,7 +40,7 @@ def plot_cands_on_sky():
     dec_gal_high = coords_high.icrs.dec.value
 
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    fig.suptitle('slope = %.2f | eta_thresh = %.2f' % (slope, eta_thresh),
+    fig.suptitle('slope = %.2f | offset = %.2f' % (slope, offset),
                  fontsize=10)
     for a in ax: a.clear()
     ax[0].set_title('All candidates', fontsize=12)
@@ -64,10 +64,10 @@ def plot_cands_on_sky():
 
 
 def plot_cands_ztf_ccd_on_sky():
-    slope, eta_thresh = return_slope_eta_thresh()
+    slope, offset = return_eta_residual_slope_offset()
     cands = CandidateLevel2.query.with_entities(CandidateLevel2.ra, CandidateLevel2.dec,
                                           CandidateLevel2.eta_best, CandidateLevel2.eta_residual_best).\
-                    filter(CandidateLevel2.eta_best<=eta_thresh, CandidateLevel2.eta_residual_best>=CandidateLevel2.eta_best*slope).\
+                    filter(CandidateLevel2.eta_residual_best>=CandidateLevel2.eta_best*slope + offset).\
                     all()
     ra_arr = np.array([c[0] for c in cands])
     dec_arr = np.array([c[1]for c in cands])
@@ -93,7 +93,7 @@ def plot_cands_ztf_ccd_on_sky():
     ccd_corners3 = load_ZTF_CCD_corners(field_id3)
 
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    fig.suptitle('slope = %.2f | eta_thresh = %.2f' % (slope, eta_thresh),
+    fig.suptitle('slope = %.2f | offset = %.2f' % (slope, offset),
                  fontsize=10)
     for a in ax: a.clear()
     ax[0].set_title('Cut candidates', fontsize=12)

@@ -9,11 +9,11 @@ import numpy as np
 
 from puzle.utils import return_DR5_dir
 from puzle.models import SourceIngestJob, StarProcessJob, \
-    Star, Source, Candidate
+    Star, Source, CandidateLevel2
 from puzle.stats import calculate_eta_on_daily_avg, \
     RF_THRESHOLD, calculate_eta_on_daily_avg_residuals
 from puzle.utils import return_figures_dir
-from puzle.cands import return_best_obj
+from puzle.cands import return_best_obj, return_eta_residual_slope_offset
 from puzle import db, catalog
 
 
@@ -134,16 +134,16 @@ def return_outcome(ztf_id, ra, dec):
         os.makedirs(mroz_figures_dir)
     print('Searching %s (ra, dec) = (%.3f, %.3f)' % (ztf_id, ra, dec))
 
-    cone_filter = Candidate.cone_search(ra, dec)
-    cands = db.session.query(Candidate).filter(cone_filter).all()
+    cone_filter = CandidateLevel2.cone_search(ra, dec)
+    cands = db.session.query(CandidateLevel2).filter(cone_filter).all()
     if len(cands) == 1:
         print('-- in database')
-        slope, eta_thresh = 3.57, 0.6
+        slope, offset = return_eta_residual_slope_offset()
         cand = cands[0]
         obj = return_best_obj(cand)
         color = obj.color
         cand_id = cand.id.replace('_', '-')
-        if cand.eta_best <= eta_thresh and cand.eta_residual_best > cand.eta_best * slope:
+        if cand.eta_residual_best > cand.eta_best * slope + offset:
             print('-- passes cuts')
             obj.plot_lightcurve(filename=f'{mroz_figures_dir}/{ztf_id}_{cand_id}_{color}_lc_in_db_passes_cuts.png')
             return 'in database - passes cuts'
