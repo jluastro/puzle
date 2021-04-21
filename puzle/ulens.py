@@ -82,10 +82,6 @@ def return_ulens_metadata(observableFlag=True, bhFlag=False):
 
 
 def return_cond_BH(tE_min=150, piE_max=0.08):
-    # stats = return_ulens_stats(observableFlag=False,
-    #                            bhFlag=False)
-    # tE = stats['tE']
-
     data_dir = return_data_dir()
     fname_total_arr = glob.glob(f'{data_dir}/ulens_sample_metadata.??.total.npz')
     fname_total_arr.sort()

@@ -11,11 +11,12 @@ from puzle.models import CandidateLevel3
 
 
 def fit_level3_candidates_to_ulens():
-    cand_ids = [c[0] for c in CandidateLevel3.query.order_by(CandidateLevel3.id).with_entities(CandidateLevel3.id).all()]
+    cand_ids = [c[0] for c in CandidateLevel3.query.order_by(CandidateLevel3.id).\
+                                    filter(CandidateLevel3.eta_best==None).\
+                                    with_entities(CandidateLevel3.id).all()]
 
     if 'SLURMD_NODENAME' in os.environ:
         from mpi4py import MPI
-
         comm = MPI.COMM_WORLD
         rank = comm.rank
         size = comm.size
