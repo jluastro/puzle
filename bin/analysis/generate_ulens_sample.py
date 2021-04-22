@@ -378,6 +378,11 @@ def calculate_stats_on_lightcurves():
     data = return_ulens_data(observableFlag=False, bhFlag=False)
     metadata = return_ulens_metadata(observableFlag=False, bhFlag=False)
 
+    data_dir = return_data_dir()
+    my_stats_complete_fname = f'{data_dir}/stats.{rank:02d}.txt'
+    if os.path.exists(my_stats_complete_fname):
+        os.remove(my_stats_complete_fname)
+
     idx_check_arr = np.arange(len(data))
     my_idx_check = np.array_split(idx_check_arr, size)[rank]
 
@@ -453,6 +458,9 @@ def calculate_stats_on_lightcurves():
             my_observable_arr1.append(True)
             my_observable_arr2.append(True)
             my_observable_arr3.append(True)
+
+        with open(my_stats_complete_fname, 'a+') as f:
+            f.write(f'{i}\n')
 
     total_eta_arr = comm.gather(my_eta_arr, root=0)
     total_eta_residual_arr = comm.gather(my_eta_residual_arr, root=0)
