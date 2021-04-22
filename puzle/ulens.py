@@ -97,7 +97,8 @@ def return_cond_BH(observableFlag=False,
 
     cond = np.ones(len(metadata['tE'])).astype(bool)
     if observableFlag:
-        stats = return_ulens_stats(observableFlag=True)
+        fname = return_ulens_data_fname('ulens_sample_stats')
+        stats = np.load(fname)
         cond *= stats['observable3']
 
     tE = metadata['tE'][cond]
