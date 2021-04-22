@@ -32,7 +32,7 @@ def populate_candidate_level3():
     for cand_level2 in my_cands_level2:
         obj = fetch_cand_best_obj_by_id(cand_level2.id)
         num_epochs = obj.lightcurve.nepochs
-        num_days = len(np.unique(np.round(obj.lightcurve.hmjd)))
+        num_days = len(set(np.round(obj.lightcurve.hmjd)))
         cand_level3 = CandidateLevel3(id=cand_level2.id,
                                       ra=cand_level2.ra,
                                       dec=cand_level2.dec,
@@ -49,7 +49,8 @@ def populate_candidate_level3():
     db.session.commit()
     db.session.close()
 
-    comm.Barrier()
+    if size > 1:
+        comm.Barrier()
     if rank == 0:
         print('Upload to candidate_level3 complete')
 
