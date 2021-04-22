@@ -18,7 +18,7 @@ from zort.photometry import fluxes_to_magnitudes
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle import db
-from puzle.ulens import return_ulens_data, return_ulens_metadata
+from puzle.ulens import return_ulens_data, return_ulens_metadata, return_ulens_data_fname
 from puzle.cands import fit_lightcurve_data_to_ulens
 from puzle.models import Source, SourceIngestJob
 from puzle.utils import return_data_dir, save_stacked_array, return_DR5_dir, load_stacked_array
@@ -507,8 +507,9 @@ def calculate_stats_on_lightcurves():
         piE_level3_arr = list(itertools.chain(*total_piE_level3_arr))
         chi_squared_delta_level3_arr = list(itertools.chain(*total_chi_squared_delta_level3_arr))
         idx_check = list(itertools.chain(*total_idx_check))
-        fname_etas = fname.replace('ulens_sample', 'ulens_sample_stats')
-        np.savez(fname_etas, eta=eta_arr, eta_residual=eta_residual_arr,
+        fname_data = return_ulens_data_fname('ulens_sample')
+        fname_stats = fname_data.replace('ulens_sample', 'ulens_sample_stats')
+        np.savez(fname_stats, eta=eta_arr, eta_residual=eta_residual_arr,
                  observable1=observable_arr1,
                  observable2=observable_arr2,
                  observable3=observable_arr3,
