@@ -379,7 +379,7 @@ def calculate_stats_on_lightcurves():
     metadata = return_ulens_metadata(observableFlag=False, bhFlag=False)
 
     data_dir = return_data_dir()
-    my_stats_complete_fname = f'{data_dir}/stats.{rank:02d}.txt'
+    my_stats_complete_fname = f'{data_dir}/ulens_samples/stats.{rank:02d}.txt'
     if os.path.exists(my_stats_complete_fname):
         os.remove(my_stats_complete_fname)
 
