@@ -95,7 +95,7 @@ def chi2(theta, params_to_fit, model_class, data):
     return chi2
 
 
-def fit_lightcurve_data_to_ulens(hmjd, mag, magerr, ra, dec):
+def fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec):
     hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
     _, magerr_round = average_xy_on_round_x(hmjd, magerr)
 
@@ -127,13 +127,19 @@ def fit_lightcurve_data_to_ulens(hmjd, mag, magerr, ra, dec):
         best_params = {}
         for k, v in zip(params_to_fit, best_fit):
             best_params[k.replace('1', '')] = v
-        best_params['piE'] = np.hypot(best_params['piE_E'],
-                                      best_params['piE_N'])
         best_params['chi_squared_delta'] = result.fun
+
+        model_params = {k: v for k, v in best_params.items() if k in params_to_fit}
+        model = PSPL_Phot_Par_Param1(**model_params, raL=ra, decL=dec)
+        mag_round_model = model.get_photometry(hmjd_round)
+        mag_residual_arr = mag_round - mag_round_model
+        cond = ~np.isnan(mag_residual_arr)
+        eta_residual = calculate_eta(mag_residual_arr[cond])
+        best_params['eta_residual'] = eta_residual
     else:
         best_params = {k: 0 for k in params_to_fit}
-        best_params['piE'] = 0
         best_params['chi_squared_delta'] = 0
+        best_params['eta_residual'] = 0
 
     return best_params
 
@@ -146,7 +152,7 @@ def fit_cand_id_to_ulens(cand_id, uploadFlag=True, plotFlag=False):
     ra = obj.ra
     dec = obj.dec
 
-    best_params = fit_lightcurve_data_to_ulens(hmjd, mag, magerr, ra, dec)
+    best_params = fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec)
     params_to_fit = ['t0', 'u0_amp', 'tE', 'mag_src',
                      'b_sff', 'piE_E', 'piE_N']
 
@@ -163,17 +169,6 @@ def fit_cand_id_to_ulens(cand_id, uploadFlag=True, plotFlag=False):
         eta = calculate_eta(mag_round)
         cand.eta_best = eta
 
-        if best_params['t0'] != 0:
-            model_params = {k: v for k, v in best_params.items() if k in params_to_fit}
-            model = PSPL_Phot_Par_Param1(**model_params, raL=ra, decL=dec)
-            mag_round_model = model.get_photometry(hmjd_round)
-            mag_residual_arr = mag_round - mag_round_model
-            cond = ~np.isnan(mag_residual_arr)
-            eta_residual = calculate_eta(mag_residual_arr[cond])
-        else:
-            eta_residual = 0
-        cand.eta_residual_best = eta_residual
-
         db.session.commit()
         db.session.close()
 
@@ -183,6 +178,8 @@ def fit_cand_id_to_ulens(cand_id, uploadFlag=True, plotFlag=False):
         hmjd_model = np.linspace(np.min(hmjd),
                                  np.max(hmjd),
                                  2000)
+        model_params = {k: v for k, v in best_params.items() if k in params_to_fit}
+        model = PSPL_Phot_Par_Param1(**model_params, raL=ra, decL=dec)
         mag_model = model.get_photometry(hmjd_model)
 
         fig, ax = plt.subplots()

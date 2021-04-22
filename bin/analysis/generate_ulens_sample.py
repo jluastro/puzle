@@ -19,7 +19,7 @@ from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle import db
 from puzle.ulens import return_ulens_data, return_ulens_metadata, return_ulens_data_fname
-from puzle.cands import fit_lightcurve_data_to_ulens
+from puzle.cands import fit_data_to_ulens_opt
 from puzle.models import Source, SourceIngestJob
 from puzle.utils import return_data_dir, save_stacked_array, return_DR5_dir, load_stacked_array
 from puzle.stats import calculate_eta_on_daily_avg, \
@@ -388,7 +388,7 @@ def calculate_stats_on_lightcurves():
 
     my_data = np.array_split(data, size)[rank]
     my_eta_arr = []
-    my_eta_residual_arr = []
+    my_eta_residual_level2_arr = []
     my_tE_level2_arr = []
     my_chi_squared_delta_level2_arr = []
     my_chi_squared_flat_level2_arr = []
@@ -398,8 +398,10 @@ def calculate_stats_on_lightcurves():
     my_tE_level3_arr = []
     my_mag_src_level3_arr = []
     my_b_sff_level3_arr = []
-    my_piE_level3_arr = []
+    my_piE_E_level3_arr = []
+    my_piE_N_level3_arr = []
     my_chi_squared_delta_level3_arr = []
+    my_eta_residual_level3_arr = []
     my_observable_arr1 = []
     my_observable_arr2 = []
     my_observable_arr3 = []
@@ -415,7 +417,7 @@ def calculate_stats_on_lightcurves():
         eta_residual_daily, fit_data = calculate_eta_on_daily_avg_residuals(hmjd, mag, magerr,
                                                                             return_fit_data=True)
         my_eta_arr.append(eta_daily)
-        my_eta_residual_arr.append(eta_residual_daily)
+        my_eta_residual_level2_arr.append(eta_residual_daily)
         _, tE, _, _, chi_squared_delta, chi_squared_flat, atype = fit_data
         my_tE_level2_arr.append(tE)
         my_chi_squared_delta_level2_arr.append(chi_squared_delta)
@@ -451,7 +453,7 @@ def calculate_stats_on_lightcurves():
 
         # calculate and append level3 fit data
         if count_cond >= 3:
-            best_params = fit_lightcurve_data_to_ulens(hmjd, mag, magerr, ra, dec)
+            best_params = fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec)
         else:
             best_params = {'t0': 0,
                            'u0_amp': 0,
@@ -459,20 +461,23 @@ def calculate_stats_on_lightcurves():
                            'mag_src': 0,
                            'b_sff': 0,
                            'piE': 0,
-                           'chi_squared_delta': 0}
+                           'chi_squared_delta': 0,
+                           'eta_residual': 0}
         my_t0_level3_arr.append(best_params['t0'])
         my_u0_amp_level3_arr.append(best_params['u0_amp'])
         my_tE_level3_arr.append(best_params['tE'])
         my_mag_src_level3_arr.append(best_params['mag_src'])
         my_b_sff_level3_arr.append(best_params['b_sff'])
-        my_piE_level3_arr.append(best_params['piE'])
+        my_piE_E_level3_arr.append(best_params['piE_E'])
+        my_piE_N_level3_arr.append(best_params['piE_N'])
         my_chi_squared_delta_level3_arr.append(best_params['chi_squared_delta'])
+        my_eta_residual_level3_arr.append(best_params['eta_residual'])
 
         with open(my_stats_complete_fname, 'a+') as f:
             f.write(f'{i}\n')
 
     total_eta_arr = comm.gather(my_eta_arr, root=0)
-    total_eta_residual_arr = comm.gather(my_eta_residual_arr, root=0)
+    total_eta_residual_level2_arr = comm.gather(my_eta_residual_level2_arr, root=0)
     total_observable_arr1 = comm.gather(my_observable_arr1, root=0)
     total_observable_arr2 = comm.gather(my_observable_arr2, root=0)
     total_observable_arr3 = comm.gather(my_observable_arr3, root=0)
@@ -485,13 +490,15 @@ def calculate_stats_on_lightcurves():
     total_tE_level3_arr = comm.gather(my_tE_level3_arr, root=0)
     total_mag_src_level3_arr = comm.gather(my_mag_src_level3_arr, root=0)
     total_b_sff_level3_arr = comm.gather(my_b_sff_level3_arr, root=0)
-    total_piE_level3_arr = comm.gather(my_piE_level3_arr, root=0)
+    total_piE_E_level3_arr = comm.gather(my_piE_E_level3_arr, root=0)
+    total_piE_N_level3_arr = comm.gather(my_piE_N_level3_arr, root=0)
     total_chi_squared_delta_level3_arr = comm.gather(my_chi_squared_delta_level3_arr, root=0)
+    total_eta_residual_level3_arr = comm.gather(my_eta_residual_level3_arr, root=0)
     total_idx_check = comm.gather(my_idx_check, root=0)
 
     if rank == 0:
         eta_arr = list(itertools.chain(*total_eta_arr))
-        eta_residual_arr = list(itertools.chain(*total_eta_residual_arr))
+        eta_residual_level2_arr = list(itertools.chain(*total_eta_residual_level2_arr))
         observable_arr1 = list(itertools.chain(*total_observable_arr1))
         observable_arr2 = list(itertools.chain(*total_observable_arr2))
         observable_arr3 = list(itertools.chain(*total_observable_arr3))
@@ -504,12 +511,16 @@ def calculate_stats_on_lightcurves():
         tE_level3_arr = list(itertools.chain(*total_tE_level3_arr))
         mag_src_level3_arr = list(itertools.chain(*total_mag_src_level3_arr))
         b_sff_level3_arr = list(itertools.chain(*total_b_sff_level3_arr))
-        piE_level3_arr = list(itertools.chain(*total_piE_level3_arr))
+        piE_E_level3_arr = list(itertools.chain(*total_piE_E_level3_arr))
+        piE_N_level3_arr = list(itertools.chain(*total_piE_N_level3_arr))
         chi_squared_delta_level3_arr = list(itertools.chain(*total_chi_squared_delta_level3_arr))
+        eta_residual_level3_arr = list(itertools.chain(*total_eta_residual_level3_arr))
         idx_check = list(itertools.chain(*total_idx_check))
         fname_data = return_ulens_data_fname('ulens_sample')
         fname_stats = fname_data.replace('ulens_sample', 'ulens_sample_stats')
-        np.savez(fname_stats, eta=eta_arr, eta_residual=eta_residual_arr,
+        np.savez(fname_stats,
+                 eta=eta_arr,
+                 eta_residual_level2=eta_residual_level2_arr,
                  observable1=observable_arr1,
                  observable2=observable_arr2,
                  observable3=observable_arr3,
@@ -522,8 +533,10 @@ def calculate_stats_on_lightcurves():
                  tE_level3=tE_level3_arr,
                  mag_src_level3=mag_src_level3_arr,
                  b_sff_level3=b_sff_level3_arr,
-                 piE_level3=piE_level3_arr,
+                 piE_E_level3=piE_E_level3_arr,
+                 piE_N_level3=piE_N_level3_arr,
                  chi_squared_delta_level3=chi_squared_delta_level3_arr,
+                 eta_residual_level3=eta_residual_level3_arr,
                  idx_check=idx_check)
 
 

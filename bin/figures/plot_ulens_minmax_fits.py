@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """
-plot_ulens_eta_by.py
+plot_ulens_minmax_fits.py
 """
 
 import numpy as np
