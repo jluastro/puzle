@@ -236,10 +236,121 @@ def plot_ulens_tE_opt_bias():
     fig.tight_layout()
 
 
+def plot_ulens_eta_residual_minmax_vs_opt():
+    stats_obs = return_ulens_stats(observableFlag=True,
+                                   bhFlag=False)
+    eta_residual_level2_obs = stats_obs['eta_residual_level2']
+    eta_residual_level3_obs = stats_obs['eta_residual_level3']
+
+    stats_obs_BH = return_ulens_stats(observableFlag=True,
+                                      bhFlag=True)
+    eta_residual_level2_obs_BH = stats_obs_BH['eta_residual_level2']
+    eta_residual_level3_obs_BH = stats_obs_BH['eta_residual_level3']
+
+    fig, ax = plt.subplots(2, 1, figsize=(8, 8))
+    ax[0].set_title('Observable uLens')
+    ax[0].scatter(eta_residual_level2_obs, eta_residual_level3_obs, s=1, alpha=.1)
+    ax[1].set_title('Observable BH uLens')
+    ax[1].scatter(eta_residual_level2_obs_BH, eta_residual_level3_obs_BH, s=1, alpha=1)
+
+    x = np.linspace(0, 2.5)
+    for a in ax:
+        a.set_xlabel('eta_residual minmax')
+        a.set_ylabel('eta_residual opt')
+        a.plot(x, x, alpha=.2, color='k')
+        a.set_xlim(0, 2.5)
+        a.set_ylim(0, 3)
+    fig.tight_layout()
+
+    data_obs = return_ulens_data(observableFlag=True,
+                                 bhFlag=False)
+
+    # top left
+    cond = eta_residual_level2_obs < 1
+    cond *= eta_residual_level3_obs > 1.5
+    idx_arr = np.random.choice(np.where(cond == True)[0],
+                               replace=False,
+                               size=9)
+
+    fig, ax = plt.subplots(5, 2, figsize=(8, 8))
+    ax = ax.flatten()
+    ax[0].scatter(eta_residual_level2_obs, eta_residual_level3_obs, s=1, alpha=.1)
+    for i, idx in enumerate(idx_arr, 1):
+        d = data_obs[idx]
+        hmjd, mag = d[:, :2].T
+        ax[i].scatter(hmjd, mag, s=1)
+        ax[i].invert_yaxis()
+        ax[0].scatter(eta_residual_level2_obs[idx],
+                      eta_residual_level3_obs[idx],
+                      s=5, color='r', marker='*')
+    fig.tight_layout()
+
+    # top right
+    cond = eta_residual_level2_obs > 1.5
+    cond *= eta_residual_level3_obs > 1.5
+    idx_arr = np.random.choice(np.where(cond == True)[0],
+                               replace=False,
+                               size=9)
+
+    fig, ax = plt.subplots(5, 2, figsize=(8, 8))
+    ax = ax.flatten()
+    ax[0].scatter(eta_residual_level2_obs, eta_residual_level3_obs, s=1, alpha=.1)
+    for i, idx in enumerate(idx_arr, 1):
+        d = data_obs[idx]
+        hmjd, mag = d[:, :2].T
+        ax[i].scatter(hmjd, mag, s=1)
+        ax[i].invert_yaxis()
+        ax[0].scatter(eta_residual_level2_obs[idx],
+                      eta_residual_level3_obs[idx],
+                      s=5, color='r', marker='*')
+    fig.tight_layout()
+
+    # bottom right
+    cond = eta_residual_level2_obs > 1.5
+    cond *= eta_residual_level3_obs < 1
+    idx_arr = np.random.choice(np.where(cond == True)[0],
+                               replace=False,
+                               size=9)
+
+    fig, ax = plt.subplots(5, 2, figsize=(8, 8))
+    ax = ax.flatten()
+    ax[0].scatter(eta_residual_level2_obs, eta_residual_level3_obs, s=1, alpha=.1)
+    for i, idx in enumerate(idx_arr, 1):
+        d = data_obs[idx]
+        hmjd, mag = d[:, :2].T
+        ax[i].scatter(hmjd, mag, s=1)
+        ax[i].invert_yaxis()
+        ax[0].scatter(eta_residual_level2_obs[idx],
+                      eta_residual_level3_obs[idx],
+                      s=5, color='r', marker='*')
+    fig.tight_layout()
+
+    # bottom left
+    cond = eta_residual_level2_obs < 1
+    cond *= eta_residual_level3_obs < 1
+    idx_arr = np.random.choice(np.where(cond == True)[0],
+                               replace=False,
+                               size=9)
+
+    fig, ax = plt.subplots(5, 2, figsize=(8, 8))
+    ax = ax.flatten()
+    ax[0].scatter(eta_residual_level2_obs, eta_residual_level3_obs, s=1, alpha=.1)
+    for i, idx in enumerate(idx_arr, 1):
+        d = data_obs[idx]
+        hmjd, mag = d[:, :2].T
+        ax[i].scatter(hmjd, mag, s=1)
+        ax[i].invert_yaxis()
+        ax[0].scatter(eta_residual_level2_obs[idx],
+                      eta_residual_level3_obs[idx],
+                      s=5, color='r', marker='*')
+    fig.tight_layout()
+
+
 def generate_all_figures():
     plot_ulens_opt_corner()
     plot_ulens_opt_inside_outside()
     plot_ulens_tE_opt_bias()
+    plot_ulens_eta_residual_minmax_vs_opt()
 
 
 if __name__ == '__main__':

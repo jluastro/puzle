@@ -42,7 +42,7 @@ def return_ulens_data(observableFlag=True, bhFlag=False):
     if observableFlag:
         cond *= stats['observable3']
     if bhFlag:
-        cond *= return_cond_BH(observableFlag=observableFlag)
+        cond *= return_cond_BH()
     idx_arr = set(np.where(cond==True)[0])
 
     lightcurve_data = []
@@ -61,7 +61,7 @@ def return_ulens_stats(observableFlag=True, bhFlag=False):
     if observableFlag:
         cond *= data['observable3']
     if bhFlag:
-        cond *= return_cond_BH(observableFlag=observableFlag)
+        cond *= return_cond_BH()
 
     stats = {}
     for key in data.keys():
@@ -81,7 +81,7 @@ def return_ulens_metadata(observableFlag=True, bhFlag=False):
     if observableFlag:
         cond *= stats['observable3']
     if bhFlag:
-        cond *= return_cond_BH(observableFlag=observableFlag)
+        cond *= return_cond_BH()
 
     metadata = {}
     for key in data.keys():
@@ -90,20 +90,13 @@ def return_ulens_metadata(observableFlag=True, bhFlag=False):
     return metadata
 
 
-def return_cond_BH(observableFlag=False,
-                   tE_min=150, piE_max=0.08):
+def return_cond_BH(tE_min=150, piE_max=0.08):
     fname = return_ulens_data_fname('ulens_sample_metadata')
     metadata = np.load(fname)
 
-    cond = np.ones(len(metadata['tE'])).astype(bool)
-    if observableFlag:
-        fname = return_ulens_data_fname('ulens_sample_stats')
-        stats = np.load(fname)
-        cond *= stats['observable3']
-
-    tE = metadata['tE'][cond]
-    piE = np.hypot(metadata['piE_E'][cond],
-                   metadata['piE_N'][cond])
+    tE = metadata['tE']
+    piE = np.hypot(metadata['piE_E'],
+                   metadata['piE_N'])
     cond_BH = tE >= tE_min
     cond_BH *= piE <= piE_max
     return cond_BH

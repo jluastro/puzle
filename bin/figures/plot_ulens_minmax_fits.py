@@ -8,7 +8,7 @@ import glob
 from puzle.cands import return_cands_level3_tE_arrs
 from puzle.stats import calculate_eta_on_daily_avg, average_xy_on_round_x
 from puzle.utils import load_stacked_array, return_data_dir, \
-    return_figures_dir, return_kde
+    return_figures_dir
 from puzle.ulens import return_ulens_level2_eta_arrs, \
     return_ulens_metadata, return_ulens_stats
 
