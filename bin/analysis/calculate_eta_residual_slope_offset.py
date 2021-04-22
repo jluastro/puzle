@@ -5,16 +5,16 @@ calculate_eta_residual_slope_offset.py
 
 import numpy as np
 
-from puzle.eta import return_level2_eta_arrs, \
+from puzle.eta import return_cands_level2_eta_arrs, \
     is_observable_frac_slope_offset
-from puzle.ulens import return_ulens_eta_arrs, return_cond_BH
+from puzle.ulens import return_ulens_level2_eta_arrs, return_cond_BH
 
 import matplotlib.pyplot as plt
 
 
 def calculate_eta_residual_slope_offset():
-    eta_arr, eta_residual_arr, _ = return_level2_eta_arrs()
-    eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_ulens_eta_arrs()
+    eta_arr, eta_residual_arr, _ = return_cands_level2_eta_arrs()
+    eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_ulens_level2_eta_arrs()
 
     cond = observable_arr == True
     tE_min = 150

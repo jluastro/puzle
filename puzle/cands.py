@@ -124,10 +124,9 @@ def fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec):
     if result.success:
         # gather up best results
         best_fit = result.x
-        best_params = {}
+        best_params = {'chi_squared_delta': result.fun}
         for k, v in zip(params_to_fit, best_fit):
-            best_params[k.replace('1', '')] = v
-        best_params['chi_squared_delta'] = result.fun
+            best_params[k] = v
 
         model_params = {k: v for k, v in best_params.items() if k in params_to_fit}
         model = PSPL_Phot_Par_Param1(**model_params, raL=ra, decL=dec)

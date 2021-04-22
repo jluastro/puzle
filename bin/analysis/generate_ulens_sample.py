@@ -460,7 +460,8 @@ def calculate_stats_on_lightcurves():
                            'tE': 0,
                            'mag_src': 0,
                            'b_sff': 0,
-                           'piE': 0,
+                           'piE_E': 0,
+                           'piE_N': 0,
                            'chi_squared_delta': 0,
                            'eta_residual': 0}
         my_t0_level3_arr.append(best_params['t0'])

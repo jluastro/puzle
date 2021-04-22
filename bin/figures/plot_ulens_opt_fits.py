@@ -184,14 +184,6 @@ def plot_ulens_opt_inside_outside():
     chi_squared_ulens = np.array(chi_squared_ulens)
     dof_ulens = np.array(dof_ulens)
 
-    fig, ax = plt.subplots()
-    bins = np.linspace(0, 4, 30)
-    ax.clear()
-    ax.hist(std_ratio_cands, histtype='step', bins=bins, color='b', density=True, label='cands')
-    ax.hist(std_ratio_ulens, histtype='step', bins=bins, color='r', density=True, label='ulens')
-    ax.set_yscale('log')
-    ax.legend()
-
 
 def plot_ulens_tE_opt_bias():
     stats = return_ulens_stats(observableFlag=True, bhFlag=False)

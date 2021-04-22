@@ -9,8 +9,8 @@ from sqlalchemy.sql.expression import func
 from puzle.models import CandidateLevel2, Source
 from puzle.stats import calculate_eta_on_daily_avg, average_xy_on_round_x
 from puzle.utils import load_stacked_array, return_data_dir, return_figures_dir
-from puzle.eta import return_level2_eta_arrs
-from puzle.ulens import return_ulens_eta_arrs, return_cond_BH
+from puzle.eta import return_cands_level2_eta_arrs
+from puzle.ulens import return_ulens_level2_eta_arrs, return_cond_BH
 from puzle import db
 
 import matplotlib.pyplot as plt
@@ -61,7 +61,7 @@ def _plot_cands(title, eta_arr, eta_residual_arr, cands):
 
 def plot_cands_samples(eta_arr=None, eta_residual_arr=None):
     if eta_arr is None:
-        eta_arr, eta_residual_arr, _ = return_level2_eta_arrs()
+        eta_arr, eta_residual_arr, _ = return_cands_level2_eta_arrs()
     regions_of_interest = [(1, 1.5, 1, 1.5),
                            (1, 1.5, 1.5, 2),
                            (1, 1.5, 2, 2.5),
@@ -170,9 +170,9 @@ def plot_ulens_samples(eta_ulens_arr, eta_residual_ulens_arr, observable_arr):
 
 
 def generate_all_figures():
-    eta_arr, eta_residual_arr, eta_threshold_low_best = return_level2_eta_arrs()
+    eta_arr, eta_residual_arr, eta_threshold_low_best = return_cands_level2_eta_arrs()
     eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, \
-    observable1_arr, observable2_arr, observable3_arr = return_ulens_eta_arrs()
+    observable1_arr, observable2_arr, observable3_arr = return_ulens_level2_eta_arrs()
     plot_cands_samples(eta_arr=eta_arr,
                        eta_residual_arr=eta_residual_arr)
     plot_ulens_samples(eta_ulens_arr=eta_ulens_arr,

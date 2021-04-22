@@ -5,24 +5,14 @@ ulens.py
 
 import numpy as np
 import glob
-from sqlalchemy.sql.expression import func
-from puzle.models import CandidateLevel2
 from puzle.utils import return_data_dir, load_stacked_array
 
 
-def return_level2_eta_arrs(N_samples=500000):
-    cands = CandidateLevel2.query.order_by(func.random()).limit(N_samples).all()
-    eta_arr = np.array([c.eta_best for c in cands])
-    eta_residual_arr = np.array([c.eta_residual_best for c in cands])
-    eta_threshold_low_best = [c.eta_threshold_low_best for c in cands]
-    return eta_arr, eta_residual_arr, eta_threshold_low_best
-
-
-def return_ulens_eta_arrs():
+def return_ulens_level2_eta_arrs():
     stats = return_ulens_stats(observableFlag=False, bhFlag=False)
 
     eta_ulens_arr = stats['eta']
-    eta_residual_ulens_arr = stats['eta_residual']
+    eta_residual_ulens_arr = stats['eta_residual_level2']
     observable1_arr = stats['observable1']
     observable2_arr = stats['observable2']
     observable3_arr = stats['observable3']

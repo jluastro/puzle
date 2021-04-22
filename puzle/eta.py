@@ -8,7 +8,7 @@ from sqlalchemy.sql.expression import func
 from puzle.models import CandidateLevel2
 
 
-def return_level2_eta_arrs(N_samples=500000):
+def return_cands_level2_eta_arrs(N_samples=500000):
     cands = CandidateLevel2.query.order_by(func.random()).limit(N_samples).all()
     eta_arr = np.array([c.eta_best for c in cands])
     eta_residual_arr = np.array([c.eta_residual_best for c in cands])
