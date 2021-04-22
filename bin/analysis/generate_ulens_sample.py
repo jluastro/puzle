@@ -375,17 +375,16 @@ def calculate_stats_on_lightcurves():
         rank = 0
         size = 1
 
-    data = return_ulens_data(observableFlag=False, bhFlag=False)
-    metadata = return_ulens_metadata(observableFlag=False, bhFlag=False)
-
     data_dir = return_data_dir()
     my_stats_complete_fname = f'{data_dir}/ulens_samples/stats.{rank:02d}.txt'
     if os.path.exists(my_stats_complete_fname):
         os.remove(my_stats_complete_fname)
 
-    idx_check_arr = np.arange(len(data))
-    my_idx_check = np.array_split(idx_check_arr, size)[rank]
+    data = return_ulens_data(observableFlag=False, bhFlag=False)
+    metadata = return_ulens_metadata(observableFlag=False, bhFlag=False)
+    idx_arr = np.arange(len(data))
 
+    my_idx_arr = np.array_split(idx_arr, size)[rank]
     my_data = np.array_split(data, size)[rank]
     my_eta_arr = []
     my_eta_residual_level2_arr = []
@@ -409,8 +408,9 @@ def calculate_stats_on_lightcurves():
         hmjd = d[:, 0]
         mag = d[:, 1]
         magerr = d[:, 2]
-        ra = metadata['ra'][i]
-        dec = metadata['dec'][i]
+        idx = my_idx_arr[i]
+        ra = metadata['ra'][idx]
+        dec = metadata['dec'][idx]
 
         # calculate and append eta and level2 fit data
         eta_daily = calculate_eta_on_daily_avg(hmjd, mag)
@@ -494,7 +494,7 @@ def calculate_stats_on_lightcurves():
     total_piE_N_level3_arr = comm.gather(my_piE_N_level3_arr, root=0)
     total_chi_squared_delta_level3_arr = comm.gather(my_chi_squared_delta_level3_arr, root=0)
     total_eta_residual_level3_arr = comm.gather(my_eta_residual_level3_arr, root=0)
-    total_idx_check = comm.gather(my_idx_check, root=0)
+    total_idx_arr = comm.gather(my_idx_arr, root=0)
 
     if rank == 0:
         eta_arr = list(itertools.chain(*total_eta_arr))
@@ -515,7 +515,7 @@ def calculate_stats_on_lightcurves():
         piE_N_level3_arr = list(itertools.chain(*total_piE_N_level3_arr))
         chi_squared_delta_level3_arr = list(itertools.chain(*total_chi_squared_delta_level3_arr))
         eta_residual_level3_arr = list(itertools.chain(*total_eta_residual_level3_arr))
-        idx_check = list(itertools.chain(*total_idx_check))
+        idx_arr = list(itertools.chain(*total_idx_arr))
         fname_data = return_ulens_data_fname('ulens_sample')
         fname_stats = fname_data.replace('ulens_sample', 'ulens_sample_stats')
         np.savez(fname_stats,
@@ -537,7 +537,7 @@ def calculate_stats_on_lightcurves():
                  piE_N_level3=piE_N_level3_arr,
                  chi_squared_delta_level3=chi_squared_delta_level3_arr,
                  eta_residual_level3=eta_residual_level3_arr,
-                 idx_check=idx_check)
+                 idx=idx_arr)
 
 
 def _test_lightcurve_stats(data_lightcurves, observable_arr, idx_sample):
