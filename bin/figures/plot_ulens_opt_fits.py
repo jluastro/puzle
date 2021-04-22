@@ -23,7 +23,9 @@ def plot_ulens_opt_corner():
                                                  CandidateLevel3.piE_E_best,
                                                  CandidateLevel3.piE_N_best,
                                                  CandidateLevel3.eta_best,
-                                                 CandidateLevel3.eta_residual_best).all()
+                                                 CandidateLevel3.eta_residual_best,
+                                                 CandidateLevel3.num_epochs_best).\
+        filtet(CandidateLevel3.tE_best>0).all()
     tE_cands = np.array([c[0] for c in cands3], dtype=np.float32)
     u0_amp_cands = np.array([c[1] for c in cands3], dtype=np.float32)
     mag_src_cands = np.array([c[2] for c in cands3], dtype=np.float32)
@@ -32,47 +34,55 @@ def plot_ulens_opt_corner():
     piE_N_cands = np.array([c[5] for c in cands3], dtype=np.float32)
     eta_cands = np.array([c[6] for c in cands3], dtype=np.float32)
     eta_residual_cands = np.array([c[7] for c in cands3], dtype=np.float32)
+    num_epochs_cands = np.array([c[8] for c in cands3], dtype=np.float32)
 
-    cond = tE_cands > 0
-    cond *= ~np.isnan(tE_cands)
-    tE_cands = tE_cands[cond]
     log_tE_cands = np.log10(tE_cands)
-    u0_amp_cands = u0_amp_cands[cond]
-    mag_src_cands = mag_src_cands[cond]
-    chi_squared_delta_cands = chi_squared_delta_cands[cond]
-    log_chi_squared_delta_cands = np.log10(chi_squared_delta_cands)
-    piE_E_cands = piE_E_cands[cond]
-    piE_N_cands = piE_N_cands[cond]
+    log_piE_E_cands = np.log10(piE_E_cands)
+    log_piE_N_cands = np.log10(piE_N_cands)
     piE_cands = np.hypot(piE_E_cands, piE_N_cands)
     log_piE_cands = np.log10(piE_cands)
-    eta_cands = eta_cands[cond]
-    eta_residual_cands = eta_residual_cands[cond]
+    
+    chi_squared_delta_reduced_cands = chi_squared_delta_cands / num_epochs_cands
+    log_chi_squared_delta_reduced_cands = np.log10(chi_squared_delta_reduced_cands)
 
     data_cands = np.vstack((log_tE_cands,
                             u0_amp_cands,
                             mag_src_cands,
-                            log_chi_squared_delta_cands,
+                            log_chi_squared_delta_reduced_cands,
+                            log_piE_E_cands,
+                            log_piE_N_cands,
                             log_piE_cands,
                             eta_cands,
                             eta_residual_cands)).T
 
     stats = return_ulens_stats(observableFlag=True, bhFlag=True)
-
     tE_ulens = stats['tE_level3']
-    log_tE_ulens = np.log10(tE_ulens)
     u0_amp_ulens = stats['u0_amp_level3']
     mag_src_ulens = stats['mag_src_level3']
     chi_squared_delta_ulens = stats['chi_squared_delta_level3']
-    log_chi_squared_delta_ulens = np.log10(chi_squared_delta_ulens)
-    piE_ulens = stats['piE_level3']
-    log_piE_ulens = np.log10(piE_ulens)
+    piE_E_ulens = stats['piE_E_level3']
+    piE_N_ulens = stats['piE_N_level3']
     eta_ulens = stats['eta_level3']
     eta_residual_ulens = stats['eta_residual_level3']
+
+    data = return_ulens_data(observableFlag=True, bhFlag=True)
+    num_epochs_ulens = np.array([len(d) for d in data])
+    
+    log_tE_ulens = np.log10(tE_ulens)
+    log_piE_E_ulens = np.log10(piE_E_ulens)
+    log_piE_N_ulens = np.log10(piE_N_ulens)
+    piE_ulens = np.hypot(piE_E_ulens, piE_N_ulens)
+    log_piE_ulens = np.log10(piE_ulens)
+    
+    chi_squared_delta_reduced_ulens = chi_squared_delta_ulens / num_epochs_ulens
+    log_chi_squared_delta_reduced_ulens = np.log10(chi_squared_delta_reduced_ulens)
 
     data_ulens = np.vstack((log_tE_ulens,
                             u0_amp_ulens,
                             mag_src_ulens,
-                            log_chi_squared_delta_ulens,
+                            log_chi_squared_delta_reduced_ulens,
+                            log_piE_E_ulens,
+                            log_piE_N_ulens,
                             log_piE_ulens,
                             eta_ulens,
                             eta_residual_ulens)).T
@@ -81,13 +91,13 @@ def plot_ulens_opt_corner():
     data_cands_sample = data_cands[idx_sample]
 
     # Plot it.
-    labels = ['LOG tE', 'u0_amp', 'mag_src', 'LOG chi_squared_delta', 'LOG piE', 'eta', 'eta_residual']
+    labels = ['LOG tE', 'u0_amp', 'mag_src', 'LOG chi_squared_delta_reduced', 'LOG piE_E', 'LOG piE_N', 'LOG piE', 'eta', 'eta_residual']
     data_range = [(.5, 4), (-3, 3), (10, 24), (1, 8), (-3, 2), (0, 1), (0, 4)]
 
     fig = corner.corner(data_ulens, labels=labels, range=data_range,
-                        show_titles=True, title_kwargs={"fontsize": 12}, color='r')
+                        show_titles=True, title_kwargs={"fontsize": 10}, color='r')
     fig = corner.corner(data_cands_sample, labels=labels, range=data_range,
-                        show_titles=True, title_kwargs={"fontsize": 12}, color='k',
+                        show_titles=True, title_kwargs={"fontsize": 10}, color='k',
                         fig=fig)
     fig.suptitle('Level 3 Fits (ulens red | cands black)')
 

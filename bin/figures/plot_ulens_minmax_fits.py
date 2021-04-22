@@ -5,9 +5,12 @@ plot_ulens_minmax_fits.py
 
 import numpy as np
 import glob
+from puzle.cands import return_cands_level3_tE_arrs
 from puzle.stats import calculate_eta_on_daily_avg, average_xy_on_round_x
-from puzle.utils import load_stacked_array, return_data_dir, return_figures_dir
-from puzle.ulens import return_ulens_level2_eta_arrs, return_ulens_metadata
+from puzle.utils import load_stacked_array, return_data_dir, \
+    return_figures_dir, return_kde
+from puzle.ulens import return_ulens_level2_eta_arrs, \
+    return_ulens_metadata, return_ulens_stats
 
 import matplotlib.pyplot as plt
 
@@ -282,6 +285,37 @@ def plot_lowest_ulens_eta(eta_ulens_arr=None, observable_arr=None):
     plt.close(fig)
 
 
+def plot_ulens_tE_cut():
+    tE_cands = return_cands_level3_tE_arrs()
+
+    stats = return_ulens_stats(observableFlag=True, bhFlag=True)
+    tE_ulens = stats['tE_level2']
+
+    percentile = 99
+    ulens_perc = np.percentile(tE_ulens, percentile)
+    cands_cond = tE_cands >= ulens_perc
+    cands_removal_rate = 100 * np.sum(cands_cond) / len(cands_cond)
+
+    fig, ax = plt.subplots()
+    ax.clear()
+    bins = np.logspace(0, 4, 50)
+    ax.set_title('%.1f ulens Percentile | '
+                 '%.2f Cands Removed' % (percentile,
+                                         cands_removal_rate))
+    ax.hist(tE_cands, histtype='step', bins=bins,
+            color='r', label='cands', density=True)
+    ax.hist(tE_ulens, histtype='step', bins=bins,
+            color='b', label='ulens', density=True)
+    ax.axvline(ulens_perc, color='k', alpha=.5)
+    ax.set_xscale('log')
+
+    figures_dir = return_figures_dir()
+    fname = f'{figures_dir}/ulens_tE_cut.png'
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    print('-- %s saved' % fname)
+    plt.close(fig)
+
+
 def generate_all_figures():
     eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, \
     observable1_arr, observable2_arr, observable3_arr = return_ulens_level2_eta_arrs()
@@ -300,8 +334,7 @@ def generate_all_figures():
                           observable_arr=observable3_arr)
     plot_lowest_ulens_eta(eta_ulens_arr=eta_ulens_arr,
                           observable_arr=observable3_arr)
-    plot_lowest_ulens_eta(eta_ulens_arr=eta_ulens_arr,
-                          observable_arr=observable3_arr)
+    plot_ulens_tE_cut()
 
 
 if __name__ == '__main__':

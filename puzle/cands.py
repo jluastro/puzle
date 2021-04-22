@@ -143,7 +143,7 @@ def fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec):
     return best_params
 
 
-def fit_cand_id_to_ulens(cand_id, uploadFlag=True, plotFlag=False):
+def fit_cand_id_to_opt(cand_id, uploadFlag=True, plotFlag=False):
     obj = fetch_cand_best_obj_by_id(cand_id)
     hmjd = obj.lightcurve.hmjd
     mag = obj.lightcurve.mag
@@ -209,4 +209,14 @@ def fit_random_cands_to_ulens():
         limit(N_samples).all()
     cand_ids = [c[0] for c in cand_ids]
     for cand_id in cand_ids:
-        fit_cand_id_to_ulens(cand_id)
+        fit_cand_id_to_opt(cand_id)
+
+
+def return_cands_level3_tE_arrs(N_samples=500000):
+    cands23 = db.session.query(CandidateLevel2, CandidateLevel3). \
+        filter(CandidateLevel2.id == CandidateLevel3.id). \
+        order_by(func.random()). \
+        with_entities(CandidateLevel2.t_E_best). \
+        limit(N_samples).all()
+    tE_arr = np.array([c[0] for c in cands23])
+    return tE_arr

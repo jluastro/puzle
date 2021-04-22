@@ -1,12 +1,12 @@
 #! /usr/bin/env python
 """
-fit_level3_candidates_to_ulens.py
+fit_level3_candidates_to_opt.py
 """
 
 import os
 import numpy as np
 
-from puzle.cands import fit_cand_id_to_ulens
+from puzle.cands import fit_cand_id_to_opt
 from puzle.models import CandidateLevel3
 
 
@@ -26,7 +26,7 @@ def fit_level3_candidates_to_ulens():
 
     my_cand_ids = np.array_split(cand_ids, size)[rank]
     for cand_id in my_cand_ids:
-        fit_cand_id_to_ulens(cand_id, uploadFlag=True, plotFlag=False)
+        fit_cand_id_to_opt(cand_id, uploadFlag=True, plotFlag=False)
 
 
 if __name__ == '__main__':

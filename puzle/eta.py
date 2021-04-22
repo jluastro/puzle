@@ -9,10 +9,13 @@ from puzle.models import CandidateLevel2
 
 
 def return_cands_level2_eta_arrs(N_samples=500000):
-    cands = CandidateLevel2.query.order_by(func.random()).limit(N_samples).all()
-    eta_arr = np.array([c.eta_best for c in cands])
-    eta_residual_arr = np.array([c.eta_residual_best for c in cands])
-    eta_threshold_low_best = [c.eta_threshold_low_best for c in cands]
+    cands = CandidateLevel2.query.order_by(func.random()).limit(N_samples).\
+        with_entities(CandidateLevel2.eta_best,
+                      CandidateLevel2.eta_residual_best,
+                      CandidateLevel2.eta_threshold_low_best).all()
+    eta_arr = np.array([c[0] for c in cands])
+    eta_residual_arr = np.array([c[1] for c in cands])
+    eta_threshold_low_best = [c[2] for c in cands]
     return eta_arr, eta_residual_arr, eta_threshold_low_best
 
 

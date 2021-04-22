@@ -188,12 +188,12 @@ def plot_eta_residual_ulens_vs_actual(eta_residual_ulens_arr=None,
     plt.close(fig)
 
 
-def return_kde(eta, eta_residual, xmin, xmax, ymin, ymax):
+def return_kde(xdata, ydata, xmin, xmax, ymin, ymax):
     x = np.linspace(xmin, xmax, 100)
     y = np.linspace(ymin, ymax, 100)
     xx, yy = np.meshgrid(x, y)
     positions = np.vstack([xx.ravel(), yy.ravel()])
-    values = np.vstack((eta, eta_residual))
+    values = np.vstack((xdata, ydata))
     kernel = st.gaussian_kde(values)
     f = np.reshape(kernel(positions).T, xx.shape)
     return xx, yy, f
