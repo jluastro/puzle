@@ -122,7 +122,6 @@ def fit_lightcurve_data_to_ulens(hmjd, mag, magerr, ra, dec):
                          args=(params_to_fit, PSPL_Phot_Par_Param1, data),
                          method='Powell')
     if result.success:
-        print('** Fit success **')
         # gather up best results
         best_fit = result.x
         best_params = {}
