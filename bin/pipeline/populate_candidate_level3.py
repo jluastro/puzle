@@ -23,7 +23,11 @@ def populate_candidate_level3():
         rank = 0
         size = 1
 
+    if rank == 0:
+        print('rank 0) %i total candidates identified' % len(cands_level2))
+
     my_cands_level2 = np.array_split(cands_level2, size)[rank]
+    print('rank %i) %i my candidates identified' % (rank, len(my_cands_level2)))
 
     for cand_level2 in my_cands_level2:
         obj = fetch_cand_best_obj_by_id(cand_level2.id)
@@ -45,7 +49,9 @@ def populate_candidate_level3():
     db.session.commit()
     db.session.close()
 
-    print('Upload to candidate_level3 complete')
+    comm.Barrier()
+    if rank == 0:
+        print('Upload to candidate_level3 complete')
 
 
 if __name__ == '__main__':
