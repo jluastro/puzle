@@ -7,7 +7,7 @@ import numpy as np
 import glob
 from sqlalchemy.sql.expression import func
 from puzle.models import CandidateLevel2
-from puzle.utils import return_data_dir
+from puzle.utils import return_data_dir, load_stacked_array
 
 
 def return_level2_eta_arrs(N_samples=500000):
@@ -44,7 +44,7 @@ def return_ulens_data_fname(prefix):
 
 def return_ulens_data(observableFlag=True, bhFlag=False):
     fname = return_ulens_data_fname('ulens_sample')
-    lightcurve_data = np.load(fname)
+    data = load_stacked_array(fname)
 
     stats = return_ulens_stats(observableFlag=False, bhFlag=False)
 
@@ -53,8 +53,14 @@ def return_ulens_data(observableFlag=True, bhFlag=False):
         cond *= stats['observable3']
     if bhFlag:
         cond *= return_cond_BH()
+    idx_arr = set(np.where(cond==True)[0])
 
-    return lightcurve_data[cond]
+    lightcurve_data = []
+    for i, d in enumerate(data):
+        if i in idx_arr:
+            lightcurve_data.append(d)
+
+    return lightcurve_data
 
 
 def return_ulens_stats(observableFlag=True, bhFlag=False):
