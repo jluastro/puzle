@@ -422,16 +422,6 @@ def calculate_stats_on_lightcurves():
         my_chi_squared_flat_level2_arr.append(chi_squared_flat)
         my_atype_level2_arr.append(atype)
 
-        # calculate and append level3 fit data
-        best_params = fit_lightcurve_data_to_ulens(hmjd, mag, magerr, ra, dec)
-        my_t0_level3_arr.append(best_params['t0'])
-        my_u0_amp_level3_arr.append(best_params['u0_amp'])
-        my_tE_level3_arr.append(best_params['tE'])
-        my_mag_src_level3_arr.append(best_params['mag_src'])
-        my_b_sff_level3_arr.append(best_params['b_sff'])
-        my_piE_level3_arr.append(best_params['piE'])
-        my_chi_squared_delta_level3_arr.append(best_params['chi_squared_delta'])
-
         # calculate and append observability conditions
         hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
         n_days_in_split = int(len(mag_round) / 5)
@@ -458,6 +448,25 @@ def calculate_stats_on_lightcurves():
             my_observable_arr1.append(True)
             my_observable_arr2.append(True)
             my_observable_arr3.append(True)
+
+        # calculate and append level3 fit data
+        if count_cond >= 3:
+            best_params = fit_lightcurve_data_to_ulens(hmjd, mag, magerr, ra, dec)
+        else:
+            best_params = {'t0': 0,
+                           'u0_amp': 0,
+                           'tE': 0,
+                           'mag_src': 0,
+                           'b_sff': 0,
+                           'piE': 0,
+                           'chi_squared_delta': 0}
+        my_t0_level3_arr.append(best_params['t0'])
+        my_u0_amp_level3_arr.append(best_params['u0_amp'])
+        my_tE_level3_arr.append(best_params['tE'])
+        my_mag_src_level3_arr.append(best_params['mag_src'])
+        my_b_sff_level3_arr.append(best_params['b_sff'])
+        my_piE_level3_arr.append(best_params['piE'])
+        my_chi_squared_delta_level3_arr.append(best_params['chi_squared_delta'])
 
         with open(my_stats_complete_fname, 'a+') as f:
             f.write(f'{i}\n')
