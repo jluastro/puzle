@@ -7,7 +7,6 @@ import os
 import glob
 import numpy as np
 from scipy.stats import expon
-from astropy.table import Table, vstack
 from shapely.geometry.polygon import Polygon
 import pickle
 import itertools
@@ -28,6 +27,7 @@ RF_THRESHOLD = 0.645
 
 
 def gather_PopSyCLE_refined_events():
+    from astropy.table import Table, vstack
     folders = glob.glob('PopSyCLE_runs_v3/l*')
     folders.sort()
     N_folders = len(folders)
@@ -115,6 +115,7 @@ def calculate_delta_m(u0, b_sff):
 def generate_random_lightcurves_lb(l, b, objs,
                                    tE_min=20, delta_m_min=0.25,
                                    num_3sigma_cut=5):
+    from astropy.table import Table
     popsycle_fname = f'{popsycle_base_folder}/l{l:.1f}_b{b:.1f}_refined_events_ztf_r_Damineli16.fits'
     popsycle_catalog = Table.read(popsycle_fname, format='fits')
     N_samples = len(objs)

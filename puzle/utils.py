@@ -8,7 +8,7 @@ import logging
 import subprocess
 import numpy as np
 from datetime import datetime
-from astropy.coordinates import SkyCoord
+
 from zort.radec import return_shifted_ra, return_ZTF_RCID_corners
 from shapely.geometry.polygon import Polygon
 
@@ -106,6 +106,7 @@ def lightcurve_file_to_ra_dec(lightcurve_file):
 
 
 def lightcurve_file_to_lb(lightcurve_file):
+    from astropy.coordinates import SkyCoord
     ra0, ra1, dec0, dec1 = lightcurve_file_to_ra_dec(lightcurve_file)
     ra = (ra0 + ra1) / 2.
     dec = (dec0 + dec1) / 2.
@@ -122,6 +123,7 @@ def lightcurve_file_to_field_id(lightcurve_file):
 
 
 def find_nearest_lightcurve_file(l, b):
+    from astropy.coordinates import SkyCoord
     coord = SkyCoord(l, b, frame='galactic', unit='degree')
     ra, dec = coord.icrs.ra.value, coord.icrs.dec.value
     lightcurve_files = glob.glob('/global/cfs/cdirs/uLens/ZTF/DR5/*txt')

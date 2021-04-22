@@ -9,8 +9,6 @@ import h5py
 import pickle
 import psycopg2
 from collections import namedtuple
-from astropy.coordinates import SkyCoord
-from astropy import units as u
 import requests
 import numpy as np
 from scipy.spatial import cKDTree
@@ -136,6 +134,9 @@ def identify_is_spin():
 
 
 def _fetch_ogle_targets():
+    from astropy.coordinates import SkyCoord
+    from astropy import units as u
+
     target_ids = []
     ra_arr = []
     dec_arr = []
@@ -170,6 +171,9 @@ OGLE_TARGETS = fetch_ogle_targets()
 
 
 def fetch_ogle_target(ra_cand, dec_cand, radius=5):
+    from astropy.coordinates import SkyCoord
+    from astropy import units as u
+
     target_ids = OGLE_TARGETS['target_ids']
     target_coords = OGLE_TARGETS['target_coords']
 

@@ -8,9 +8,6 @@ import glob
 import numpy as np
 from collections import defaultdict
 from scipy.stats import expon
-from astropy.table import Table, vstack
-from astropy.coordinates import SkyCoord
-import astropy.units as u
 from sqlalchemy.sql.expression import func
 import itertools
 
@@ -29,6 +26,8 @@ popsycle_base_folder = '/global/cfs/cdirs/uLens/PopSyCLE_runs/PopSyCLE_runs_v3_r
 
 
 def gather_PopSyCLE_refined_events():
+    from astropy.table import Table, vstack
+
     folders = glob.glob('PopSyCLE_runs_v3/l*')
     folders.sort()
     N_folders = len(folders)
@@ -158,6 +157,10 @@ def calculate_delta_m(u0, b_sff):
 def generate_random_lightcurves_lb(l, b, N_samples=1000,
                                    tE_min=20, delta_m_min=0.1, delta_m_min_cut=3,
                                    n_days_min=50):
+    from astropy.coordinates import SkyCoord
+    import astropy.units as u
+    from astropy.table import Table
+
     popsycle_fname = f'{popsycle_base_folder}/l{l:.1f}_b{b:.1f}_refined_events_ztf_r_Damineli16.fits'
     popsycle_catalog = Table.read(popsycle_fname, format='fits')
 
