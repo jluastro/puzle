@@ -462,10 +462,10 @@ def calculate_stats_on_lightcurves():
                  observable1=observable_arr1,
                  observable2=observable_arr2,
                  observable3=observable_arr3,
-                 tE=tE_arr,
-                 chi_squared_delta=chi_squared_delta_arr,
-                 chi_squared_flat=chi_squared_flat_arr,
-                 atype=atype_arr,
+                 tE_level2=tE_arr,
+                 chi_squared_delta_level2=chi_squared_delta_arr,
+                 chi_squared_flat_level2=chi_squared_flat_arr,
+                 atype_level2=atype_arr,
                  idx_check=idx_check)
 
 
