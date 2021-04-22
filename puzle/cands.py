@@ -121,19 +121,20 @@ def fit_lightcurve_data_to_ulens(hmjd, mag, magerr, ra, dec):
     result = op.minimize(chi2, x0=initial_guess,
                          args=(params_to_fit, PSPL_Phot_Par_Param1, data),
                          method='Powell')
-    if not result.success:
-        print('** Fit fail **')
-        return None
-
-    print('** Fit success **')
-    # gather up best results
-    best_fit = result.x
-    best_params = {}
-    for k, v in zip(params_to_fit, best_fit):
-        best_params[k.replace('1', '')] = v
-    best_params['piE'] = np.hypot(best_params['piE_E'],
-                                  best_params['piE_N'])
-    best_params['chi_squared_delta'] = result.fun
+    if result.success:
+        print('** Fit success **')
+        # gather up best results
+        best_fit = result.x
+        best_params = {}
+        for k, v in zip(params_to_fit, best_fit):
+            best_params[k.replace('1', '')] = v
+        best_params['piE'] = np.hypot(best_params['piE_E'],
+                                      best_params['piE_N'])
+        best_params['chi_squared_delta'] = result.fun
+    else:
+        best_params = {k: 0 for k in params_to_fit}
+        best_params['piE'] = 0
+        best_params['chi_squared_delta'] = 0
 
     return best_params
 
@@ -152,32 +153,27 @@ def fit_cand_id_to_ulens(cand_id, uploadFlag=True, plotFlag=False):
 
     if uploadFlag:
         cand = CandidateLevel3.query.filter(CandidateLevel3.id == cand_id).first()
-        if best_params is not None:
-            for param, val in best_params.items():
-                attr = f'{param}_best'
-                try:
-                    setattr(cand, attr, val)
-                except AttributeError:
-                    pass
+        for param, val in best_params.items():
+            attr = f'{param}_best'
+            try:
+                setattr(cand, attr, val)
+            except AttributeError:
+                pass
 
+        hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
+        eta = calculate_eta(mag_round)
+        cand.eta_best = eta
+
+        if best_params['t0'] != 0:
             model_params = {k: v for k, v in best_params.items() if k in params_to_fit}
             model = PSPL_Phot_Par_Param1(**model_params, raL=ra, decL=dec)
-            hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
-
-            eta = calculate_eta(mag_round)
             mag_round_model = model.get_photometry(hmjd_round)
             mag_residual_arr = mag_round - mag_round_model
             cond = ~np.isnan(mag_residual_arr)
             eta_residual = calculate_eta(mag_residual_arr[cond])
-
-            cand.eta_best = eta
-            cand.eta_residual_best = eta_residual
         else:
-            for param in params_to_fit:
-                setattr(cand, f'{param}_best', 0)
-            cand.chi_squared_delta_best = 0
-            cand.eta_best = 0
-            cand.eta_residual_best = 0
+            eta_residual = 0
+        cand.eta_residual_best = eta_residual
 
         db.session.commit()
         db.session.close()

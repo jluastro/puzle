@@ -19,17 +19,13 @@ def return_level2_eta_arrs(N_samples=500000):
 
 
 def return_ulens_eta_arrs():
-    data_dir = return_data_dir()
-    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample_stats.??.total.npz')
-    fname_total_arr.sort()
-    fname = fname_total_arr[-1]
-    data = np.load(fname)
+    stats = return_ulens_stats(observableFlag=False, bhFlag=False)
 
-    eta_ulens_arr = data['eta']
-    eta_residual_ulens_arr = data['eta_residual']
-    observable1_arr = data['observable1']
-    observable2_arr = data['observable2']
-    observable3_arr = data['observable3']
+    eta_ulens_arr = stats['eta']
+    eta_residual_ulens_arr = stats['eta_residual']
+    observable1_arr = stats['observable1']
+    observable2_arr = stats['observable2']
+    observable3_arr = stats['observable3']
 
     metadata = return_ulens_metadata()
     eta_residual_actual_ulens_arr = metadata['eta_residual']
@@ -38,11 +34,31 @@ def return_ulens_eta_arrs():
            observable1_arr, observable2_arr, observable3_arr
 
 
-def return_ulens_stats(observableFlag=True, bhFlag=False):
+def return_ulens_data_fname(prefix):
     data_dir = return_data_dir()
-    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample_stats.??.total.npz')
+    fname_total_arr = glob.glob(f'{data_dir}/{prefix}.??.total.npz')
     fname_total_arr.sort()
     fname = fname_total_arr[-1]
+    return fname
+
+
+def return_ulens_data(observableFlag=True, bhFlag=False):
+    fname = return_ulens_data_fname('ulens_sample')
+    lightcurve_data = np.load(fname)
+
+    stats = return_ulens_stats(observableFlag=False, bhFlag=False)
+
+    cond = np.ones(len(stats['eta'])).astype(bool)
+    if observableFlag:
+        cond *= stats['observable3']
+    if bhFlag:
+        cond *= return_cond_BH()
+
+    return lightcurve_data[cond]
+
+
+def return_ulens_stats(observableFlag=True, bhFlag=False):
+    fname = return_ulens_data_fname('ulens_sample_stats')
     data = np.load(fname)
 
     cond = np.ones(len(data['eta'])).astype(bool)
@@ -62,10 +78,7 @@ def return_ulens_metadata(observableFlag=True, bhFlag=False):
     stats = return_ulens_stats(observableFlag=False,
                                bhFlag=False)
 
-    data_dir = return_data_dir()
-    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample_metadata.??.total.npz')
-    fname_total_arr.sort()
-    fname = fname_total_arr[-1]
+    fname = return_ulens_data_fname('ulens_sample_metadata')
     data = np.load(fname)
 
     cond = np.ones(len(data['tE'])).astype(bool)
@@ -82,10 +95,7 @@ def return_ulens_metadata(observableFlag=True, bhFlag=False):
 
 
 def return_cond_BH(tE_min=150, piE_max=0.08):
-    data_dir = return_data_dir()
-    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample_metadata.??.total.npz')
-    fname_total_arr.sort()
-    fname = fname_total_arr[-1]
+    fname = return_ulens_data_fname('ulens_sample_metadata')
     metadata = np.load(fname)
 
     tE = metadata['tE']
