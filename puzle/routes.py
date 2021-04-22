@@ -2,7 +2,6 @@ from flask import render_template, flash, redirect, url_for, request, session
 from flask_login import current_user, login_user, logout_user, login_required
 from werkzeug.urls import url_parse
 from datetime import datetime
-import astropy.units as u
 from puzle import app, db
 from puzle.forms import LoginForm, RegistrationForm, \
     EditProfileForm, ResetPasswordRequestForm, ResetPasswordForm, \
@@ -383,6 +382,7 @@ def candidates():
 @login_required
 def radial_search():
     from astropy.coordinates import SkyCoord
+    import astropy.units as u
     form_radial = RadialSearchForm()
     glon, glat = None, None
     if form_radial.validate_on_submit():
