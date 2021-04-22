@@ -614,6 +614,8 @@ class CandidateLevel3(db.Model):
     idx_best = db.Column(db.Integer)
     num_objs_pass = db.Column(db.Integer)
     num_objs_tot = db.Column(db.Integer)
+    num_epochs_best = db.Column(db.Integer)
+    num_days_best = db.Column(db.Integer)
     eta_best = db.Column(db.Float)
     eta_residual_best = db.Column(db.Float)
     t0_best = db.Column(db.Float)
@@ -632,6 +634,7 @@ class CandidateLevel3(db.Model):
                  source_id_arr, color_arr,
                  pass_arr, idx_best,
                  num_objs_pass, num_objs_tot,
+                 num_epochs_best, num_days_best,
                  eta_best=None, eta_residual_best=None,
                  t0_best=None, u0_amp_best=None,
                  tE_best=None, mag_src_best=None,
@@ -647,6 +650,8 @@ class CandidateLevel3(db.Model):
         self.idx_best = idx_best
         self.num_objs_pass = num_objs_pass
         self.num_objs_tot = num_objs_tot
+        self.num_epochs_best = num_epochs_best
+        self.num_days_best = num_days_best
         self.eta_best = eta_best
         self.eta_residual_best = eta_residual_best
         self.t0_best = t0_best
