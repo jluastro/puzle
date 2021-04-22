@@ -390,7 +390,7 @@ def calculate_stats_on_lightcurves():
     my_idx_arr = np.array_split(idx_arr, size)[rank]
     my_data = np.array_split(data, size)[rank]
 
-    print('Rank %) Processing %i lightcurves' % (rank, len(my_data)))
+    print('Rank %i) Processing %i lightcurves' % (rank, len(my_data)))
 
     my_eta_arr = []
     my_eta_residual_level2_arr = []
