@@ -81,7 +81,7 @@ def chi2(theta, params_to_fit, model_class, data):
     model = model_class(**params,
                         raL=data['raL'], decL=data['decL'])
 
-    mag_model = model.get_photometry(data['hmjd'])
+    mag_model = model.get_photometry(data['hmjd'], print_warning=False)
 
     lnL_term1 = -0.5 * ((data['mag'] - mag_model) / data['magerr']) ** 2
     lnL_term2 = -0.5 * np.log(2.0 * np.pi * data['magerr'] ** 2)
@@ -188,7 +188,7 @@ def fit_cand_id_to_ulens(cand_id, uploadFlag=True, plotFlag=False):
         fig, ax = plt.subplots()
         ax.clear()
         ax.set_title('tE %.1f | mag_src %.1f | b_sff %.2f | piE %.3f' % (
-            best_params['tE'], best_params['mag_src'], best_params['b_sff'], piE))
+            best_params['tE'], best_params['mag_src'], best_params['b_sff'], best_params['piE']))
         ax.scatter(hmjd, mag, color='b', label='data', s=2)
         ax.plot(hmjd_model, mag_model, color='g', label='model')
         ax.axvline(best_params['t0'], color='k', alpha=.2)
