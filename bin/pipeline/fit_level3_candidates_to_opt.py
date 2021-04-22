@@ -25,6 +25,8 @@ def fit_level3_candidates_to_ulens():
         size = 1
 
     my_cand_ids = np.array_split(cand_ids, size)[rank]
+    print('Rank %i) %i candidates to fit' % (rank, len(my_cand_ids)))
+
     for cand_id in my_cand_ids:
         fit_cand_id_to_opt(cand_id, uploadFlag=True, plotFlag=False)
 

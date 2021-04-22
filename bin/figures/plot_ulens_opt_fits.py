@@ -16,7 +16,7 @@ from puzle import db
 
 
 def plot_ulens_opt_corner():
-    cands3 = CandidateLevel3.query.with_entities(CandidateLevel3.tE_best,
+    ulens3 = CandidateLevel3.query.with_entities(CandidateLevel3.tE_best,
                                                  CandidateLevel3.u0_amp_best,
                                                  CandidateLevel3.mag_src_best,
                                                  CandidateLevel3.chi_squared_delta_best,
@@ -26,34 +26,34 @@ def plot_ulens_opt_corner():
                                                  CandidateLevel3.eta_residual_best,
                                                  CandidateLevel3.num_epochs_best).\
         filtet(CandidateLevel3.tE_best>0).all()
-    tE_cands = np.array([c[0] for c in cands3], dtype=np.float32)
-    u0_amp_cands = np.array([c[1] for c in cands3], dtype=np.float32)
-    mag_src_cands = np.array([c[2] for c in cands3], dtype=np.float32)
-    chi_squared_delta_cands = np.array([c[3] for c in cands3], dtype=np.float32)
-    piE_E_cands = np.array([c[4] for c in cands3], dtype=np.float32)
-    piE_N_cands = np.array([c[5] for c in cands3], dtype=np.float32)
-    eta_cands = np.array([c[6] for c in cands3], dtype=np.float32)
-    eta_residual_cands = np.array([c[7] for c in cands3], dtype=np.float32)
-    num_epochs_cands = np.array([c[8] for c in cands3], dtype=np.float32)
+    tE_ulens = np.array([c[0] for c in ulens3], dtype=np.float32)
+    u0_amp_ulens = np.array([c[1] for c in ulens3], dtype=np.float32)
+    mag_src_ulens = np.array([c[2] for c in ulens3], dtype=np.float32)
+    chi_squared_delta_ulens = np.array([c[3] for c in ulens3], dtype=np.float32)
+    piE_E_ulens = np.array([c[4] for c in ulens3], dtype=np.float32)
+    piE_N_ulens = np.array([c[5] for c in ulens3], dtype=np.float32)
+    eta_ulens = np.array([c[6] for c in ulens3], dtype=np.float32)
+    eta_residual_ulens = np.array([c[7] for c in ulens3], dtype=np.float32)
+    num_epochs_ulens = np.array([c[8] for c in ulens3], dtype=np.float32)
 
-    log_tE_cands = np.log10(tE_cands)
-    log_piE_E_cands = np.log10(piE_E_cands)
-    log_piE_N_cands = np.log10(piE_N_cands)
-    piE_cands = np.hypot(piE_E_cands, piE_N_cands)
-    log_piE_cands = np.log10(piE_cands)
+    log_tE_ulens = np.log10(tE_ulens)
+    log_piE_E_ulens = np.log10(piE_E_ulens)
+    log_piE_N_ulens = np.log10(piE_N_ulens)
+    piE_ulens = np.hypot(piE_E_ulens, piE_N_ulens)
+    log_piE_ulens = np.log10(piE_ulens)
     
-    chi_squared_delta_reduced_cands = chi_squared_delta_cands / num_epochs_cands
-    log_chi_squared_delta_reduced_cands = np.log10(chi_squared_delta_reduced_cands)
+    chi_squared_delta_reduced_ulens = chi_squared_delta_ulens / num_epochs_ulens
+    log_chi_squared_delta_reduced_ulens = np.log10(chi_squared_delta_reduced_ulens)
 
-    data_cands = np.vstack((log_tE_cands,
-                            u0_amp_cands,
-                            mag_src_cands,
-                            log_chi_squared_delta_reduced_cands,
-                            log_piE_E_cands,
-                            log_piE_N_cands,
-                            log_piE_cands,
-                            eta_cands,
-                            eta_residual_cands)).T
+    data_ulens = np.vstack((log_tE_ulens,
+                            u0_amp_ulens,
+                            mag_src_ulens,
+                            log_chi_squared_delta_reduced_ulens,
+                            log_piE_E_ulens,
+                            log_piE_N_ulens,
+                            log_piE_ulens,
+                            eta_ulens,
+                            eta_residual_ulens)).T
 
     stats = return_ulens_stats(observableFlag=True, bhFlag=True)
     tE_ulens = stats['tE_level3']
@@ -87,8 +87,8 @@ def plot_ulens_opt_corner():
                             eta_ulens,
                             eta_residual_ulens)).T
 
-    idx_sample = np.random.choice(np.arange(len(data_cands)), replace=False, size=len(data_ulens))
-    data_cands_sample = data_cands[idx_sample]
+    idx_sample = np.random.choice(np.arange(len(data_ulens)), replace=False, size=len(data_ulens))
+    data_ulens_sample = data_ulens[idx_sample]
 
     # Plot it.
     labels = ['LOG tE', 'u0_amp', 'mag_src', 'LOG chi_squared_delta_reduced', 'LOG piE_E', 'LOG piE_N', 'LOG piE', 'eta', 'eta_residual']
@@ -96,10 +96,10 @@ def plot_ulens_opt_corner():
 
     fig = corner.corner(data_ulens, labels=labels, range=data_range,
                         show_titles=True, title_kwargs={"fontsize": 10}, color='r')
-    fig = corner.corner(data_cands_sample, labels=labels, range=data_range,
+    fig = corner.corner(data_ulens_sample, labels=labels, range=data_range,
                         show_titles=True, title_kwargs={"fontsize": 10}, color='k',
                         fig=fig)
-    fig.suptitle('Level 3 Fits (ulens red | cands black)')
+    fig.suptitle('Level 3 Fits (ulens red | ulens black)')
 
     fname = '%s/ulens_opt_corner.png' % return_figures_dir()
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
@@ -129,13 +129,13 @@ def calculate_inside_outside(hmjd, mag, magerr, t0, tE):
     
     
 def plot_ulens_opt_inside_outside():
-    cands23 = db.session.query(CandidateLevel2, CandidateLevel3). \
+    ulens23 = db.session.query(CandidateLevel2, CandidateLevel3). \
         filter(CandidateLevel2.id == CandidateLevel3.id). \
         filter(CandidateLevel2.t_E_best <= 400). \
         order_by(func.random()).with_entities(CandidateLevel3.id,
                                               CandidateLevel2.t_0_best,
                                               CandidateLevel2.t_E_best).limit(10000).all()
-    cand_id_arr = [c[0] for c in cands23]
+    cand_id_arr = [c[0] for c in ulens23]
     obj_arr = []
     for i, cand_id in enumerate(cand_id_arr):
         if i % 100 == 0:
@@ -144,27 +144,28 @@ def plot_ulens_opt_inside_outside():
         _ = obj.lightcurve.hmjd
         obj_arr.append(obj)
 
-    t0_arr = [c[1] for c in cands23]
-    tE_arr = [c[2] for c in cands23]
-    std_inside_cands = []
-    std_outside_cands = []
-    chi_squared_cands = []
-    dof_cands = []
+    t0_arr = [c[1] for c in ulens23]
+    tE_arr = [c[2] for c in ulens23]
+    std_inside_ulens = []
+    std_outside_ulens = []
+    chi_squared_ulens = []
+    dof_ulens = []
     for i, (obj, t0, tE) in enumerate(zip(obj_arr, t0_arr, tE_arr)):
         hmjd = obj.lightcurve.hmjd
         mag = obj.lightcurve.mag
         magerr = obj.lightcurve.magerr
         std_inside, std_outside, chi_squared, dof = calculate_inside_outside(hmjd, mag, magerr, t0, tE)
-        std_inside_cands.append(std_inside)
-        std_outside_cands.append(std_outside)
-        chi_squared_cands.append(chi_squared)
-        dof_cands.append(dof)
-    std_inside_cands = np.array(std_inside_cands)
-    std_outside_cands = np.array(std_outside_cands)
-    std_ratio_cands = std_outside_cands / std_inside_cands
-    std_ratio_cands[np.isinf(std_ratio_cands)] = 0
-    chi_squared_cands = np.array(chi_squared_cands)
-    dof_cands = np.array(dof_cands)
+        std_inside_ulens.append(std_inside)
+        std_outside_ulens.append(std_outside)
+        chi_squared_ulens.append(chi_squared)
+        dof_ulens.append(dof)
+    std_inside_ulens = np.array(std_inside_ulens)
+    std_outside_ulens = np.array(std_outside_ulens)
+    std_ratio_ulens = std_outside_ulens / std_inside_ulens
+    std_ratio_ulens[np.isinf(std_ratio_ulens)] = 0
+    chi_squared_ulens = np.array(chi_squared_ulens)
+    dof_ulens = np.array(dof_ulens)
+    chi_squared_reduced_ulens = chi_squared_ulens / dof_ulens
 
     data = return_ulens_data(observableFlag=True, bhFlag=True)
     metadata = return_ulens_metadata(observableFlag=True, bhFlag=True)
@@ -193,6 +194,7 @@ def plot_ulens_opt_inside_outside():
     std_ratio_ulens[np.isinf(std_ratio_ulens)] = 0
     chi_squared_ulens = np.array(chi_squared_ulens)
     dof_ulens = np.array(dof_ulens)
+    chi_squared_reduced_ulens = chi_squared_ulens / dof_ulens
 
 
 def plot_ulens_tE_opt_bias():
@@ -232,3 +234,13 @@ def plot_ulens_tE_opt_bias():
     ax[1].set_ylim(1.3, 2.6)
 
     fig.tight_layout()
+
+
+def generate_all_figures():
+    plot_ulens_opt_corner()
+    plot_ulens_opt_inside_outside()
+    plot_ulens_tE_opt_bias()
+
+
+if __name__ == '__main__':
+    generate_all_figures()
