@@ -383,10 +383,16 @@ def calculate_stats_on_lightcurves():
     if os.path.exists(my_stats_complete_fname):
         os.remove(my_stats_complete_fname)
 
-    data = return_ulens_data(observableFlag=False, bhFlag=False)
-    metadata = return_ulens_metadata(observableFlag=False, bhFlag=False)
-    idx_arr = np.arange(len(data))
+    fname = return_ulens_data_fname('ulens_sample')
+    data = load_stacked_array(fname)
+    lightcurve_data = []
+    for i, d in enumerate(data):
+        lightcurve_data.append(d)
 
+    fname = return_ulens_data_fname('ulens_sample_metadata')
+    metadata = np.load(fname)
+
+    idx_arr = np.arange(len(lightcurve_data))
     my_idx_arr = np.array_split(idx_arr, size)[rank]
     my_data = np.array_split(data, size)[rank]
 
