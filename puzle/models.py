@@ -11,8 +11,6 @@ import os
 import requests
 import numpy as np
 from collections import defaultdict
-from astropy.coordinates import SkyCoord
-import astropy.units as u
 from zort.source import Source as zort_source
 
 from puzle import app
@@ -200,6 +198,8 @@ class Source(db.Model):
 
     @hybrid_property
     def glonlat(self):
+        from astropy.coordinates import SkyCoord
+        import astropy.units as u
         try:
             return self._glonlat
         except AttributeError:
@@ -409,6 +409,8 @@ class Star(db.Model):
 
     @hybrid_property
     def glonlat(self):
+        from astropy.coordinates import SkyCoord
+        import astropy.units as u
         try:
             return self._glonlat
         except AttributeError:
@@ -520,6 +522,8 @@ class CandidateLevel2(db.Model):
 
     @hybrid_property
     def glonlat(self):
+        from astropy.coordinates import SkyCoord
+        import astropy.units as u
         try:
             return self._glonlat
         except AttributeError:
@@ -680,6 +684,8 @@ class CandidateLevel3(db.Model):
 
     @hybrid_property
     def glonlat(self):
+        from astropy.coordinates import SkyCoord
+        import astropy.units as u
         try:
             return self._glonlat
         except AttributeError:
