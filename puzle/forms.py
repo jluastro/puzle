@@ -98,18 +98,6 @@ class FilterSearchForm(FlaskForm):
                                    validators=[Optional(), NumberRange(min=1)])
     num_objs_pass_max = IntegerField('num_objs_pass max',
                                    validators=[Optional(), NumberRange(min=1)])
-    t_0_best_min = FloatField('t_0_best min (days)',
-                              validators=[Optional(), NumberRange(min=58144)])
-    t_0_best_max = FloatField('t_0_best max (days)',
-                              validators=[Optional(), NumberRange(min=59293)])
-    t_E_best_min = FloatField('t_E_best min (days)',
-                              validators=[Optional(), NumberRange(min=0.01)])
-    t_E_best_max = FloatField('t_E_best max (days)',
-                              validators=[Optional(), NumberRange(min=5000)])
-    chi_squared_delta_best_min = FloatField('chi_squared_delta_best min',
-                                            validators=[Optional(), NumberRange(min=0)])
-    chi_squared_delta_best_max = FloatField('chi_squared_delta_best max',
-                                            validators=[Optional(), NumberRange(min=0)])
     rf_score_best_min = FloatField('rf_score_best min',
                                    validators=[Optional(), NumberRange(min=0, max=1)])
     rf_score_best_max = FloatField('rf_score_best max',
@@ -118,14 +106,44 @@ class FilterSearchForm(FlaskForm):
                               validators=[Optional(), NumberRange(min=0)])
     eta_best_max = FloatField('eta_best max',
                               validators=[Optional(), NumberRange(min=0)])
-    eta_residual_best_min = FloatField('eta_residual_best min',
-                              validators=[Optional(), NumberRange(min=0)])
-    eta_residual_best_max = FloatField('eta_residual_best max',
-                              validators=[Optional(), NumberRange(min=0)])
-    order_by = RadioField(choices=[('eta_residual_best', 'Order results by eta_residual descending'),
-                                   ('eta_best', 'Order results by eta ascending'),
-                                   ('chi_squared_delta_best', 'Order results by chi_squared_delta desc')],
-                          default='eta_residual_best')
+    minmax_t_0_best_min = FloatField('minmax: t_0_best min (days)',
+                                     validators=[Optional(), NumberRange(min=58144)])
+    minmax_t_0_best_max = FloatField('minmax: t_0_best max (days)',
+                                     validators=[Optional(), NumberRange(max=59293)])
+    minmax_t_E_best_min = FloatField('minmax: t_E_best min (days)',
+                                     validators=[Optional(), NumberRange(min=0.01)])
+    minmax_t_E_best_max = FloatField('minmax: t_E_best max (days)',
+                                     validators=[Optional(), NumberRange(max=5000)])
+    minmax_chi_squared_delta_best_min = FloatField('minmax: reduced chi_squared_delta_best min',
+                                                   validators=[Optional(), NumberRange(min=0)])
+    minmax_chi_squared_delta_best_max = FloatField('minmax: reduced chi_squared_delta_best max',
+                                                   validators=[Optional(), NumberRange(min=0)])
+    minmax_eta_residual_best_min = FloatField('minmax: eta_residual_best min',
+                                              validators=[Optional(), NumberRange(min=0)])
+    minmax_eta_residual_best_max = FloatField('minmax: eta_residual_best max',
+                                              validators=[Optional(), NumberRange(min=0)])
+    opt_t0_best_min = FloatField('opt: t0_best min (days)',
+                                  validators=[Optional(), NumberRange(min=0)])
+    opt_t0_best_max = FloatField('opt: t0_best max (days)',
+                                  validators=[Optional(), NumberRange(min=0)])
+    opt_tE_best_min = FloatField('opt: tE_best min (days)',
+                                  validators=[Optional(), NumberRange(min=0)])
+    opt_tE_best_max = FloatField('opt: tE_best max (days)',
+                                  validators=[Optional(), NumberRange(min=0)])
+    opt_chi_squared_delta_best_min = FloatField('opt: reduced chi_squared_delta_best min',
+                                                validators=[Optional(), NumberRange(min=0)])
+    opt_chi_squared_delta_best_max = FloatField('opt: reduced chi_squared_delta_best max',
+                                                validators=[Optional(), NumberRange(min=0)])
+    opt_eta_residual_best_min = FloatField('opt: eta_residual_best min',
+                                           validators=[Optional(), NumberRange(min=0)])
+    opt_eta_residual_best_max = FloatField('opt: eta_residual_best max',
+                                           validators=[Optional(), NumberRange(min=0)])
+    order_by = RadioField(choices=[('eta_best', 'Order results by eta ascending'),
+                                   ('minmax_eta_residual_best', 'Order results by minmax eta_residual descending'),
+                                   ('minmax_chi_squared_delta_best', 'Order results by minmax reduced chi_squared_delta desc'),
+                                   ('opt_eta_residual_best', 'Order results by opt eta_residual descending'),
+                                   ('opt_chi_squared_delta_best', 'Order results optmax reduced chi_squared_delta desc')],
+                          default='opt_eta_residual_best')
     order_by_num_objs = BooleanField('Order by number of objects descending', default=True)
     submit = SubmitField('Search')
 

@@ -483,15 +483,23 @@ def filter_search():
             if val_min > val_max:
                 flash(f'{field} minimum must be less than {field} maximum', 'danger')
                 return None
+        if 'opt' in field:
+            cand = CandidateLevel3
+            field_cand = field.replace('opt_', '')
+        else:
+            cand = CandidateLevel2
+            field_cand = field.replace('minmax_', '')
         if val_min:
-            query = query.filter(getattr(CandidateLevel3, field) >= val_min)
+            query = query.filter(getattr(cand, field_cand) >= val_min)
         if val_max:
-            query = query.filter(getattr(CandidateLevel3, field) <= val_max)
+            query = query.filter(getattr(cand, field_cand) <= val_max)
         return query
 
-    query_fields = ['num_objs_pass', 't_0_best', 't_E_best',
-                    'chi_squared_delta_best', 'rf_score_best',
-                    'eta_best', 'eta_residual_best']
+    query_fields = ['num_objs_pass', 'rf_score_best', 'eta_best',
+                    'minmax_t_0_best', 'minmax_t_E_best',
+                    'minmax_chi_squared_delta_best', 'minmax_eta_residual_best',
+                    'opt_t0_best', 'opt_tE_best',
+                    'opt_chi_squared_delta_best', 'opt_eta_residual_best']
 
     form_filter = FilterSearchForm()
     if form_filter.validate_on_submit():
@@ -519,7 +527,8 @@ def filter_search():
             else:
                 session[order_by_type] = None
 
-    query = CandidateLevel3.query
+    query = db.session.query(CandidateLevel3).\
+        join(CandidateLevel2, CandidateLevel3.id==CandidateLevel2.id)
     current_query = False
     for field in query_fields:
         val_min = session[f'{field}_min']
@@ -529,11 +538,15 @@ def filter_search():
             current_query = True
 
     if current_query:
-        if session['order_by'] == 'eta_residual_best':
+        if session['order_by'] == 'minmax_eta_residual_best':
+            order_by_cond = CandidateLevel2.eta_residual_best.desc()
+        elif session['order_by'] == 'opt_eta_residual_best':
             order_by_cond = CandidateLevel3.eta_residual_best.desc()
         elif session['order_by'] == 'eta_best':
             order_by_cond = CandidateLevel3.eta_best.asc()
-        elif session['order_by'] == 'chi_squared_delta_best':
+        elif session['order_by'] == 'minmax_chi_squared_delta_best':
+            order_by_cond = CandidateLevel2.chi_squared_delta_best.desc()
+        elif session['order_by'] == 'opt_chi_squared_delta_best':
             order_by_cond = CandidateLevel3.chi_squared_delta_best.desc()
 
         if session['order_by_num_objs']:
@@ -541,6 +554,7 @@ def filter_search():
         else:
             query = query.order_by(order_by_cond)
 
+        print(query)
         page = request.args.get('page', 1, type=int)
         cands = query.paginate(page, app.config['ITEMS_PER_PAGE'], False)
         next_url = url_for('candidates', page=cands.next_num) \
