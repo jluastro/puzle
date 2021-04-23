@@ -356,4 +356,18 @@ def return_eta_threshold(size):
             return None
 
 
+def calculate_chi_squared_inside_outside(hmjd, mag, magerr, t0, tE, tE_factor):
+    cond = hmjd <= t0 + tE_factor * tE
+    cond *= hmjd >= t0 - tE_factor * tE
+    num_inside = np.sum(cond)
+
+    mag_avg_inside = np.median(mag[cond])
+    chi_squared_inside = np.sum((mag[cond] - mag_avg_inside) ** 2. / magerr[cond] ** 2.)
+
+    mag_avg_outside = np.median(mag[~cond])
+    chi_squared_outside = np.sum((mag[~cond] - mag_avg_outside) ** 2. / magerr[~cond] ** 2.)
+
+    return chi_squared_inside, chi_squared_outside, num_inside
+
+
 ETA_THRESHOLDS = load_eta_thresholds()

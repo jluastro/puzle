@@ -630,6 +630,15 @@ class CandidateLevel3(db.Model):
     piE_E_best = db.Column(db.Float)
     piE_N_best = db.Column(db.Float)
     chi_squared_delta_best = db.Column(db.Float)
+    chi_squared_inside_1tE_best = db.Column(db.Float)
+    chi_squared_inside_2tE_best = db.Column(db.Float)
+    chi_squared_inside_3tE_best = db.Column(db.Float)
+    chi_squared_outside_1tE_best = db.Column(db.Float)
+    chi_squared_outside_2tE_best = db.Column(db.Float)
+    chi_squared_outside_3tE_best = db.Column(db.Float)
+    num_epochs_inside_1tE_best = db.Column(db.Integer)
+    num_epochs_inside_2tE_best = db.Column(db.Integer)
+    num_epochs_inside_3tE_best = db.Column(db.Integer)
     comments = db.Column(db.String(1024))
     _ztf_ids = db.Column(db.String(256))
     ogle_target = db.Column(db.String(128))
@@ -644,6 +653,15 @@ class CandidateLevel3(db.Model):
                  tE_best=None, mag_src_best=None,
                  b_sff_best=None, piE_E_best=None, piE_N_best=None,
                  chi_squared_delta_best=None,
+                 chi_squared_inside_1tE_best=None,
+                 chi_squared_inside_2tE_best=None,
+                 chi_squared_inside_3tE_best=None,
+                 chi_squared_outside_1tE_best=None,
+                 chi_squared_outside_2tE_best=None,
+                 chi_squared_outside_3tE_best=None,
+                 num_epochs_inside_1tE_best=None,
+                 num_epochs_inside_2tE_best=None,
+                 num_epochs_inside_3tE_best=None,
                  comments=None, _ztf_ids=None, ogle_target=None):
         self.id = id
         self.ra = ra
@@ -666,6 +684,15 @@ class CandidateLevel3(db.Model):
         self.piE_E_best = piE_E_best
         self.piE_N_best = piE_N_best
         self.chi_squared_delta_best = chi_squared_delta_best
+        self.chi_squared_inside_1tE_best = chi_squared_inside_1tE_best
+        self.chi_squared_inside_2tE_best = chi_squared_inside_2tE_best
+        self.chi_squared_inside_3tE_best = chi_squared_inside_3tE_best
+        self.chi_squared_outside_1tE_best = chi_squared_outside_1tE_best
+        self.chi_squared_outside_2tE_best = chi_squared_outside_2tE_best
+        self.chi_squared_outside_3tE_best = chi_squared_outside_3tE_best
+        self.num_epochs_inside_1tE_best = num_epochs_inside_1tE_best
+        self.num_epochs_inside_2tE_best = num_epochs_inside_2tE_best
+        self.num_epochs_inside_3tE_best = num_epochs_inside_3tE_best
         self.comments = comments
         self._ztf_ids = _ztf_ids
         self.ogle_target = ogle_target

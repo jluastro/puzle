@@ -218,6 +218,16 @@ def return_cands_tE_arrs():
         order_by(func.random()). \
         with_entities(CandidateLevel2.t_E_best, CandidateLevel3.tE_best). \
         all()
-    tE_level2_arr = np.array([c[0] for c in cands23])
-    tE_level3_arr = np.array([c[1] for c in cands23])
-    return tE_level2_arr, tE_level3_arr
+    tE_minmax_arr = np.array([c[0] for c in cands23])
+    tE_opt_arr = np.array([c[1] for c in cands23])
+    return tE_minmax_arr, tE_opt_arr
+
+
+def return_cands_eta_resdiual_arrs():
+    cands23 = db.session.query(CandidateLevel2, CandidateLevel3). \
+        filter(CandidateLevel2.id == CandidateLevel3.id). \
+        with_entities(CandidateLevel2.eta_residual_best, CandidateLevel3.eta_residual_best). \
+        all()
+    eta_residual_minmax_arr = np.array([c[0] for c in cands23])
+    eta_residual_opt_arr = np.array([c[1] for c in cands23])
+    return eta_residual_minmax_arr, eta_residual_opt_arr
