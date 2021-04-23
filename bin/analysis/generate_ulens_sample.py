@@ -400,7 +400,10 @@ def calculate_stats_on_lightcurves():
 
     my_eta_arr = []
     my_eta_residual_level2_arr = []
+    my_t0_level2_arr = []
     my_tE_level2_arr = []
+    my_f0_level2_arr = []
+    my_f1_level2_arr = []
     my_chi_squared_delta_level2_arr = []
     my_chi_squared_flat_level2_arr = []
     my_atype_level2_arr = []
@@ -430,8 +433,11 @@ def calculate_stats_on_lightcurves():
                                                                             return_fit_data=True)
         my_eta_arr.append(eta_daily)
         my_eta_residual_level2_arr.append(eta_residual_daily)
-        _, tE, _, _, chi_squared_delta, chi_squared_flat, atype = fit_data
+        t0, tE, f0, f1, chi_squared_delta, chi_squared_flat, atype = fit_data
+        my_t0_level2_arr.append(t0)
         my_tE_level2_arr.append(tE)
+        my_f0_level2_arr.append(f0)
+        my_f1_level2_arr.append(f1)
         my_chi_squared_delta_level2_arr.append(chi_squared_delta)
         my_chi_squared_flat_level2_arr.append(chi_squared_flat)
         my_atype_level2_arr.append(atype)
@@ -494,7 +500,10 @@ def calculate_stats_on_lightcurves():
     total_observable_arr1 = comm.gather(my_observable_arr1, root=0)
     total_observable_arr2 = comm.gather(my_observable_arr2, root=0)
     total_observable_arr3 = comm.gather(my_observable_arr3, root=0)
+    total_t0_level2_arr = comm.gather(my_t0_level2_arr, root=0)
     total_tE_level2_arr = comm.gather(my_tE_level2_arr, root=0)
+    total_f0_level2_arr = comm.gather(my_f0_level2_arr, root=0)
+    total_f1_level2_arr = comm.gather(my_f1_level2_arr, root=0)
     total_chi_squared_delta_level2_arr = comm.gather(my_chi_squared_delta_level2_arr, root=0)
     total_chi_squared_flat_level2_arr = comm.gather(my_chi_squared_flat_level2_arr, root=0)
     total_atype_level2_arr = comm.gather(my_atype_level2_arr, root=0)
@@ -515,7 +524,10 @@ def calculate_stats_on_lightcurves():
         observable_arr1 = list(itertools.chain(*total_observable_arr1))
         observable_arr2 = list(itertools.chain(*total_observable_arr2))
         observable_arr3 = list(itertools.chain(*total_observable_arr3))
+        t0_level2_arr = list(itertools.chain(*total_t0_level2_arr))
         tE_level2_arr = list(itertools.chain(*total_tE_level2_arr))
+        f0_level2_arr = list(itertools.chain(*total_f0_level2_arr))
+        f1_level2_arr = list(itertools.chain(*total_f1_level2_arr))
         chi_squared_delta_level2_arr = list(itertools.chain(*total_chi_squared_delta_level2_arr))
         chi_squared_flat_level2_arr = list(itertools.chain(*total_chi_squared_flat_level2_arr))
         atype_level2_arr = list(itertools.chain(*total_atype_level2_arr))
@@ -537,7 +549,10 @@ def calculate_stats_on_lightcurves():
                  observable1=observable_arr1,
                  observable2=observable_arr2,
                  observable3=observable_arr3,
+                 t0_level2=t0_level2_arr,
                  tE_level2=tE_level2_arr,
+                 f0_level2=f0_level2_arr,
+                 f1_level2=f1_level2_arr,
                  chi_squared_delta_level2=chi_squared_delta_level2_arr,
                  chi_squared_flat_level2=chi_squared_flat_level2_arr,
                  atype_level2=atype_level2_arr,
