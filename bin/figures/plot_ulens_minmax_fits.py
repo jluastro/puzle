@@ -5,7 +5,7 @@ plot_ulens_minmax_fits.py
 
 import numpy as np
 import glob
-from puzle.cands import return_cands_level3_tE_arrs
+from puzle.cands import return_cands_tE_arrs
 from puzle.stats import calculate_eta_on_daily_avg, average_xy_on_round_x
 from puzle.utils import load_stacked_array, return_data_dir, \
     return_figures_dir
@@ -286,28 +286,35 @@ def plot_lowest_ulens_eta(eta_ulens_arr=None, observable_arr=None):
 
 
 def plot_ulens_tE_cut():
-    tE_cands = return_cands_level3_tE_arrs()
+    tE_level2_cands, tE_level3_cands = return_cands_tE_arrs()
+    log_tE_level2_cands = np.log10(tE_level2_cands)
+    log_tE_level3_cands = np.log10(tE_level3_cands)
 
     stats = return_ulens_stats(observableFlag=True, bhFlag=True)
-    tE_ulens = stats['tE_level2']
+    tE_level2_ulens = stats['tE_level2']
+    tE_level3_ulens = stats['tE_level3']
+    log_tE_level2_ulens = np.log10(tE_level2_ulens)
+    log_tE_level3_ulens = np.log10(tE_level3_ulens)
+
 
     percentile = 99
-    ulens_perc = np.percentile(tE_ulens, percentile)
-    cands_cond = tE_cands >= ulens_perc
-    cands_removal_rate = 100 * np.sum(cands_cond) / len(cands_cond)
+    ulens_level2_perc = np.percentile(log_tE_level2_ulens, percentile)
+    cands_level2_cond = log_tE_level2_cands < ulens_level2_perc
+    cands_removal_rate = 100 * np.sum(~cands_level2_cond) / len(cands_level2_cond)
 
-    fig, ax = plt.subplots()
-    ax.clear()
-    bins = np.logspace(0, 4, 50)
-    ax.set_title('%.1f ulens Percentile | '
-                 '%.2f Cands Removed' % (percentile,
-                                         cands_removal_rate))
-    ax.hist(tE_cands, histtype='step', bins=bins,
-            color='r', label='cands', density=True)
-    ax.hist(tE_ulens, histtype='step', bins=bins,
-            color='b', label='ulens', density=True)
-    ax.axvline(ulens_perc, color='k', alpha=.5)
-    ax.set_xscale('log')
+    fig, ax = plt.subplots(figsize=(6, 5))
+    bins = np.linspace(0, 4, 25)
+    ax.set_title('%ith ulens Percentile | '
+                 '%.2f%% Cands Removed' % (percentile,
+                                           cands_removal_rate))
+    ax.hist(log_tE_level2_cands, color='k', label='cands',
+               histtype='step', density=True, bins=bins)
+    ax.hist(log_tE_level2_ulens, color='r', label='ulens',
+               histtype='step', density=True, bins=bins)
+    ax.axvline(ulens_level2_perc, color='r', linestyle='--')
+    ax.set_xlabel('LOG tE minmax')
+    ax.set_yscale('log')
+    fig.tight_layout()
 
     figures_dir = return_figures_dir()
     fname = f'{figures_dir}/ulens_tE_cut.png'

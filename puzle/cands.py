@@ -212,11 +212,12 @@ def fit_random_cands_to_ulens():
         fit_cand_id_to_opt(cand_id)
 
 
-def return_cands_level3_tE_arrs(N_samples=500000):
+def return_cands_tE_arrs():
     cands23 = db.session.query(CandidateLevel2, CandidateLevel3). \
         filter(CandidateLevel2.id == CandidateLevel3.id). \
         order_by(func.random()). \
-        with_entities(CandidateLevel2.t_E_best). \
-        limit(N_samples).all()
-    tE_arr = np.array([c[0] for c in cands23])
-    return tE_arr
+        with_entities(CandidateLevel2.t_E_best, CandidateLevel3.tE_best). \
+        all()
+    tE_level2_arr = np.array([c[0] for c in cands23])
+    tE_level3_arr = np.array([c[1] for c in cands23])
+    return tE_level2_arr, tE_level3_arr

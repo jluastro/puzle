@@ -7,6 +7,7 @@ import corner
 import matplotlib.pyplot as plt
 import numpy as np
 from sqlalchemy.sql.expression import func
+from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle.ulens import return_ulens_data, return_ulens_metadata, return_ulens_stats
 from puzle.cands import fetch_cand_best_obj_by_id
@@ -16,7 +17,7 @@ from puzle import db
 
 
 def plot_ulens_opt_corner():
-    ulens3 = CandidateLevel3.query.with_entities(CandidateLevel3.tE_best,
+    cands3 = CandidateLevel3.query.with_entities(CandidateLevel3.tE_best,
                                                  CandidateLevel3.u0_amp_best,
                                                  CandidateLevel3.mag_src_best,
                                                  CandidateLevel3.chi_squared_delta_best,
@@ -24,36 +25,35 @@ def plot_ulens_opt_corner():
                                                  CandidateLevel3.piE_N_best,
                                                  CandidateLevel3.eta_best,
                                                  CandidateLevel3.eta_residual_best,
-                                                 CandidateLevel3.num_epochs_best).\
-        filtet(CandidateLevel3.tE_best>0).all()
-    tE_ulens = np.array([c[0] for c in ulens3], dtype=np.float32)
-    u0_amp_ulens = np.array([c[1] for c in ulens3], dtype=np.float32)
-    mag_src_ulens = np.array([c[2] for c in ulens3], dtype=np.float32)
-    chi_squared_delta_ulens = np.array([c[3] for c in ulens3], dtype=np.float32)
-    piE_E_ulens = np.array([c[4] for c in ulens3], dtype=np.float32)
-    piE_N_ulens = np.array([c[5] for c in ulens3], dtype=np.float32)
-    eta_ulens = np.array([c[6] for c in ulens3], dtype=np.float32)
-    eta_residual_ulens = np.array([c[7] for c in ulens3], dtype=np.float32)
-    num_epochs_ulens = np.array([c[8] for c in ulens3], dtype=np.float32)
+                                                 CandidateLevel3.num_days_best).\
+        filter(CandidateLevel3.tE_best>0).all()
+    tE_cands = np.array([c[0] for c in cands3], dtype=np.float32)
+    u0_amp_cands = np.array([c[1] for c in cands3], dtype=np.float32)
+    mag_src_cands = np.array([c[2] for c in cands3], dtype=np.float32)
+    chi_squared_delta_cands = np.array([c[3] for c in cands3], dtype=np.float32)
+    piE_E_cands = np.array([c[4] for c in cands3], dtype=np.float32)
+    piE_N_cands = np.array([c[5] for c in cands3], dtype=np.float32)
+    eta_cands = np.array([c[6] for c in cands3], dtype=np.float32)
+    eta_residual_cands = np.array([c[7] for c in cands3], dtype=np.float32)
+    num_days_cands = np.array([c[8] for c in cands3], dtype=np.float32)
 
-    log_tE_ulens = np.log10(tE_ulens)
-    log_piE_E_ulens = np.log10(piE_E_ulens)
-    log_piE_N_ulens = np.log10(piE_N_ulens)
-    piE_ulens = np.hypot(piE_E_ulens, piE_N_ulens)
-    log_piE_ulens = np.log10(piE_ulens)
+    log_tE_cands = np.log10(tE_cands)
+    log_piE_E_cands = np.log10(piE_E_cands)
+    log_piE_N_cands = np.log10(piE_N_cands)
+    piE_cands = np.hypot(piE_E_cands, piE_N_cands)
+    log_piE_cands = np.log10(piE_cands)
     
-    chi_squared_delta_reduced_ulens = chi_squared_delta_ulens / num_epochs_ulens
-    log_chi_squared_delta_reduced_ulens = np.log10(chi_squared_delta_reduced_ulens)
+    chi_squared_delta_reduced_cands = chi_squared_delta_cands / num_days_cands
 
-    data_ulens = np.vstack((log_tE_ulens,
-                            u0_amp_ulens,
-                            mag_src_ulens,
-                            log_chi_squared_delta_reduced_ulens,
-                            log_piE_E_ulens,
-                            log_piE_N_ulens,
-                            log_piE_ulens,
-                            eta_ulens,
-                            eta_residual_ulens)).T
+    data_cands = np.vstack((log_tE_cands,
+                            u0_amp_cands,
+                            mag_src_cands,
+                            chi_squared_delta_reduced_cands,
+                            log_piE_E_cands,
+                            log_piE_N_cands,
+                            log_piE_cands,
+                            eta_cands,
+                            eta_residual_cands)).T
 
     stats = return_ulens_stats(observableFlag=True, bhFlag=True)
     tE_ulens = stats['tE_level3']
@@ -62,11 +62,11 @@ def plot_ulens_opt_corner():
     chi_squared_delta_ulens = stats['chi_squared_delta_level3']
     piE_E_ulens = stats['piE_E_level3']
     piE_N_ulens = stats['piE_N_level3']
-    eta_ulens = stats['eta_level3']
+    eta_ulens = stats['eta']
     eta_residual_ulens = stats['eta_residual_level3']
 
     data = return_ulens_data(observableFlag=True, bhFlag=True)
-    num_epochs_ulens = np.array([len(d) for d in data])
+    num_days_ulens = np.array([len(set(np.round(d[:, 0]))) for d in data])
     
     log_tE_ulens = np.log10(tE_ulens)
     log_piE_E_ulens = np.log10(piE_E_ulens)
@@ -74,32 +74,46 @@ def plot_ulens_opt_corner():
     piE_ulens = np.hypot(piE_E_ulens, piE_N_ulens)
     log_piE_ulens = np.log10(piE_ulens)
     
-    chi_squared_delta_reduced_ulens = chi_squared_delta_ulens / num_epochs_ulens
-    log_chi_squared_delta_reduced_ulens = np.log10(chi_squared_delta_reduced_ulens)
+    chi_squared_delta_reduced_ulens = chi_squared_delta_ulens / num_days_ulens
 
     data_ulens = np.vstack((log_tE_ulens,
                             u0_amp_ulens,
                             mag_src_ulens,
-                            log_chi_squared_delta_reduced_ulens,
+                            chi_squared_delta_reduced_ulens,
                             log_piE_E_ulens,
                             log_piE_N_ulens,
                             log_piE_ulens,
                             eta_ulens,
                             eta_residual_ulens)).T
 
-    idx_sample = np.random.choice(np.arange(len(data_ulens)), replace=False, size=len(data_ulens))
-    data_ulens_sample = data_ulens[idx_sample]
+    idx_sample = np.random.choice(np.arange(len(data_cands)), replace=False, size=len(data_ulens))
+    data_cands_sample = data_cands[idx_sample]
 
     # Plot it.
-    labels = ['LOG tE', 'u0_amp', 'mag_src', 'LOG chi_squared_delta_reduced', 'LOG piE_E', 'LOG piE_N', 'LOG piE', 'eta', 'eta_residual']
-    data_range = [(.5, 4), (-3, 3), (10, 24), (1, 8), (-3, 2), (0, 1), (0, 4)]
+    labels = ['LOG tE', 'u0_amp', 'mag_src', 'chi_squared_delta_reduced', 'LOG piE_E', 'LOG piE_N', 'LOG piE', 'eta', 'eta_residual']
+    data_range = [(.5, 4), (-3, 3), (10, 24), (0, 10), (-3, 2), (-3, 2), (-3, 2), (0, 1), (0, 4)]
+
+    fig, ax = plt.subplots(5, 2, figsize=(8, 8))
+    ax = ax.flatten()
+    for i, label in enumerate(labels):
+        ax[i].set_title(label)
+        bins = np.linspace(data_range[i][0],
+                           data_range[i][1], 25)
+        ax[i].hist(data_ulens[:, i], histtype='step',
+                   bins=bins, color='r')
+        ax[i].hist(data_cands_sample[:, i], histtype='step',
+                   bins=bins, color='k')
+        ax[i].set_xlim(data_range[i])
+    fig.tight_layout()
 
     fig = corner.corner(data_ulens, labels=labels, range=data_range,
-                        show_titles=True, title_kwargs={"fontsize": 10}, color='r')
-    fig = corner.corner(data_ulens_sample, labels=labels, range=data_range,
-                        show_titles=True, title_kwargs={"fontsize": 10}, color='k',
+                        show_titles=True, title_kwargs={"fontsize": 6},
+                        label_kwargs={'fontsize': 6}, color='r')
+    fig = corner.corner(data_cands_sample, labels=labels, range=data_range,
+                        show_titles=True, title_kwargs={"fontsize": 6},
+                        label_kwargs={'fontsize': 6}, color='k',
                         fig=fig)
-    fig.suptitle('Level 3 Fits (ulens red | ulens black)')
+    fig.suptitle('Level 3 Fits (ulens red | cands black)')
 
     fname = '%s/ulens_opt_corner.png' % return_figures_dir()
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
@@ -236,6 +250,29 @@ def plot_ulens_tE_opt_bias():
     fig.tight_layout()
 
 
+def _plot_ulens_model(ax, stats_obs, metadata_obs, idx, hmjd):
+    t0 = stats_obs['t0_level3'][idx]
+    u0_amp = stats_obs['u0_amp_level3'][idx]
+    tE = stats_obs['tE_level3'][idx]
+    piE_E = stats_obs['piE_E_level3'][idx]
+    piE_N = stats_obs['piE_N_level3'][idx]
+    b_sff = stats_obs['b_sff_level3'][idx]
+    mag_src = stats_obs['mag_src_level3'][idx]
+    raL = metadata_obs['ra'][idx]
+    decL = metadata_obs['dec'][idx]
+    model = PSPL_Phot_Par_Param1(
+        t0=t0, u0_amp=u0_amp, tE=tE,
+        piE_E=piE_E, piE_N=piE_N,
+        b_sff=b_sff, mag_src=mag_src,
+        raL=raL, decL=decL)
+    hmjd_model = np.linspace(np.min(hmjd), np.max(hmjd), 10000)
+    mag_model = model.get_photometry(hmjd_model)
+    ax.plot(hmjd_model, mag_model, color='g')
+    ax.axvline(t0, color='r', alpha=.3)
+    ax.axvline(t0 + tE, color='k', alpha=.3)
+    ax.axvline(t0 - tE, color='k', alpha=.3)
+
+
 def plot_ulens_eta_residual_minmax_vs_opt():
     stats_obs = return_ulens_stats(observableFlag=True,
                                    bhFlag=False)
@@ -264,6 +301,8 @@ def plot_ulens_eta_residual_minmax_vs_opt():
 
     data_obs = return_ulens_data(observableFlag=True,
                                  bhFlag=False)
+    metadata_obs = return_ulens_metadata(observableFlag=True,
+                                         bhFlag=False)
 
     # top left
     cond = eta_residual_level2_obs < 1
@@ -279,7 +318,10 @@ def plot_ulens_eta_residual_minmax_vs_opt():
         d = data_obs[idx]
         hmjd, mag = d[:, :2].T
         ax[i].scatter(hmjd, mag, s=1)
+        _plot_ulens_model(ax[i], stats_obs, metadata_obs, idx, hmjd)
         ax[i].invert_yaxis()
+        ax[i].set_xlim(np.min(hmjd), np.max(hmjd))
+
         ax[0].scatter(eta_residual_level2_obs[idx],
                       eta_residual_level3_obs[idx],
                       s=5, color='r', marker='*')
@@ -298,8 +340,11 @@ def plot_ulens_eta_residual_minmax_vs_opt():
     for i, idx in enumerate(idx_arr, 1):
         d = data_obs[idx]
         hmjd, mag = d[:, :2].T
-        ax[i].scatter(hmjd, mag, s=1)
+        ax[i].scatter(hmjd, mag, s=1, color='b')
+        _plot_ulens_model(ax[i], stats_obs, metadata_obs, idx, hmjd)
         ax[i].invert_yaxis()
+        ax[i].set_xlim(np.min(hmjd), np.max(hmjd))
+
         ax[0].scatter(eta_residual_level2_obs[idx],
                       eta_residual_level3_obs[idx],
                       s=5, color='r', marker='*')
@@ -319,7 +364,10 @@ def plot_ulens_eta_residual_minmax_vs_opt():
         d = data_obs[idx]
         hmjd, mag = d[:, :2].T
         ax[i].scatter(hmjd, mag, s=1)
+        _plot_ulens_model(ax[i], stats_obs, metadata_obs, idx, hmjd)
         ax[i].invert_yaxis()
+        ax[i].set_xlim(np.min(hmjd), np.max(hmjd))
+
         ax[0].scatter(eta_residual_level2_obs[idx],
                       eta_residual_level3_obs[idx],
                       s=5, color='r', marker='*')
@@ -339,7 +387,9 @@ def plot_ulens_eta_residual_minmax_vs_opt():
         d = data_obs[idx]
         hmjd, mag = d[:, :2].T
         ax[i].scatter(hmjd, mag, s=1)
+        _plot_ulens_model(ax[i], stats_obs, metadata_obs, idx, hmjd)
         ax[i].invert_yaxis()
+        ax[i].set_xlim(np.min(hmjd), np.max(hmjd))
         ax[0].scatter(eta_residual_level2_obs[idx],
                       eta_residual_level3_obs[idx],
                       s=5, color='r', marker='*')
