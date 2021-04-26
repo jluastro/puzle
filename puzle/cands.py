@@ -87,16 +87,25 @@ def calculate_chi2(param_values, param_names, model_class, data, add_err=0):
     return chi2
 
 
-def fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec):
+def fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec, t0_guess=None, tE_guess=None):
     hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
     _, magerr_round = average_xy_on_round_x(hmjd, magerr)
 
     # Setup parameter initial guess and list of params
     param_names_to_fit = ['t0', 'u0_amp', 'tE', 'mag_src',
                           'b_sff', 'piE_E', 'piE_N']
-    initial_guess = np.array([hmjd[np.argmin(mag_round)],
+    if t0_guess:
+        t0 = t0_guess
+    else:
+        t0 = hmjd[np.argmin(mag_round)]
+    if tE_guess:
+        tE = tE_guess
+    else:
+        tE = 50
+
+    initial_guess = np.array([t0,
                               0.5,
-                              50,
+                              tE,
                               np.median(mag_round),
                               1.0,
                               0.1,
@@ -136,6 +145,10 @@ def fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec):
 
 
 def fit_cand_id_to_opt(cand_id, uploadFlag=True, plotFlag=False):
+    cand2 = CandidateLevel2.query.filter(CandidateLevel2.id==cand_id).first()
+    t0 = cand2.t_0_best
+    tE = cand2.t_E_best
+
     obj = fetch_cand_best_obj_by_id(cand_id)
     hmjd = obj.lightcurve.hmjd
     mag = obj.lightcurve.mag
@@ -143,7 +156,8 @@ def fit_cand_id_to_opt(cand_id, uploadFlag=True, plotFlag=False):
     ra = obj.ra
     dec = obj.dec
 
-    best_params = fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec)
+    best_params = fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec,
+                                        t0_guess=t0, tE_guess=tE)
     params_to_fit = ['t0', 'u0_amp', 'tE', 'mag_src',
                      'b_sff', 'piE_E', 'piE_N']
 
