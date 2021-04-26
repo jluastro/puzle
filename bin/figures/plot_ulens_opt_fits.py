@@ -6,14 +6,14 @@ plot_ulens_opt_fits.py
 import corner
 import matplotlib.pyplot as plt
 import numpy as np
-from sqlalchemy.sql.expression import func
 from zort.photometry import magnitudes_to_fluxes, fluxes_to_magnitudes
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle.ulens import return_ulens_data, return_ulens_metadata, return_ulens_stats
-from puzle.cands import fetch_cand_best_obj_by_id, return_cands_eta_resdiual_arrs
+from puzle.cands import return_cands_eta_resdiual_arrs, fetch_cand_best_obj_by_id
 from puzle.models import CandidateLevel2, CandidateLevel3
 from puzle.utils import return_figures_dir
+from puzle.stats import calculate_chi_squared_inside_outside
 from puzle.fit import return_flux_model
 from puzle import db
 
@@ -121,74 +121,426 @@ def plot_ulens_opt_corner():
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
     plt.close(fig)
-    
-    
-def plot_ulens_opt_inside_outside():
-    ulens23 = db.session.query(CandidateLevel2, CandidateLevel3). \
-        filter(CandidateLevel2.id == CandidateLevel3.id). \
-        order_by(func.random()).with_entities(CandidateLevel3.id,
-                                              CandidateLevel2.t_0_best,
-                                              CandidateLevel2.t_E_best).limit(10000).all()
-    cand_id_arr = [c[0] for c in ulens23]
-    obj_arr = []
-    for i, cand_id in enumerate(cand_id_arr):
-        if i % 100 == 0:
-            print(i, len(cand_id_arr))
-        obj = fetch_cand_best_obj_by_id(cand_id)
-        _ = obj.lightcurve.hmjd
-        obj_arr.append(obj)
 
-    t0_arr = [c[1] for c in ulens23]
-    tE_arr = [c[2] for c in ulens23]
-    std_inside_ulens = []
-    std_outside_ulens = []
-    chi_squared_ulens = []
-    dof_ulens = []
-    for i, (obj, t0, tE) in enumerate(zip(obj_arr, t0_arr, tE_arr)):
+
+def _plot_cands_model(ax, hmjd, mag, magerr, cand2, cand3):
+    t0 = cand3.t0_best
+    u0_amp = cand3.u0_amp_best
+    tE = cand3.tE_best
+    piE_E = cand3.piE_E_best
+    piE_N = cand3.piE_N_best
+    b_sff = cand3.b_sff_best
+    mag_src = cand3.mag_src_best
+    raL = cand3.ra
+    decL = cand3.dec
+    model = PSPL_Phot_Par_Param1(
+        t0=t0, u0_amp=u0_amp, tE=tE,
+        piE_E=piE_E, piE_N=piE_N,
+        b_sff=b_sff, mag_src=mag_src,
+        raL=raL, decL=decL)
+
+    hmjd_model = np.linspace(np.min(hmjd), np.max(hmjd), 10000)
+    mag_model_opt = model.get_photometry(hmjd_model)
+    ax.plot(hmjd_model, mag_model_opt, color='g')
+    ax.axvline(t0, color='g', alpha=.3)
+    ax.axvline(t0 + tE, color='g', alpha=.3, linestyle='--')
+    ax.axvline(t0 - tE, color='g', alpha=.3, linestyle='--')
+
+    t0 = cand2.t_0_best
+    tE = cand2.t_E_best
+    f0 = cand2.f_0_best
+    f1 = cand2.f_1_best
+    a_type = cand2.a_type_best
+
+    flux_model_minmax = return_flux_model(hmjd_model, t0, tE, a_type, f0, f1)
+    _, fluxerr = magnitudes_to_fluxes(mag, magerr)
+    fluxerr_model = np.interp(hmjd_model, hmjd, fluxerr)
+    mag_model_minmax, _ = fluxes_to_magnitudes(flux_model_minmax, fluxerr_model)
+
+    ax.plot(hmjd_model, mag_model_minmax, color='r')
+    ax.axvline(t0, color='r', alpha=.3)
+    ax.axvline(t0 + tE, color='r', alpha=.3, linestyle='--')
+    ax.axvline(t0 - tE, color='r', alpha=.3, linestyle='--')
+
+
+def _plot_ulens_model(ax, hmjd, mag, magerr, stats_obs, metadata_obs, idx):
+    t0 = metadata_obs['t0'][idx]
+    u0_amp = metadata_obs['u0'][idx]
+    tE = metadata_obs['tE'][idx]
+    piE_E = metadata_obs['piE_E'][idx]
+    piE_N = metadata_obs['piE_N'][idx]
+    b_sff = metadata_obs['b_sff'][idx]
+    mag_src = metadata_obs['mag_src'][idx]
+    raL = metadata_obs['ra'][idx]
+    decL = metadata_obs['dec'][idx]
+    model = PSPL_Phot_Par_Param1(
+        t0=t0, u0_amp=u0_amp, tE=tE,
+        piE_E=piE_E, piE_N=piE_N,
+        b_sff=b_sff, mag_src=mag_src,
+        raL=raL, decL=decL)
+
+    hmjd_model = np.linspace(np.min(hmjd), np.max(hmjd), 10000)
+    mag_model_opt = model.get_photometry(hmjd_model)
+    ax.plot(hmjd_model, mag_model_opt, color='k', alpha=.3)
+    ax.axvline(t0, color='k', alpha=.3)
+    ax.axvline(t0 + tE, color='k', alpha=.3, linestyle='--')
+    ax.axvline(t0 - tE, color='k', alpha=.3, linestyle='--')
+
+    t0 = stats_obs['t0_level3'][idx]
+    u0_amp = stats_obs['u0_amp_level3'][idx]
+    tE = stats_obs['tE_level3'][idx]
+    piE_E = stats_obs['piE_E_level3'][idx]
+    piE_N = stats_obs['piE_N_level3'][idx]
+    b_sff = stats_obs['b_sff_level3'][idx]
+    mag_src = stats_obs['mag_src_level3'][idx]
+    raL = metadata_obs['ra'][idx]
+    decL = metadata_obs['dec'][idx]
+    model = PSPL_Phot_Par_Param1(
+        t0=t0, u0_amp=u0_amp, tE=tE,
+        piE_E=piE_E, piE_N=piE_N,
+        b_sff=b_sff, mag_src=mag_src,
+        raL=raL, decL=decL)
+
+    hmjd_model = np.linspace(np.min(hmjd), np.max(hmjd), 10000)
+    mag_model_opt = model.get_photometry(hmjd_model)
+    ax.plot(hmjd_model, mag_model_opt, color='g', alpha=.3)
+    ax.axvline(t0, color='g', alpha=.3)
+    ax.axvline(t0 + tE, color='g', alpha=.3, linestyle='--')
+    ax.axvline(t0 - tE, color='g', alpha=.3, linestyle='--')
+
+    t0 = stats_obs['t0_level2'][idx]
+    tE = stats_obs['tE_level2'][idx]
+    f0 = stats_obs['f0_level2'][idx]
+    f1 = stats_obs['f1_level2'][idx]
+    a_type = stats_obs['atype_level2'][idx]
+
+    flux_model_minmax = return_flux_model(hmjd_model, t0, tE, a_type, f0, f1)
+    _, fluxerr = magnitudes_to_fluxes(mag, magerr)
+    fluxerr_model = np.interp(hmjd_model, hmjd, fluxerr)
+    mag_model_minmax, _ = fluxes_to_magnitudes(flux_model_minmax, fluxerr_model)
+
+    ax.plot(hmjd_model, mag_model_minmax, color='r', alpha=.3)
+    ax.axvline(t0, color='r', alpha=.3)
+    ax.axvline(t0 + tE, color='r', alpha=.3, linestyle='--')
+    ax.axvline(t0 - tE, color='r', alpha=.3, linestyle='--')
+
+
+def _plot_chi_samples_cands(log_reduced_chi_squared_outside_cands,
+                            log_reduced_chi_squared_inside_cands,
+                            id_cands, tE_factor,
+                            outside_low, outside_high,
+                            inside_low, inside_high):
+    # center cands
+    cond = log_reduced_chi_squared_outside_cands > outside_low
+    cond *= log_reduced_chi_squared_outside_cands < outside_high
+    cond *= log_reduced_chi_squared_inside_cands > inside_low
+    cond *= log_reduced_chi_squared_inside_cands < inside_high
+    idx_sample_arr = np.random.choice(np.where(cond == True)[0],
+                                      replace=False,
+                                      size=9)
+
+    fig, ax = plt.subplots(5, 2, figsize=(7, 7))
+    fig.suptitle('cands')
+    ax = ax.flatten()
+    ax[0].hexbin(log_reduced_chi_squared_inside_cands,
+                 log_reduced_chi_squared_outside_cands,
+                 gridsize=50, mincnt=1)
+    ax[0].set_xlabel('Inside %stE LOG \n Reduced Chi Squared' % tE_factor, fontsize=6)
+    ax[0].set_ylabel('Outside %stE LOG \n Reduced Chi Squared' % tE_factor, fontsize=6)
+    for i, idx in enumerate(idx_sample_arr, 1):
+        cand_id = id_cands[idx]
+        cand2, cand3 = db.session.query(CandidateLevel2, CandidateLevel3).\
+            filter(CandidateLevel2.id==CandidateLevel3.id,
+                   CandidateLevel3.id==cand_id).first()
+        obj = fetch_cand_best_obj_by_id(cand_id)
         hmjd = obj.lightcurve.hmjd
         mag = obj.lightcurve.mag
         magerr = obj.lightcurve.magerr
-        std_inside, std_outside, chi_squared, dof = calculate_inside_outside(hmjd, mag, magerr, t0, tE)
-        std_inside_ulens.append(std_inside)
-        std_outside_ulens.append(std_outside)
-        chi_squared_ulens.append(chi_squared)
-        dof_ulens.append(dof)
-    std_inside_ulens = np.array(std_inside_ulens)
-    std_outside_ulens = np.array(std_outside_ulens)
-    std_ratio_ulens = std_outside_ulens / std_inside_ulens
-    std_ratio_ulens[np.isinf(std_ratio_ulens)] = 0
-    chi_squared_ulens = np.array(chi_squared_ulens)
-    dof_ulens = np.array(dof_ulens)
-    chi_squared_reduced_ulens = chi_squared_ulens / dof_ulens
 
-    data = return_ulens_data(observableFlag=True, bhFlag=True)
-    metadata = return_ulens_metadata(observableFlag=True, bhFlag=True)
+        ax[i].scatter(hmjd, mag, s=1, color='b')
+        _plot_cands_model(ax[i], hmjd, mag, magerr, cand2, cand3)
+        ax[i].invert_yaxis()
+        ax[i].set_xlim(np.min(hmjd), np.max(hmjd))
 
-    size = min(len(data), len(obj_arr))
-    idx_sample = np.random.choice(np.arange(len(data)), replace=False, size=size)
+        ax[0].scatter(log_reduced_chi_squared_inside_cands[idx],
+                      log_reduced_chi_squared_outside_cands[idx],
+                      s=5, color='r', marker='*')
+    ax[0].set_xlim(-.5, 3.5)
+    ax[0].set_ylim(-2, 3)
+    fig.tight_layout()
+    fig.subplots_adjust(top=.95)
 
-    std_inside_ulens = []
-    std_outside_ulens = []
-    chi_squared_ulens = []
-    dof_ulens = []
+
+def _plot_chi_samples_ulens(log_reduced_chi_squared_outside_ulens,
+                            log_reduced_chi_squared_inside_ulens,
+                            data_ulens, stats_ulens, metadata_ulens,
+                            idx_ulens, tE_factor,
+                            outside_low, outside_high,
+                            inside_low, inside_high):
+    cond1 = log_reduced_chi_squared_outside_ulens > outside_low
+    cond2 = log_reduced_chi_squared_outside_ulens < outside_high
+    cond3 = log_reduced_chi_squared_inside_ulens > inside_low
+    cond4 = log_reduced_chi_squared_inside_ulens < inside_high
+    print('outside > outside_low: %i ulens' % np.sum(cond1))
+    print('outside < outside_high: %i ulens' % np.sum(cond2))
+    print('inside > inside_low: %i ulens' % np.sum(cond3))
+    print('inside < inside_high: %i ulens' % np.sum(cond4))
+    cond = cond1 * cond2 * cond3 * cond4
+    print('total samples: %i ulens' % np.sum(cond))
+    idx_sample_arr = np.random.choice(idx_ulens[cond == True],
+                                      replace=False,
+                                      size=9)
+
+    fig, ax = plt.subplots(5, 2, figsize=(7, 7))
+    fig.suptitle('uLens')
+    ax = ax.flatten()
+    ax[0].hexbin(log_reduced_chi_squared_inside_ulens,
+                 log_reduced_chi_squared_outside_ulens,
+                 gridsize=50, mincnt=1)
+    ax[0].set_xlabel('Inside %stE LOG \n Reduced Chi Squared' % tE_factor, fontsize=6)
+    ax[0].set_ylabel('Outside %stE LOG \n Reduced Chi Squared' % tE_factor, fontsize=6)
+    for i, idx in enumerate(idx_sample_arr, 1):
+        d = data_ulens[idx]
+        hmjd, mag, magerr = d[:, :3].T
+        ax[i].scatter(hmjd, mag, s=1, color='b')
+        _plot_ulens_model(ax[i], hmjd, mag, magerr, stats_ulens, metadata_ulens, idx)
+        ax[i].invert_yaxis()
+        ax[i].set_xlim(np.min(hmjd), np.max(hmjd))
+        ax[i].set_title('inside: %.2f | outside: %.2f' % (log_reduced_chi_squared_inside_ulens[idx_ulens == idx],
+                                                          log_reduced_chi_squared_outside_ulens[idx_ulens == idx]))
+
+        ax[0].scatter(log_reduced_chi_squared_inside_ulens[idx_ulens == idx],
+                      log_reduced_chi_squared_outside_ulens[idx_ulens == idx],
+                      s=5, color='r', marker='*')
+    ax[0].set_xlim(-.5, 3.5)
+    ax[0].set_ylim(-2, 3)
+    fig.tight_layout()
+    fig.subplots_adjust(top=.95)
+
+
+def plot_ulens_opt_inside_outside():
+    tE_factor = 3
+
+    cands_outside_column = getattr(CandidateLevel3, f'chi_squared_outside_{tE_factor}tE_best')
+    cands_inside_column = getattr(CandidateLevel3, f'chi_squared_inside_{tE_factor}tE_best')
+    cands_inside_num = getattr(CandidateLevel3, f'num_epochs_inside_{tE_factor}tE_best')
+    cands = CandidateLevel3.query.with_entities(
+        cands_inside_column, cands_outside_column,
+        cands_inside_num, CandidateLevel3.num_epochs_best,
+        CandidateLevel3.id).\
+        filter(cands_inside_column!=0, cands_outside_column!=0).\
+        order_by(CandidateLevel3.id).all()
+    chi_squared_inside_cands = np.array([c[0] for c in cands])
+    chi_squared_outside_cands = np.array([c[1] for c in cands])
+    num_epochs_inside_cands = np.array([c[2] for c in cands])
+    num_epochs_cands = np.array([c[3] for c in cands])
+    id_cands = np.array([c[4] for c in cands])
+
+    reduced_chi_squared_inside_cands = chi_squared_inside_cands / (num_epochs_inside_cands - 1)
+    reduced_chi_squared_outside_cands = chi_squared_outside_cands / (num_epochs_cands - num_epochs_inside_cands - 1)
+    reduced_chi_squared_ratio_cands = reduced_chi_squared_outside_cands / reduced_chi_squared_inside_cands
+
+    log_reduced_chi_squared_inside_cands = np.log10(reduced_chi_squared_inside_cands)
+    log_reduced_chi_squared_outside_cands = np.log10(reduced_chi_squared_outside_cands)
+    log_reduced_chi_squared_ratio_cands = np.log10(reduced_chi_squared_ratio_cands)
+    # log_reduced_chi_squared_ratio_cands = log_reduced_chi_squared_outside_cands / log_reduced_chi_squared_inside_cands
+
+    bhFlag = False
+    data_ulens = return_ulens_data(observableFlag=True, bhFlag=bhFlag)
+    stats_ulens = return_ulens_stats(observableFlag=True, bhFlag=bhFlag)
+    metadata_ulens = return_ulens_metadata(observableFlag=True, bhFlag=bhFlag)
+    # size = min(len(data), len(obj_arr))
+    # idx_sample = np.random.choice(np.arange(len(data)), replace=False, size=size)
+    idx_sample = np.arange(len(data_ulens))
+
+    chi_squared_inside_ulens = []
+    chi_squared_outside_ulens = []
+    num_epochs_inside_ulens = []
+    num_epochs_ulens = []
+    idx_ulens = []
     for idx in idx_sample:
-        hmjd = data[idx][:, 0]
-        mag = data[idx][:, 1]
-        magerr = data[idx][:, 2]
-        t0 = metadata['t0'][idx]
-        tE = metadata['tE'][idx]
-        std_inside, std_outside, chi_squared, dof = calculate_inside_outside(hmjd, mag, magerr, t0, tE)
-        std_inside_ulens.append(std_inside)
-        std_outside_ulens.append(std_outside)
-        chi_squared_ulens.append(chi_squared)
-        dof_ulens.append(dof)
-    std_inside_ulens = np.array(std_inside_ulens)
-    std_outside_ulens = np.array(std_outside_ulens)
-    std_ratio_ulens = std_outside_ulens / std_inside_ulens
-    std_ratio_ulens[np.isinf(std_ratio_ulens)] = 0
-    chi_squared_ulens = np.array(chi_squared_ulens)
-    dof_ulens = np.array(dof_ulens)
-    chi_squared_reduced_ulens = chi_squared_ulens / dof_ulens
+        hmjd = data_ulens[idx][:, 0]
+        mag = data_ulens[idx][:, 1]
+        magerr = data_ulens[idx][:, 2]
+        t0 = stats_ulens['t0_level3'][idx]
+        tE = stats_ulens['tE_level3'][idx]
+        num_epochs = len(hmjd)
+
+        info = calculate_chi_squared_inside_outside(hmjd, mag, magerr,
+                                                    t0, tE, tE_factor=tE_factor)
+        if np.any(np.array(info) == 0):
+            continue
+        chi_squared_inside, chi_squared_outside, num_inside = info
+        chi_squared_inside_ulens.append(chi_squared_inside)
+        chi_squared_outside_ulens.append(chi_squared_outside)
+        num_epochs_inside_ulens.append(num_inside)
+        num_epochs_ulens.append(num_epochs)
+        idx_ulens.append(idx)
+
+    idx_ulens = np.array(idx_ulens)
+    chi_squared_inside_ulens = np.array(chi_squared_inside_ulens)
+    chi_squared_outside_ulens = np.array(chi_squared_outside_ulens)
+    num_epochs_inside_ulens = np.array(num_epochs_inside_ulens)
+    num_epochs_ulens = np.array(num_epochs_ulens)
+    
+    reduced_chi_squared_inside_ulens = chi_squared_inside_ulens / (num_epochs_inside_ulens - 1)
+    reduced_chi_squared_outside_ulens = chi_squared_outside_ulens / (num_epochs_ulens - num_epochs_inside_ulens - 1)
+    reduced_chi_squared_ratio_ulens = reduced_chi_squared_outside_ulens / reduced_chi_squared_inside_ulens
+    
+    log_reduced_chi_squared_inside_ulens = np.log10(reduced_chi_squared_inside_ulens)
+    log_reduced_chi_squared_outside_ulens = np.log10(reduced_chi_squared_outside_ulens)
+    log_reduced_chi_squared_ratio_ulens = np.log10(reduced_chi_squared_ratio_ulens)
+    # log_reduced_chi_squared_ratio_ulens = log_reduced_chi_squared_outside_ulens / log_reduced_chi_squared_inside_ulens
+
+    inout_bins = np.linspace(-1, 3, 25)
+    ratio_bins = np.linspace(-3, 3, 25)
+    
+    fig, ax = plt.subplots(2, 1, figsize=(7, 7))
+    for a in ax: a.clear()
+    ax[0].set_title('ulens')
+    ax[0].scatter(num_epochs_inside_ulens, chi_squared_inside_ulens, label='inside',
+                  s=.1, alpha=.1)
+    ax[0].scatter(num_epochs_ulens - num_epochs_inside_ulens, chi_squared_outside_ulens, label='outside',
+                  s=.1, alpha=.1)
+    ax[1].set_title('cands')
+    ax[1].scatter(num_epochs_inside_cands, chi_squared_inside_cands, label='inside',
+                  s=.1, alpha=.1)
+    ax[1].scatter(num_epochs_cands - num_epochs_inside_cands, chi_squared_outside_cands, label='outside',
+                  s=.1, alpha=.1)
+    for a in ax:
+        a.set_yscale('log')
+        a.set_xscale('log')
+        a.set_xlabel('number of epochs')
+        a.set_ylabel('chi squared')
+        a.legend(markerscale=20)
+    fig.tight_layout()
+
+    fig, ax = plt.subplots(3, 1, figsize=(7, 7))
+    fig.suptitle(f'tE factor: {tE_factor}')
+    for a in ax: a.clear()
+    ax[0].set_title('Inside')
+    ax[0].hist(log_reduced_chi_squared_inside_ulens, color='r', bins=inout_bins, histtype='step', density=True, label=f'ulens | BH {bhFlag}')
+    ax[0].hist(log_reduced_chi_squared_inside_cands, color='k', bins=inout_bins, histtype='step', density=True, label='cands')
+    ax[1].set_title('Outside')
+    ax[1].hist(log_reduced_chi_squared_outside_ulens, color='r', bins=inout_bins, histtype='step', density=True, label=f'ulens | BH {bhFlag}')
+    ax[1].hist(log_reduced_chi_squared_outside_cands, color='k', bins=inout_bins, histtype='step', density=True, label='cands')
+    ax[2].set_title('Ratio')
+    ax[2].hist(log_reduced_chi_squared_ratio_ulens, color='r', bins=ratio_bins, histtype='step', density=True, label=f'ulens | BH {bhFlag}')
+    ax[2].hist(log_reduced_chi_squared_ratio_cands, color='k', bins=ratio_bins, histtype='step', density=True, label='cands')
+    for a in ax:
+        a.set_xlabel('LOG Reduced Chi Squared')
+        a.legend()
+    fig.tight_layout()
+    fig.subplots_adjust(top=.9)
+
+    fig, ax = plt.subplots(2, 1, figsize=(7, 7))
+    fig.suptitle(f'tE factor: {tE_factor}')
+    for a in ax: a.clear()
+    ax[0].set_title('ulens')
+    ax[0].hexbin(log_reduced_chi_squared_inside_ulens,
+                 log_reduced_chi_squared_outside_ulens,
+                 gridsize=25, mincnt=1)
+    ax[1].set_title('cands')
+    ax[1].hexbin(log_reduced_chi_squared_inside_cands,
+                 log_reduced_chi_squared_outside_cands,
+                 gridsize=50, mincnt=1)
+    for a in ax:
+        a.set_xlim(-.5, 3.5)
+        a.set_ylim(-2, 3)
+        a.grid(True)
+        a.set_xlabel('Inside %stE LOG Reduced Chi Squared' % tE_factor)
+        a.set_ylabel('Outside %stE LOG Reduced Chi Squared' % tE_factor)
+    fig.tight_layout()
+    fig.subplots_adjust(top=.9)
+
+    delta_ulens = reduced_chi_squared_inside_ulens - reduced_chi_squared_outside_ulens
+    delta_cands = reduced_chi_squared_inside_cands - reduced_chi_squared_outside_cands
+
+    fig, ax = plt.subplots(2, 1, figsize=(7, 7))
+    fig.suptitle(f'tE factor: {tE_factor}')
+    for a in ax: a.clear()
+    bins = 150
+    ax[0].hist(delta_ulens,
+               density=True, color='r', label='ulens', histtype='step', bins=bins)
+    ax[0].hist(delta_cands,
+               density=True, color='k', label='cands', histtype='step', bins=bins)
+    ax[0].set_yscale('log')
+    ax[0].set_xlabel('chi_squared_inside - chi_squared_outside')
+    ax[0].set_title('%i candidates' % len(delta_cands))
+    cond_cands = delta_cands >= np.min(delta_ulens)
+    ax[1].set_title('%i candidates' % np.sum(cond_cands))
+    ax[1].hist(np.log10(delta_ulens),
+               density=True, color='r', label='ulens', histtype='step', bins=bins)
+    ax[1].hist(np.log10(delta_cands[cond_cands]),
+               density=True, color='k', label='cands', histtype='step', bins=bins)
+    ax[1].set_xlabel('LOG chi_squared_inside - chi_squared_outside')
+    fig.tight_layout()
+    fig.subplots_adjust(top=.9)
+
+    ax[1].scatter(log_reduced_chi_squared_outside_cands,
+                 reduced_chi_squared_inside_cands - reduced_chi_squared_outside_cands,
+                 s=.1, alpha=.1)
+
+    # center uLens
+    _plot_chi_samples_ulens(log_reduced_chi_squared_outside_ulens,
+                            log_reduced_chi_squared_inside_ulens,
+                            data_ulens, stats_ulens, metadata_ulens,
+                            idx_ulens, tE_factor,
+                            outside_low=0, outside_high=0.5,
+                            inside_low=0.5, inside_high=1.5)
+
+    # high outside uLens
+    _plot_chi_samples_ulens(log_reduced_chi_squared_outside_ulens,
+                            log_reduced_chi_squared_inside_ulens,
+                            data_ulens, stats_ulens, metadata_ulens,
+                            idx_ulens, tE_factor,
+                            outside_low=2, outside_high=3,
+                            inside_low=-3, inside_high=3)
+
+    # high mag uLens
+    _plot_chi_samples_ulens(log_reduced_chi_squared_outside_ulens,
+                            log_reduced_chi_squared_inside_ulens,
+                            data_ulens, stats_ulens, metadata_ulens,
+                            idx_ulens, tE_factor,
+                            outside_low=0, outside_high=0.5,
+                            inside_low=2, inside_high=3)
+
+    # low mag uLens
+    _plot_chi_samples_ulens(log_reduced_chi_squared_outside_ulens,
+                            log_reduced_chi_squared_inside_ulens,
+                            data_ulens, stats_ulens, metadata_ulens,
+                            idx_ulens, tE_factor,
+                            outside_low=0, outside_high=0.5,
+                            inside_low=-.5, inside_high=.5)
+
+    # poorly fit uLens
+    _plot_chi_samples_ulens(log_reduced_chi_squared_outside_ulens,
+                            log_reduced_chi_squared_inside_ulens,
+                            data_ulens, stats_ulens, metadata_ulens,
+                            idx_ulens, tE_factor,
+                            outside_low=1, outside_high=2.5,
+                            inside_low=-.5, inside_high=0.5)
+
+    # center cands
+    _plot_chi_samples_cands(log_reduced_chi_squared_outside_cands,
+                            log_reduced_chi_squared_inside_cands,
+                            id_cands, tE_factor,
+                            outside_low=-.4, outside_high=1.5,
+                            inside_low=-.5, inside_high=1)
+
+    # high mag cands
+    _plot_chi_samples_cands(log_reduced_chi_squared_outside_cands,
+                            log_reduced_chi_squared_inside_cands,
+                            id_cands, tE_factor,
+                            outside_low=-1, outside_high=0,
+                            inside_low=1, inside_high=2)
+
+    # flat cands
+    _plot_chi_samples_cands(log_reduced_chi_squared_outside_cands,
+                            log_reduced_chi_squared_inside_cands,
+                            id_cands, tE_factor,
+                            outside_low=-2, outside_high=-1,
+                            inside_low=0, inside_high=1)
 
 
 def plot_ulens_tE_opt_bias():
@@ -230,44 +582,81 @@ def plot_ulens_tE_opt_bias():
     fig.tight_layout()
 
 
-def _plot_ulens_model(ax, hmjd, mag, magerr, stats_obs, metadata_obs, idx):
-    t0 = stats_obs['t0_level3'][idx]
-    u0_amp = stats_obs['u0_amp_level3'][idx]
-    tE = stats_obs['tE_level3'][idx]
-    piE_E = stats_obs['piE_E_level3'][idx]
-    piE_N = stats_obs['piE_N_level3'][idx]
-    b_sff = stats_obs['b_sff_level3'][idx]
-    mag_src = stats_obs['mag_src_level3'][idx]
-    raL = metadata_obs['ra'][idx]
-    decL = metadata_obs['dec'][idx]
-    model = PSPL_Phot_Par_Param1(
-        t0=t0, u0_amp=u0_amp, tE=tE,
-        piE_E=piE_E, piE_N=piE_N,
-        b_sff=b_sff, mag_src=mag_src,
-        raL=raL, decL=decL)
+def _plot_eta_minmax_opt_samples_ulens(eta_residual_minmax_ulens,
+                                       eta_residual_opt_ulens,
+                                       data_ulens, stats_ulens, metadata_ulens,
+                                       minmax_low, minmax_high,
+                                       opt_low, opt_high):
+    # top left
+    cond = eta_residual_minmax_ulens > minmax_low
+    cond *= eta_residual_minmax_ulens < minmax_high
+    cond *= eta_residual_opt_ulens > opt_low
+    cond *= eta_residual_opt_ulens < opt_high
+    idx_arr = np.random.choice(np.where(cond == True)[0],
+                               replace=False,
+                               size=9)
 
-    hmjd_model = np.linspace(np.min(hmjd), np.max(hmjd), 10000)
-    mag_model_opt = model.get_photometry(hmjd_model)
-    ax.plot(hmjd_model, mag_model_opt, color='g')
-    ax.axvline(t0, color='g', alpha=.3)
-    ax.axvline(t0 + tE, color='g', alpha=.3, linestyle='--')
-    ax.axvline(t0 - tE, color='g', alpha=.3, linestyle='--')
+    fig, ax = plt.subplots(5, 2, figsize=(7, 7))
+    fig.suptitle('uLens')
+    ax = ax.flatten()
+    ax[0].scatter(eta_residual_minmax_ulens, eta_residual_opt_ulens, s=1, alpha=.1)
+    ax[0].set_xlabel('eta_residual minmax', fontsize=6)
+    ax[0].set_ylabel('eta_residual opt', fontsize=6)
+    for i, idx in enumerate(idx_arr, 1):
+        d = data_ulens[idx]
+        hmjd, mag, magerr = d[:, :3].T
+        ax[i].scatter(hmjd, mag, s=1, color='b')
+        _plot_ulens_model(ax[i], hmjd, mag, magerr, stats_ulens, metadata_ulens, idx)
+        ax[i].invert_yaxis()
+        ax[i].set_xlim(np.min(hmjd), np.max(hmjd))
 
-    t0 = stats_obs['t0_level2'][idx]
-    tE = stats_obs['tE_level2'][idx]
-    f0 = stats_obs['f0_level2'][idx]
-    f1 = stats_obs['f1_level2'][idx]
-    a_type = stats_obs['atype_level2'][idx]
+        ax[0].scatter(eta_residual_minmax_ulens[idx],
+                      eta_residual_opt_ulens[idx],
+                      s=5, color='r', marker='*')
+    fig.tight_layout()
+    fig.subplots_adjust(top=.95)
 
-    flux_model_minmax = return_flux_model(hmjd_model, t0, tE, a_type, f0, f1)
-    _, fluxerr = magnitudes_to_fluxes(mag, magerr)
-    fluxerr_model = np.interp(hmjd_model, hmjd, fluxerr)
-    mag_model_minmax, _ = fluxes_to_magnitudes(flux_model_minmax, fluxerr_model)
 
-    ax.plot(hmjd_model, mag_model_minmax, color='r')
-    ax.axvline(t0, color='r', alpha=.3)
-    ax.axvline(t0 + tE, color='r', alpha=.3, linestyle='--')
-    ax.axvline(t0 - tE, color='r', alpha=.3, linestyle='--')
+def _plot_eta_minmax_opt_samples_cands(eta_residual_minmax_cands,
+                                       eta_residual_opt_cands,
+                                       id_cands,
+                                       minmax_low, minmax_high,
+                                       opt_low, opt_high):
+    # top left
+    cond = eta_residual_minmax_cands > minmax_low
+    cond *= eta_residual_minmax_cands < minmax_high
+    cond *= eta_residual_opt_cands > opt_low
+    cond *= eta_residual_opt_cands < opt_high
+    idx_arr = np.random.choice(np.where(cond == True)[0],
+                               replace=False,
+                               size=9)
+
+    fig, ax = plt.subplots(5, 2, figsize=(7, 7))
+    fig.suptitle('Cands')
+    ax = ax.flatten()
+    ax[0].scatter(eta_residual_minmax_cands, eta_residual_opt_cands, s=1, alpha=.1)
+    ax[0].set_xlabel('eta_residual minmax', fontsize=6)
+    ax[0].set_ylabel('eta_residual opt', fontsize=6)
+    for i, idx in enumerate(idx_arr, 1):
+        cand_id = id_cands[idx]
+        cand2, cand3 = db.session.query(CandidateLevel2, CandidateLevel3).\
+            filter(CandidateLevel2.id==CandidateLevel3.id,
+                   CandidateLevel3.id==cand_id).first()
+        obj = fetch_cand_best_obj_by_id(cand_id)
+        hmjd = obj.lightcurve.hmjd
+        mag = obj.lightcurve.mag
+        magerr = obj.lightcurve.magerr
+
+        ax[i].scatter(hmjd, mag, s=1, color='b')
+        _plot_cands_model(ax[i], hmjd, mag, magerr, cand2, cand3)
+        ax[i].invert_yaxis()
+        ax[i].set_xlim(np.min(hmjd), np.max(hmjd))
+
+        ax[0].scatter(eta_residual_minmax_cands[idx],
+                      eta_residual_opt_cands[idx],
+                      s=5, color='r', marker='*')
+    fig.tight_layout()
+    fig.subplots_adjust(top=.95)
 
 
 def plot_ulens_eta_residual_minmax_vs_opt():
@@ -335,127 +724,32 @@ def plot_ulens_eta_residual_minmax_vs_opt():
                                          bhFlag=False)
 
     # top left
-    cond = eta_residual_minmax_ulens < 1
-    cond *= eta_residual_opt_ulens > 1.5
-    idx_arr = np.random.choice(np.where(cond == True)[0],
-                               replace=False,
-                               size=9)
-
-    fig, ax = plt.subplots(5, 2, figsize=(7, 7))
-    ax = ax.flatten()
-    ax[0].scatter(eta_residual_minmax_ulens, eta_residual_opt_ulens, s=1, alpha=.1)
-    ax[0].set_xlabel('eta_residual minmax', fontsize=6)
-    ax[0].set_ylabel('eta_residual opt', fontsize=6)
-    for i, idx in enumerate(idx_arr, 1):
-        d = data_ulens[idx]
-        hmjd, mag, magerr = d[:, :3].T
-        ax[i].scatter(hmjd, mag, s=1, color='b')
-        _plot_ulens_model(ax[i], hmjd, mag, magerr, stats_ulens, metadata_ulens, idx)
-        ax[i].invert_yaxis()
-        ax[i].set_xlim(np.min(hmjd), np.max(hmjd))
-
-        ax[0].scatter(eta_residual_minmax_ulens[idx],
-                      eta_residual_opt_ulens[idx],
-                      s=5, color='r', marker='*')
-    fig.tight_layout()
+    _plot_eta_minmax_opt_samples_ulens(eta_residual_minmax_ulens,
+                                       eta_residual_opt_ulens,
+                                       data_ulens, stats_ulens, metadata_ulens,
+                                       minmax_low=0, minmax_high=1,
+                                       opt_low=1.5, opt_high=3)
 
     # top right
-    cond = eta_residual_minmax_ulens > 1.5
-    cond *= eta_residual_opt_ulens > 1.5
-    idx_arr = np.random.choice(np.where(cond == True)[0],
-                               replace=False,
-                               size=9)
-
-    fig, ax = plt.subplots(5, 2, figsize=(7, 7))
-    ax = ax.flatten()
-    ax[0].scatter(eta_residual_minmax_ulens, eta_residual_opt_ulens, s=1, alpha=.1)
-    ax[0].set_xlabel('eta_residual minmax', fontsize=6)
-    ax[0].set_ylabel('eta_residual opt', fontsize=6)
-    for i, idx in enumerate(idx_arr, 1):
-        d = data_ulens[idx]
-        hmjd, mag, magerr = d[:, :3].T
-        ax[i].scatter(hmjd, mag, s=1, color='b')
-        _plot_ulens_model(ax[i], hmjd, mag, magerr, stats_ulens, metadata_ulens, idx)
-        ax[i].invert_yaxis()
-        ax[i].set_xlim(np.min(hmjd), np.max(hmjd))
-
-        ax[0].scatter(eta_residual_minmax_ulens[idx],
-                      eta_residual_opt_ulens[idx],
-                      s=5, color='r', marker='*')
-    fig.tight_layout()
+    _plot_eta_minmax_opt_samples_ulens(eta_residual_minmax_ulens,
+                                       eta_residual_opt_ulens,
+                                       data_ulens, stats_ulens, metadata_ulens,
+                                       minmax_low=1.5, minmax_high=2.5,
+                                       opt_low=1.5, opt_high=3)
 
     # bottom right
-    cond = eta_residual_minmax_ulens > 1.5
-    cond *= eta_residual_opt_ulens < 1
-    idx_arr = np.random.choice(np.where(cond == True)[0],
-                               replace=False,
-                               size=9)
-
-    fig, ax = plt.subplots(5, 2, figsize=(7, 7))
-    ax = ax.flatten()
-    ax[0].scatter(eta_residual_minmax_ulens, eta_residual_opt_ulens, s=1, alpha=.1)
-    ax[0].set_xlabel('eta_residual minmax', fontsize=6)
-    ax[0].set_ylabel('eta_residual opt', fontsize=6)
-    for i, idx in enumerate(idx_arr, 1):
-        d = data_ulens[idx]
-        hmjd, mag, magerr = d[:, :3].T
-        ax[i].scatter(hmjd, mag, s=1, color='b')
-        _plot_ulens_model(ax[i], hmjd, mag, magerr, stats_ulens, metadata_ulens, idx)
-        ax[i].invert_yaxis()
-        ax[i].set_xlim(np.min(hmjd), np.max(hmjd))
-
-        ax[0].scatter(eta_residual_minmax_ulens[idx],
-                      eta_residual_opt_ulens[idx],
-                      s=5, color='r', marker='*')
-    fig.tight_layout()
+    _plot_eta_minmax_opt_samples_ulens(eta_residual_minmax_ulens,
+                                       eta_residual_opt_ulens,
+                                       data_ulens, stats_ulens, metadata_ulens,
+                                       minmax_low=1.5, minmax_high=2.5,
+                                       opt_low=0, opt_high=1)
 
     # bottom left
-    cond = eta_residual_minmax_ulens < 1
-    cond *= eta_residual_opt_ulens < 1
-    idx_arr = np.random.choice(np.where(cond == True)[0],
-                               replace=False,
-                               size=9)
-
-    fig, ax = plt.subplots(5, 2, figsize=(7, 7))
-    ax = ax.flatten()
-    ax[0].scatter(eta_residual_minmax_ulens, eta_residual_opt_ulens, s=1, alpha=.1)
-    ax[0].set_xlabel('eta_residual minmax', fontsize=6)
-    ax[0].set_ylabel('eta_residual opt', fontsize=6)
-    for i, idx in enumerate(idx_arr, 1):
-        d = data_ulens[idx]
-        hmjd, mag, magerr = d[:, :3].T
-        ax[i].scatter(hmjd, mag, s=1, color='b')
-        _plot_ulens_model(ax[i], hmjd, mag, magerr, stats_ulens, metadata_ulens, idx)
-        ax[i].invert_yaxis()
-        ax[i].set_xlim(np.min(hmjd), np.max(hmjd))
-        ax[0].scatter(eta_residual_minmax_ulens[idx],
-                      eta_residual_opt_ulens[idx],
-                      s=5, color='r', marker='*')
-    fig.tight_layout()
-
-    # same performance
-    cond = eta_residual_minmax_ulens / eta_residual_opt_ulens <= 1.05
-    cond *= eta_residual_minmax_ulens / eta_residual_opt_ulens >= .95
-    idx_arr = np.random.choice(np.where(cond == True)[0],
-                               replace=False,
-                               size=9)
-
-    fig, ax = plt.subplots(5, 2, figsize=(7, 7))
-    ax = ax.flatten()
-    ax[0].scatter(eta_residual_minmax_ulens, eta_residual_opt_ulens, s=1, alpha=.1)
-    ax[0].set_xlabel('eta_residual minmax', fontsize=6)
-    ax[0].set_ylabel('eta_residual opt', fontsize=6)
-    for i, idx in enumerate(idx_arr, 1):
-        d = data_ulens[idx]
-        hmjd, mag, magerr = d[:, :3].T
-        ax[i].scatter(hmjd, mag, s=1, color='b')
-        _plot_ulens_model(ax[i], hmjd, mag, magerr, stats_ulens, metadata_ulens, idx)
-        ax[i].invert_yaxis()
-        ax[i].set_xlim(np.min(hmjd), np.max(hmjd))
-        ax[0].scatter(eta_residual_minmax_ulens[idx],
-                      eta_residual_opt_ulens[idx],
-                      s=5, color='r', marker='*')
-    fig.tight_layout()
+    _plot_eta_minmax_opt_samples_ulens(eta_residual_minmax_ulens,
+                                       eta_residual_opt_ulens,
+                                       data_ulens, stats_ulens, metadata_ulens,
+                                       minmax_low=0, minmax_high=1,
+                                       opt_low=0, opt_high=1)
 
 
 def generate_all_figures():

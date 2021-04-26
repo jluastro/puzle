@@ -83,15 +83,7 @@ def chi2(theta, params_to_fit, model_class, data):
 
     mag_model = model.get_photometry(data['hmjd'], print_warning=False)
 
-    lnL_term1 = -0.5 * ((data['mag'] - mag_model) / data['magerr']) ** 2
-    lnL_term2 = -0.5 * np.log(2.0 * np.pi * data['magerr'] ** 2)
-    lnL_phot = np.sum(lnL_term1 + lnL_term2)
-
-    lnL_const_phot = -0.5 * np.log(2.0 * np.pi * data['magerr'] ** 2)
-    lnL_const_phot = lnL_const_phot.sum()
-
-    # Calculate chi2.
-    chi2 = (lnL_phot - lnL_const_phot) / -0.5
+    chi2 = np.sum(((data['mag'] - mag_model) / data['magerr']) ** 2)
     return chi2
 
 
