@@ -74,16 +74,16 @@ def apply_eta_residual_slope_offset_to_query(query):
     return query
 
 
-def chi2(theta, params_to_fit, model_class, data):
+def calculate_chi2(param_values, param_names, model_class, data, add_err=0):
     params = {}
-    for k, v in zip(params_to_fit, theta):
+    for k, v in zip(param_names, param_values):
         params[k] = v
     model = model_class(**params,
                         raL=data['raL'], decL=data['decL'])
 
     mag_model = model.get_photometry(data['hmjd'], print_warning=False)
 
-    chi2 = np.sum(((data['mag'] - mag_model) / data['magerr']) ** 2)
+    chi2 = np.sum(((data['mag'] - mag_model) / (data['magerr'] + add_err)) ** 2)
     return chi2
 
 
@@ -92,8 +92,8 @@ def fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec):
     _, magerr_round = average_xy_on_round_x(hmjd, magerr)
 
     # Setup parameter initial guess and list of params
-    params_to_fit = ['t0', 'u0_amp', 'tE', 'mag_src',
-                     'b_sff', 'piE_E', 'piE_N']
+    param_names_to_fit = ['t0', 'u0_amp', 'tE', 'mag_src',
+                          'b_sff', 'piE_E', 'piE_N']
     initial_guess = np.array([hmjd[np.argmin(mag_round)],
                               0.5,
                               50,
@@ -110,17 +110,17 @@ def fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec):
             'decL': dec}
 
     # run the optimizer
-    result = op.minimize(chi2, x0=initial_guess,
-                         args=(params_to_fit, PSPL_Phot_Par_Param1, data),
+    result = op.minimize(calculate_chi2, x0=initial_guess,
+                         args=(param_names_to_fit, PSPL_Phot_Par_Param1, data),
                          method='Powell')
     if result.success:
         # gather up best results
         best_fit = result.x
         best_params = {'chi_squared_delta': result.fun}
-        for k, v in zip(params_to_fit, best_fit):
+        for k, v in zip(param_names_to_fit, best_fit):
             best_params[k] = v
 
-        model_params = {k: v for k, v in best_params.items() if k in params_to_fit}
+        model_params = {k: v for k, v in best_params.items() if k in param_names_to_fit}
         model = PSPL_Phot_Par_Param1(**model_params, raL=ra, decL=dec)
         mag_round_model = model.get_photometry(hmjd_round)
         mag_residual_arr = mag_round - mag_round_model
@@ -128,7 +128,7 @@ def fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec):
         eta_residual = calculate_eta(mag_residual_arr[cond])
         best_params['eta_residual'] = eta_residual
     else:
-        best_params = {k: 0 for k in params_to_fit}
+        best_params = {k: 0 for k in param_names_to_fit}
         best_params['chi_squared_delta'] = 0
         best_params['eta_residual'] = 0
 
