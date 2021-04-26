@@ -205,7 +205,8 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000,
         piE_N = piE_N_arr[i]
         u0 = u0_arr[i]
         b_sff = b_sff_arr[i]
-        mag_src = np.median(obj.lightcurve.mag) * b_sff
+        flux_src = np.median(obj.lightcurve.flux) * b_sff
+        mag_src, _ = fluxes_to_magnitudes(flux_src)
 
         obj_t = obj.lightcurve.hmjd
         obj_mag = obj.lightcurve.mag
