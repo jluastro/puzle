@@ -421,6 +421,7 @@ def calculate_stats_on_lightcurves():
     my_observable_arr2 = []
     my_observable_arr3 = []
     for i, d in enumerate(my_data):
+        print(i, len(data))
         hmjd = d[:, 0]
         mag = d[:, 1]
         magerr = d[:, 2]
@@ -430,11 +431,16 @@ def calculate_stats_on_lightcurves():
 
         # calculate and append eta and level2 fit data
         eta_daily = calculate_eta_on_daily_avg(hmjd, mag)
+        my_eta_arr.append(eta_daily)
+
         eta_residual_daily, fit_data = calculate_eta_on_daily_avg_residuals(hmjd, mag, magerr,
                                                                             return_fit_data=True)
-        my_eta_arr.append(eta_daily)
-        my_eta_residual_level2_arr.append(eta_residual_daily)
-        t0, tE, f0, f1, chi_squared_delta, chi_squared_flat, atype = fit_data
+        if fit_data is not None:
+            t0, tE, f0, f1, chi_squared_delta, chi_squared_flat, atype = fit_data
+        else:
+            t0, tE, f0, f1, chi_squared_delta, chi_squared_flat, atype = [None for _ in range(7)]
+
+        eta_residual_daily.append(eta_residual_daily)
         my_t0_level2_arr.append(t0)
         my_tE_level2_arr.append(tE)
         my_f0_level2_arr.append(f0)
@@ -475,15 +481,15 @@ def calculate_stats_on_lightcurves():
             best_params = fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec,
                                                 t0_guess=t0, tE_guess=tE)
         else:
-            best_params = {'t0': 0,
-                           'u0_amp': 0,
-                           'tE': 0,
-                           'mag_src': 0,
-                           'b_sff': 0,
-                           'piE_E': 0,
-                           'piE_N': 0,
-                           'chi_squared_delta': 0,
-                           'eta_residual': 0}
+            best_params = {'t0': None,
+                           'u0_amp': None,
+                           'tE': None,
+                           'mag_src': None,
+                           'b_sff': None,
+                           'piE_E': None,
+                           'piE_N': None,
+                           'chi_squared_delta': None,
+                           'eta_residual': None}
         my_t0_level3_arr.append(best_params['t0'])
         my_u0_amp_level3_arr.append(best_params['u0_amp'])
         my_tE_level3_arr.append(best_params['tE'])
