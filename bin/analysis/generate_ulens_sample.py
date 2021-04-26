@@ -421,7 +421,6 @@ def calculate_stats_on_lightcurves():
     my_observable_arr2 = []
     my_observable_arr3 = []
     for i, d in enumerate(my_data):
-        print(i, len(data))
         hmjd = d[:, 0]
         mag = d[:, 1]
         magerr = d[:, 2]
