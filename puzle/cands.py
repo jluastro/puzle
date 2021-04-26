@@ -94,11 +94,11 @@ def fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec, t0_guess=None, tE_guess=No
     # Setup parameter initial guess and list of params
     param_names_to_fit = ['t0', 'u0_amp', 'tE', 'mag_src',
                           'b_sff', 'piE_E', 'piE_N']
-    if t0_guess:
+    if t0_guess is not None:
         t0 = t0_guess
     else:
         t0 = hmjd[np.argmin(mag_round)]
-    if tE_guess:
+    if tE_guess is not None:
         tE = tE_guess
     else:
         tE = 50
