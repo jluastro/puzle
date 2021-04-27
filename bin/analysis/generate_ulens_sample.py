@@ -437,7 +437,7 @@ def calculate_stats_on_lightcurves():
         if fit_data is not None:
             t0, tE, f0, f1, chi_squared_delta, chi_squared_flat, atype = fit_data
         else:
-            t0, tE, f0, f1, chi_squared_delta, chi_squared_flat, atype = [None for _ in range(7)]
+            t0, tE, f0, f1, chi_squared_delta, chi_squared_flat, atype = [0 for _ in range(7)]
 
         my_eta_residual_level2_arr.append(eta_residual_daily)
         my_t0_level2_arr.append(t0)
@@ -480,15 +480,15 @@ def calculate_stats_on_lightcurves():
             best_params = fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec,
                                                 t0_guess=t0, tE_guess=tE)
         else:
-            best_params = {'t0': None,
-                           'u0_amp': None,
-                           'tE': None,
-                           'mag_src': None,
-                           'b_sff': None,
-                           'piE_E': None,
-                           'piE_N': None,
-                           'chi_squared_delta': None,
-                           'eta_residual': None}
+            best_params = {'t0': 0,
+                           'u0_amp': 0,
+                           'tE': 0,
+                           'mag_src': 0,
+                           'b_sff': 0,
+                           'piE_E': 0,
+                           'piE_N': 0,
+                           'chi_squared_delta': 0,
+                           'eta_residual': 0}
         my_t0_level3_arr.append(best_params['t0'])
         my_u0_amp_level3_arr.append(best_params['u0_amp'])
         my_tE_level3_arr.append(best_params['tE'])
