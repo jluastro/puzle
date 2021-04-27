@@ -438,6 +438,7 @@ def calculate_stats_on_lightcurves():
             t0, tE, f0, f1, chi_squared_delta, chi_squared_flat, atype = fit_data
         else:
             t0, tE, f0, f1, chi_squared_delta, chi_squared_flat, atype = [0 for _ in range(7)]
+            eta_residual_daily = 0
 
         my_eta_residual_level2_arr.append(eta_residual_daily)
         my_t0_level2_arr.append(t0)
