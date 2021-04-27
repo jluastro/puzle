@@ -477,8 +477,15 @@ def calculate_stats_on_lightcurves():
 
         # calculate and append level3 fit data
         if count_cond >= 3:
+            if t0 == 0:
+                t0_guess = None
+                tE_guess = None
+            else:
+                t0_guess = t0
+                tE_guess = tE
             best_params = fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec,
-                                                t0_guess=t0, tE_guess=tE)
+                                                t0_guess=t0_guess,
+                                                tE_guess=tE_guess)
         else:
             best_params = {'t0': 0,
                            'u0_amp': 0,
