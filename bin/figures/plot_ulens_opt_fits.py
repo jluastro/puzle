@@ -560,7 +560,6 @@ def plot_ulens_tE_opt_bias():
         a.clear()
 
     x0 = np.linspace(1.3, 2.6, 1000)
-    m, b = np.polyfit(log_tE_modeled, log_tE_measured)
     ax[0].scatter(log_tE_modeled, log_tE_measured, s=1, alpha=.1)
     ax[0].set_xlabel('log tE modeled')
     ax[0].set_ylabel('log tE measured')
