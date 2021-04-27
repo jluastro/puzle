@@ -127,7 +127,10 @@ def fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec, t0_guess=None, tE_guess=No
         best_fit = result.x
         best_params = {'chi_squared_delta': result.fun}
         for k, v in zip(param_names_to_fit, best_fit):
-            best_params[k] = v
+            if k == 'tE':
+                best_params[k] = abs(v)
+            else:
+                best_params[k] = v
 
         model_params = {k: v for k, v in best_params.items() if k in param_names_to_fit}
         model = PSPL_Phot_Par_Param1(**model_params, raL=ra, decL=dec)
