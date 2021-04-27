@@ -42,6 +42,7 @@ def return_ulens_data(observableFlag=True, bhFlag=False):
     cond = np.ones(len(stats['eta'])).astype(bool)
     if observableFlag:
         cond *= stats['observable3']
+        cond *= stats['tE_level2'] != 0
         cond *= stats['tE_level3'] != 0
     if bhFlag:
         cond *= return_cond_BH()
@@ -62,6 +63,7 @@ def return_ulens_stats(observableFlag=True, bhFlag=False):
     cond = np.ones(len(data['eta'])).astype(bool)
     if observableFlag:
         cond *= data['observable3']
+        cond *= data['tE_level2'] != 0
         cond *= data['tE_level3'] != 0
     if bhFlag:
         cond *= return_cond_BH()
@@ -83,6 +85,7 @@ def return_ulens_metadata(observableFlag=True, bhFlag=False):
     cond = np.ones(len(data['tE'])).astype(bool)
     if observableFlag:
         cond *= stats['observable3']
+        cond *= stats['tE_level2'] != 0
         cond *= stats['tE_level3'] != 0
     if bhFlag:
         cond *= return_cond_BH()
