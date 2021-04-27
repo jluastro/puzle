@@ -16,7 +16,8 @@ def fit_level3_candidates_to_chi_squared():
     cands = CandidateLevel3.query.order_by(CandidateLevel3.id).\
                                     with_entities(CandidateLevel3.id,
                                                   CandidateLevel3.t0_best,
-                                                  CandidateLevel3.tE_best).all()
+                                                  CandidateLevel3.tE_best).\
+                                    filter(CandidateLevel3.t0_best!=0).all()
     num_cands = len(cands)
     cand_id_arr = [c[0] for c in cands]
     t0_arr = [c[1] for c in cands]

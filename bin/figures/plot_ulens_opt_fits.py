@@ -57,7 +57,8 @@ def plot_ulens_opt_corner():
                             eta_cands,
                             eta_residual_cands)).T
 
-    stats = return_ulens_stats(observableFlag=True, bhFlag=True)
+    bhFlag = False
+    stats = return_ulens_stats(observableFlag=True, bhFlag=bhFlag)
     tE_ulens = stats['tE_level3']
     u0_amp_ulens = stats['u0_amp_level3']
     mag_src_ulens = stats['mag_src_level3']
@@ -67,7 +68,7 @@ def plot_ulens_opt_corner():
     eta_ulens = stats['eta']
     eta_residual_ulens = stats['eta_residual_level3']
 
-    data = return_ulens_data(observableFlag=True, bhFlag=True)
+    data = return_ulens_data(observableFlag=True, bhFlag=bhFlag)
     num_days_ulens = np.array([len(set(np.round(d[:, 0]))) for d in data])
     
     log_tE_ulens = np.log10(tE_ulens)
@@ -96,6 +97,7 @@ def plot_ulens_opt_corner():
     data_range = [(.5, 4), (-3, 3), (10, 24), (0, 5), (-3, 2), (-3, 2), (-3, 2), (0, 1), (0, 4)]
 
     fig, ax = plt.subplots(5, 2, figsize=(8, 8))
+    fig.suptitle(f'ulens red | cands black | bhFlag {bhFlag}')
     ax = ax.flatten()
     for i, label in enumerate(labels):
         ax[i].set_title(label)
@@ -115,7 +117,7 @@ def plot_ulens_opt_corner():
                         show_titles=True, title_kwargs={"fontsize": 6},
                         label_kwargs={'fontsize': 6}, color='k',
                         fig=fig)
-    fig.suptitle('Level 3 Fits (ulens red | cands black)')
+    fig.suptitle(f'Level 3 Fits (ulens red | cands black | bhFlag {bhFlag})')
 
     fname = '%s/ulens_opt_corner.png' % return_figures_dir()
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
