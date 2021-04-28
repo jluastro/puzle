@@ -10,7 +10,8 @@ from zort.photometry import magnitudes_to_fluxes, fluxes_to_magnitudes
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle.ulens import return_ulens_data, return_ulens_metadata, return_ulens_stats
-from puzle.cands import return_cands_eta_resdiual_arrs, fetch_cand_best_obj_by_id
+from puzle.cands import return_cands_eta_resdiual_arrs, \
+    fetch_cand_best_obj_by_id, calculate_chi2
 from puzle.models import CandidateLevel2, CandidateLevel3
 from puzle.utils import return_figures_dir
 from puzle.stats import calculate_chi_squared_inside_outside
@@ -27,7 +28,7 @@ def plot_ulens_opt_corner():
                                                  CandidateLevel3.piE_N_best,
                                                  CandidateLevel3.eta_best,
                                                  CandidateLevel3.eta_residual_best,
-                                                 CandidateLevel3.num_days_best).\
+                                                 CandidateLevel3.num_epochs_best).\
         filter(CandidateLevel3.tE_best>0).all()
     tE_cands = np.array([c[0] for c in cands3], dtype=np.float32)
     u0_amp_cands = np.array([c[1] for c in cands3], dtype=np.float32)
@@ -37,7 +38,7 @@ def plot_ulens_opt_corner():
     piE_N_cands = np.array([c[5] for c in cands3], dtype=np.float32)
     eta_cands = np.array([c[6] for c in cands3], dtype=np.float32)
     eta_residual_cands = np.array([c[7] for c in cands3], dtype=np.float32)
-    num_days_cands = np.array([c[8] for c in cands3], dtype=np.float32)
+    num_epochs_cands = np.array([c[8] for c in cands3], dtype=np.float32)
 
     log_tE_cands = np.log10(tE_cands)
     log_piE_E_cands = np.log10(piE_E_cands)
@@ -45,7 +46,7 @@ def plot_ulens_opt_corner():
     piE_cands = np.hypot(piE_E_cands, piE_N_cands)
     log_piE_cands = np.log10(piE_cands)
     
-    chi_squared_delta_reduced_cands = chi_squared_delta_cands / num_days_cands
+    chi_squared_delta_reduced_cands = chi_squared_delta_cands / num_epochs_cands
 
     data_cands = np.vstack((log_tE_cands,
                             u0_amp_cands,
@@ -320,6 +321,142 @@ def _plot_chi_samples_ulens(log_reduced_chi_squared_outside_ulens,
     fig.subplots_adjust(top=.95)
 
 
+def return_CDF(arr):
+    x = np.sort(arr)
+    y = np.arange(len(arr)) / (len(arr) - 1)
+    return x, y
+
+
+def plot_ulens_opt_chi2():
+    cands = CandidateLevel3.query.with_entities(CandidateLevel3.chi_squared_delta_best,
+                                                CandidateLevel3.num_epochs_best).all()
+    chi2_measured_cands = np.array([c[0] for c in cands])
+    num_epochs = np.array([c[1] for c in cands])
+    reduced_chi2_measured_cands = chi2_measured_cands / num_epochs
+
+    bhFlag = False
+    data = return_ulens_data(observableFlag=True, bhFlag=bhFlag)
+    metadata = return_ulens_metadata(observableFlag=True, bhFlag=bhFlag)
+    stats = return_ulens_stats(observableFlag=True, bhFlag=bhFlag)
+
+    chi2_measured_ulens = stats['chi_squared_delta_level3']
+    num_epochs = np.array([len(d) for d in data])
+    reduced_chi2_measured_ulens = chi2_measured_ulens / num_epochs
+
+    param_names = ['t0', 'u0_amp', 'tE', 'mag_src',
+                   'b_sff', 'piE_E', 'piE_N']
+    model_class = PSPL_Phot_Par_Param1
+    chi2_modeled_ulens = []
+    dof_arr = []
+    idx_arr = np.arange(len(data))
+    for idx in idx_arr:
+        if idx % 10000 == 0:
+            print('-- ulens sample %i / %i' % (idx, len(idx_arr)))
+        hmjd, mag, magerr = data[idx][:, :3].T
+        t0 = metadata['t0'][idx]
+        u0 = metadata['u0'][idx]
+        tE = metadata['tE'][idx]
+        mag_src = metadata['mag_src'][idx]
+        piE_E = metadata['piE_E'][idx]
+        piE_N = metadata['piE_N'][idx]
+        b_sff = metadata['b_sff'][idx]
+        ra = metadata['ra'][idx]
+        dec = metadata['dec'][idx]
+
+        data_fit = {'hmjd': hmjd, 'mag': mag, 'magerr': magerr, 'raL': ra, 'decL': dec}
+        param_values = [t0, u0, tE, mag_src, b_sff, piE_E, piE_N]
+        chi2 = calculate_chi2(param_values, param_names, model_class, data_fit)
+        dof = len(hmjd)
+        chi2_modeled_ulens.append(chi2)
+        dof_arr.append(dof)
+
+    chi2_modeled_ulens = np.array(chi2_modeled_ulens)
+    dof_arr = np.array(dof_arr)
+    reduced_chi2_modeled_ulens = chi2_modeled_ulens / dof_arr
+
+    chi2_thresh = np.percentile(reduced_chi2_measured_ulens, 95)
+    cand_frac = np.sum(reduced_chi2_measured_cands <= chi2_thresh) / len(reduced_chi2_measured_cands)
+
+    fig, ax = plt.subplots(2, 1, figsize=(8, 8))
+    fig.suptitle('%.2f%% Percent of Cands below 95th Percentile' % (100 * cand_frac))
+    for a in ax: a.clear()
+    bins = np.linspace(0, 5, 50)
+    ax[0].hist(reduced_chi2_measured_ulens, label='ulens measured',
+               bins=bins, histtype='step', density=True)
+    ax[0].hist(reduced_chi2_modeled_ulens, label='ulens modeled',
+               bins=bins, histtype='step', density=True)
+    ax[0].hist(reduced_chi2_measured_cands, label='cands measured',
+               bins=bins, histtype='step', density=True)
+    ax[0].axvline(chi2_thresh, color='k', alpha=.3, label='ulens measured 95th percentile')
+    ax[1].plot(*return_CDF(reduced_chi2_measured_ulens), label='ulens measured')
+    ax[1].plot(*return_CDF(reduced_chi2_modeled_ulens), label='ulens modeled')
+    ax[1].plot(*return_CDF(reduced_chi2_measured_cands), label='cands measured')
+    ax[1].axhline(0.95, color='k', alpha=.3, label='ulens measured 95th percentile')
+    ax[1].axvline(chi2_thresh, color='k', alpha=.3)
+
+    for a in ax:
+        a.grid(True)
+        a.set_xlim(0, 5)
+        a.set_xlabel('Reduced Chi Squared')
+        a.legend()
+    fig.tight_layout()
+    fig.subplots_adjust(top=.95)
+
+    fname = '%s/ulens_opt_chi2_cut.png' % return_figures_dir()
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    print('-- %s saved' % fname)
+    plt.close(fig)
+
+
+def plot_ulens_opt_chi2():
+    cands = CandidateLevel3.query.with_entities(CandidateLevel3.tE_best).\
+        filter(CandidateLevel3.tE_best>0).all()
+    tE_level3_cands = np.array([c[0] for c in cands])
+    log_tE_level3_cands = np.log10(tE_level3_cands)
+
+    bhFlag = False
+    metadata = return_ulens_metadata(observableFlag=True, bhFlag=bhFlag)
+    stats = return_ulens_stats(observableFlag=True, bhFlag=bhFlag)
+
+    tE_modeled_ulens = metadata['tE']
+    log_tE_modeled_ulens = np.log10(tE_modeled_ulens)
+    tE_level3_ulens = stats['tE_level3']
+    log_tE_level3_ulens = np.log10(tE_level3_ulens)
+
+    tE_thresh = np.percentile(log_tE_level3_ulens, 99)
+    cand_frac = np.sum(log_tE_level3_cands <= tE_thresh) / len(log_tE_level3_cands)
+
+    fig, ax = plt.subplots(2, 1, figsize=(8, 8))
+    fig.suptitle('%.2f%% Percent of Cands below 99th Percentile' % (100 * cand_frac))
+    for a in ax: a.clear()
+    bins = np.linspace(0, 4, 50)
+    ax[0].hist(log_tE_level3_ulens, label='ulens measured',
+               bins=bins, histtype='step', density=True)
+    ax[0].hist(log_tE_modeled_ulens, label='ulens modeled',
+               bins=bins, histtype='step', density=True)
+    ax[0].hist(log_tE_level3_cands, label='cands measured',
+               bins=bins, histtype='step', density=True)
+    ax[0].axvline(tE_thresh, color='k', alpha=.3, label='ulens measured 99th percentile')
+    ax[1].plot(*return_CDF(log_tE_level3_ulens), label='ulens measured')
+    ax[1].plot(*return_CDF(log_tE_modeled_ulens), label='ulens modeled')
+    ax[1].plot(*return_CDF(log_tE_level3_cands), label='cands measured')
+    ax[1].axhline(0.99, color='k', alpha=.3, label='ulens measured 99th percentile')
+    ax[1].axvline(tE_thresh, color='k', alpha=.3)
+
+    for a in ax:
+        a.grid(True)
+        a.set_xlim(0, 4)
+        a.set_xlabel('Einstein Crossing Time')
+        a.legend()
+    fig.tight_layout()
+    fig.subplots_adjust(top=.95)
+
+    fname = '%s/ulens_opt_tE_cut.png' % return_figures_dir()
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    print('-- %s saved' % fname)
+    plt.close(fig)
+
+
 def plot_ulens_opt_inside_outside():
     tE_factor = 3
 
@@ -554,27 +691,15 @@ def plot_ulens_tE_opt_bias():
     tE_modeled = metadata['tE']
     log_tE_modeled = np.log10(tE_modeled)
 
-    fig, ax = plt.subplots(2, 1, figsize=(8, 6))
-    ax = ax.flatten()
-    for a in ax:
-        a.clear()
-
+    fig, ax = plt.subplots(figsize=(8, 6))
     x0 = np.linspace(1.3, 2.6, 1000)
-    ax[0].scatter(log_tE_modeled, log_tE_measured, s=1, alpha=.1)
-    ax[0].set_xlabel('log tE modeled')
-    ax[0].set_ylabel('log tE measured')
-    ax[0].plot(x0, x0, color='r', alpha=.3)
-    ax[0].set_xlim(1.3, 2.6)
-    ax[0].set_ylim(0, 3)
-
-    x1 = np.linspace(0, 3, 1000)
-    ax[1].scatter(log_tE_measured, log_tE_modeled, s=1, alpha=.1)
-    ax[1].set_xlabel('log tE measured')
-    ax[1].set_ylabel('log tE modeled')
-    ax[1].plot(x1, x1, color='r', alpha=.3)
-    ax[1].set_xlim(0, 3)
-    ax[1].set_ylim(1.3, 2.6)
-
+    ax.set_title('Microlensing Simulations')
+    ax.scatter(log_tE_modeled, log_tE_measured, s=1, alpha=.1)
+    ax.set_xlabel('log tE modeled')
+    ax.set_ylabel('log tE measured')
+    ax.plot(x0, x0, color='r', alpha=.3)
+    ax.set_xlim(1.3, 2.6)
+    ax.set_ylim(0.5, 3)
     fig.tight_layout()
 
 
@@ -715,9 +840,9 @@ def plot_ulens_eta_residual_minmax_vs_opt():
     fig.tight_layout()
 
     data_ulens = return_ulens_data(observableFlag=True,
-                                 bhFlag=False)
+                                   bhFlag=False)
     metadata_ulens = return_ulens_metadata(observableFlag=True,
-                                         bhFlag=False)
+                                           bhFlag=False)
 
     # top left
     _plot_eta_minmax_opt_samples_ulens(eta_residual_minmax_ulens,
@@ -753,6 +878,7 @@ def generate_all_figures():
     plot_ulens_opt_inside_outside()
     plot_ulens_tE_opt_bias()
     plot_ulens_eta_residual_minmax_vs_opt()
+    plot_ulens_opt_chi2()
 
 
 if __name__ == '__main__':

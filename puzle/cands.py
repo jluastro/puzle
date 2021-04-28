@@ -74,7 +74,7 @@ def apply_eta_residual_slope_offset_to_query(query):
     return query
 
 
-def calculate_chi2(param_values, param_names, model_class, data, add_err=0):
+def calculate_chi2(param_values, param_names, model_class, data):
     params = {}
     for k, v in zip(param_names, param_values):
         params[k] = v
@@ -83,7 +83,7 @@ def calculate_chi2(param_values, param_names, model_class, data, add_err=0):
 
     mag_model = model.get_photometry(data['hmjd'], print_warning=False)
 
-    chi2 = np.sum(((data['mag'] - mag_model) / (data['magerr'] + add_err)) ** 2)
+    chi2 = np.sum(((data['mag'] - mag_model) / data['magerr']) ** 2)
     return chi2
 
 

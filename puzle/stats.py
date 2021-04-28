@@ -7,6 +7,7 @@ import os
 import glob
 import numpy as np
 from scipy.stats import expon
+from astropy.stats import sigma_clip
 from shapely.geometry.polygon import Polygon
 import pickle
 import itertools
@@ -354,6 +355,35 @@ def return_eta_threshold(size):
             return np.log10(size) * m + b
         else:
             return None
+
+
+def calculate_chi2(mag, magerr, mag_model, add_err=0,
+                   hmjd=None, t0=None, tE=None, clip=False):
+    if clip:
+        # Mask out those points that are within the microlensing event
+        ulens_mask = hmjd > t0 - 2 * tE
+        ulens_mask *= hmjd < t0 + 2 * tE
+        # Use this mask to generated a masked array for sigma clipping
+        # By applying this mask, the 3-sigma will not be calculated using these points
+        mag_masked = np.ma.array(mag, mask=ulens_mask)
+        # Perform the sigma clipping
+        mag_masked = sigma_clip(mag_masked, sigma=3, maxiters=5)
+        # This masked array is now a mask that includes BOTH the mirolensing event and
+        # the 3-sigma outliers that we want removed. We want to remove the mask that
+        # is on the micorlensing event. So we only keep the mask for those points
+        # outside of +-2 tE.
+        chi2_mask = mag_masked.mask * ~ulens_mask
+        # Using this mask, do one pass of clipping out all +- 5 sigma points.
+        # This gets points that are within the +-2 tE.
+        mag_masked = np.ma.array(mag, mask=chi2_mask)
+        mag_masked = sigma_clip(mag_masked, sigma=5, maxiters=1)
+        # This mask is then inverted for the chi2 calculation
+        chi2_cond = ~mag_masked.mask
+    else:
+        chi2_cond = np.ones(len(mag)).astype(bool)
+    chi2 = np.sum(((mag[chi2_cond] - mag_model[chi2_cond]) / np.hypot(magerr[chi2_cond], add_err)) ** 2)
+    dof = np.sum(chi2_cond)
+    return chi2, dof
 
 
 def calculate_chi_squared_inside_outside(hmjd, mag, magerr, t0, tE, tE_factor):
