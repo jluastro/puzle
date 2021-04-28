@@ -11,7 +11,7 @@ from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle.ulens import return_ulens_data, return_ulens_metadata, return_ulens_stats
 from puzle.cands import return_cands_eta_resdiual_arrs, \
-    fetch_cand_best_obj_by_id, calculate_chi2
+    fetch_cand_best_obj_by_id, calculate_chi2, apply_level3_cuts_to_query
 from puzle.models import CandidateLevel2, CandidateLevel3
 from puzle.utils import return_figures_dir
 from puzle.stats import calculate_chi_squared_inside_outside
@@ -20,7 +20,7 @@ from puzle import db
 
 
 def plot_ulens_opt_corner():
-    cands3 = CandidateLevel3.query.with_entities(CandidateLevel3.tE_best,
+    query = CandidateLevel3.query.with_entities(CandidateLevel3.tE_best,
                                                  CandidateLevel3.u0_amp_best,
                                                  CandidateLevel3.mag_src_best,
                                                  CandidateLevel3.chi_squared_delta_best,
@@ -28,8 +28,8 @@ def plot_ulens_opt_corner():
                                                  CandidateLevel3.piE_N_best,
                                                  CandidateLevel3.eta_best,
                                                  CandidateLevel3.eta_residual_best,
-                                                 CandidateLevel3.num_epochs_best).\
-        filter(CandidateLevel3.tE_best>0).all()
+                                                 CandidateLevel3.num_epochs_best)
+    cands3 = apply_level3_cuts_to_query(query).all()
     tE_cands = np.array([c[0] for c in cands3], dtype=np.float32)
     u0_amp_cands = np.array([c[1] for c in cands3], dtype=np.float32)
     mag_src_cands = np.array([c[2] for c in cands3], dtype=np.float32)
@@ -59,7 +59,7 @@ def plot_ulens_opt_corner():
                             eta_residual_cands)).T
 
     bhFlag = False
-    stats = return_ulens_stats(observableFlag=True, bhFlag=bhFlag)
+    stats = return_ulens_stats(observableFlag=True, bhFlag=bhFlag, )
     tE_ulens = stats['tE_level3']
     u0_amp_ulens = stats['u0_amp_level3']
     mag_src_ulens = stats['mag_src_level3']
@@ -452,6 +452,58 @@ def plot_ulens_opt_tE_cut():
     fig.subplots_adjust(top=.95)
 
     fname = '%s/ulens_opt_tE_cut.png' % return_figures_dir()
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    print('-- %s saved' % fname)
+    plt.close(fig)
+
+
+def plot_ulens_opt_piE_cut():
+    cands = CandidateLevel3.query.with_entities(CandidateLevel3.piE_N_best,
+                                                CandidateLevel3.piE_E_best).\
+        filter(CandidateLevel3.tE_best>0).all()
+    piE_N = np.array([c[0] for c in cands])
+    piE_E = np.array([c[1] for c in cands])
+    piE_measured_cands = np.hypot(piE_N, piE_E)
+    log_piE_measured_cands = np.log10(piE_measured_cands)
+
+    bhFlag = False
+    metadata = return_ulens_metadata(observableFlag=True, bhFlag=bhFlag)
+    stats = return_ulens_stats(observableFlag=True, bhFlag=bhFlag)
+
+    piE_modeled_ulens = np.hypot(metadata['piE_E'], metadata['piE_N'])
+    log_piE_modeled_ulens = np.log10(piE_modeled_ulens)
+    piE_measured_ulens = np.hypot(stats['piE_E_level3'], stats['piE_N_level3'])
+    log_piE_measured_ulens = np.log10(piE_measured_ulens)
+
+    log_piE_thresh = np.percentile(log_piE_measured_ulens, 99)
+    cand_frac = np.sum(log_piE_measured_cands <= log_piE_thresh) / len(log_piE_measured_cands)
+
+    fig, ax = plt.subplots(2, 1, figsize=(8, 8))
+    fig.suptitle('%.2f%% Percent of Cands below 99th Percentile' % (100 * cand_frac))
+    for a in ax: a.clear()
+    bins = np.linspace(-3, 3, 50)
+    ax[0].hist(log_piE_measured_ulens, label='ulens measured',
+               bins=bins, histtype='step', density=True)
+    ax[0].hist(log_piE_modeled_ulens, label='ulens modeled',
+               bins=bins, histtype='step', density=True)
+    ax[0].hist(log_piE_measured_cands, label='cands measured',
+               bins=bins, histtype='step', density=True)
+    ax[0].axvline(log_piE_thresh, color='k', alpha=.3, label='ulens measured 99th percentile')
+    ax[1].plot(*return_CDF(log_piE_measured_ulens), label='ulens measured')
+    ax[1].plot(*return_CDF(log_piE_modeled_ulens), label='ulens modeled')
+    ax[1].plot(*return_CDF(log_piE_measured_cands), label='cands measured')
+    ax[1].axhline(0.99, color='k', alpha=.3, label='ulens measured 99th percentile')
+    ax[1].axvline(log_piE_thresh, color='k', alpha=.3)
+
+    for a in ax:
+        a.grid(True)
+        a.set_xlim(-3, 3)
+        a.set_xlabel('LOG Einstein Parallax')
+        a.legend()
+    fig.tight_layout()
+    fig.subplots_adjust(top=.95)
+
+    fname = '%s/ulens_opt_piE_cut.png' % return_figures_dir()
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
     plt.close(fig)
@@ -880,6 +932,7 @@ def generate_all_figures():
     plot_ulens_eta_residual_minmax_vs_opt()
     plot_ulens_opt_chi2_cut()
     plot_ulens_opt_tE_cut()
+    plot_ulens_opt_piE_cut()
 
 
 if __name__ == '__main__':

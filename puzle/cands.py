@@ -240,3 +240,12 @@ def return_cands_eta_resdiual_arrs():
     eta_residual_minmax_arr = np.array([c[0] for c in cands23])
     eta_residual_opt_arr = np.array([c[1] for c in cands23])
     return eta_residual_minmax_arr, eta_residual_opt_arr
+
+
+def apply_level3_cuts_to_query(query):
+    query = query.filter(CandidateLevel3.tE_best != 0,
+                         CandidateLevel3.tE_best <= 595,
+                         CandidateLevel3.chi_squared_delta_best / CandidateLevel3.num_epochs_best <= 2.221,
+                         func.sqrt(func.pow(CandidateLevel3.piE_E_best, 2.) +
+                                   func.pow(CandidateLevel3.piE_N_best, 2.)) <= 2.877)
+    return query
