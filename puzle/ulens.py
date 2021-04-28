@@ -32,7 +32,7 @@ def return_ulens_data_fname(prefix):
     return fname
 
 
-def return_ulens_data(observableFlag=True, bhFlag=False):
+def return_ulens_data(observableFlag=True, bhFlag=False, level3Flag=False):
     fname = return_ulens_data_fname('ulens_sample')
     data = load_stacked_array(fname)
 
@@ -46,6 +46,10 @@ def return_ulens_data(observableFlag=True, bhFlag=False):
         cond *= stats['tE_level3'] != 0
     if bhFlag:
         cond *= return_cond_BH()
+    if level3Flag:
+        cond *= stats['tE_level3'] <= 595
+        n_days = np.array([len(d) for d in data])
+        cond *= stats['chi_squared_delta_level3'] / n_days <= 2.221
     idx_arr = set(np.where(cond==True)[0])
 
     lightcurve_data = []
@@ -56,45 +60,59 @@ def return_ulens_data(observableFlag=True, bhFlag=False):
     return lightcurve_data
 
 
-def return_ulens_stats(observableFlag=True, bhFlag=False):
+def return_ulens_stats(observableFlag=True, bhFlag=False, level3Flag=False):
+    fname = return_ulens_data_fname('ulens_sample')
+    data = load_stacked_array(fname)
+
     fname = return_ulens_data_fname('ulens_sample_stats')
-    data = np.load(fname)
+    stats = np.load(fname)
 
-    cond = np.ones(len(data['eta'])).astype(bool)
-    if observableFlag:
-        cond *= data['observable3']
-        cond *= data['tE_level2'] != 0
-        cond *= data['tE_level3'] != 0
-    if bhFlag:
-        cond *= return_cond_BH()
-
-    stats = {}
-    for key in data.keys():
-        stats[key] = data[key][cond]
-
-    return stats
-
-
-def return_ulens_metadata(observableFlag=True, bhFlag=False):
-    stats = return_ulens_stats(observableFlag=False,
-                               bhFlag=False)
-
-    fname = return_ulens_data_fname('ulens_sample_metadata')
-    data = np.load(fname)
-
-    cond = np.ones(len(data['tE'])).astype(bool)
+    cond = np.ones(len(stats['eta'])).astype(bool)
     if observableFlag:
         cond *= stats['observable3']
         cond *= stats['tE_level2'] != 0
         cond *= stats['tE_level3'] != 0
     if bhFlag:
         cond *= return_cond_BH()
+    if level3Flag:
+        cond *= stats['tE_level3'] <= 595
+        n_days = np.array([len(d) for d in data])
+        cond *= stats['chi_squared_delta_level3'] / n_days <= 2.221
 
-    metadata = {}
-    for key in data.keys():
-        metadata[key] = data[key][cond]
+    stats_dct = {}
+    for key in stats.keys():
+        stats_dct[key] = stats[key][cond]
 
-    return metadata
+    return stats_dct
+
+
+def return_ulens_metadata(observableFlag=True, bhFlag=False, level3Flag=False):
+    stats = return_ulens_stats(observableFlag=False,
+                               bhFlag=False)
+
+    fname = return_ulens_data_fname('ulens_sample_metadata')
+    metadata = np.load(fname)
+
+    fname = return_ulens_data_fname('ulens_sample')
+    data = load_stacked_array(fname)
+
+    cond = np.ones(len(metadata['tE'])).astype(bool)
+    if observableFlag:
+        cond *= stats['observable3']
+        cond *= stats['tE_level2'] != 0
+        cond *= stats['tE_level3'] != 0
+    if bhFlag:
+        cond *= return_cond_BH()
+    if level3Flag:
+        cond *= stats['tE_level3'] <= 595
+        n_days = np.array([len(d) for d in data])
+        cond *= stats['chi_squared_delta_level3'] / n_days <= 2.221
+
+    metadata_dct = {}
+    for key in metadata.keys():
+        metadata_dct[key] = metadata[key][cond]
+
+    return metadata_dct
 
 
 def return_cond_BH(tE_min=150, piE_max=0.08):
