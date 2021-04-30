@@ -980,7 +980,7 @@ def plot_ulens_opt_sigma_peaks():
         filter(getattr(CandidateLevel3, name_column)!=None).\
         order_by(CandidateLevel3.id).all()
     sigma_peaks_cands = np.array([getattr(c, name_column) for c in cands3]).astype(int)
-    id_cands = np.array([c.id for c in cand3])
+    id_cands = np.array([c.id for c in cands3])
 
     bhFlag = False
     data = return_ulens_data(observableFlag=True, bhFlag=bhFlag, level3Flag=True)
