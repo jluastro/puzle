@@ -253,21 +253,23 @@ def apply_level3_cuts_to_query(query):
 
 
 def return_sigma_peaks(hmjd, mag, t0, tE, sigma_factor=3, tE_factor=2):
+    # perform calculating on day averages
+    hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
     # Mask out those points that are within the microlensing event
-    ulens_mask = hmjd > t0 - tE_factor * tE
-    ulens_mask *= hmjd < t0 + tE_factor * tE
+    ulens_mask = hmjd_round > t0 - tE_factor * tE
+    ulens_mask *= hmjd_round < t0 + tE_factor * tE
     # Use this mask to generated a masked array for sigma clipping
     # By applying this mask, the 3-sigma will not be calculated using these points
-    mag_masked = np.ma.array(mag, mask=ulens_mask)
+    mag_round_masked = np.ma.array(mag_round, mask=ulens_mask)
     # Perform the sigma clipping
-    mag_masked = sigma_clip(mag_masked, sigma=3, maxiters=5)
+    mag_round_masked = sigma_clip(mag_round_masked, sigma=3, maxiters=5)
     # This masked array is now a mask that includes BOTH the mirolensing event and
     # the 3-sigma outliers that we want removed. This is the "flats" where we
     # want to calculate the mean and sigma
-    mean_flat = mag_masked.mean()
-    std_flat = mag_masked.std()
+    mean_flat = mag_round_masked.mean()
+    std_flat = mag_round_masked.std()
     # We now add up the number of sigma peaks within tE
-    sigma_peaks = np.sum(mag[ulens_mask] <= mean_flat - sigma_factor * std_flat)
+    sigma_peaks = np.sum(mag_round[ulens_mask] <= mean_flat - sigma_factor * std_flat)
     if type(sigma_peaks) == np.ma.core.MaskedConstant:
         sigma_peaks = 0
     else:
