@@ -29,7 +29,8 @@ def plot_ulens_opt_corner():
                                                  CandidateLevel3.piE_N_best,
                                                  CandidateLevel3.eta_best,
                                                  CandidateLevel3.eta_residual_best,
-                                                 CandidateLevel3.num_epochs_best)
+                                                 CandidateLevel3.num_epochs_best,
+                                                 CandidateLevel3.t0_best)
     cands3 = apply_level3_cuts_to_query(query).all()
     tE_cands = np.array([c[0] for c in cands3], dtype=np.float32)
     u0_amp_cands = np.array([c[1] for c in cands3], dtype=np.float32)
@@ -40,6 +41,7 @@ def plot_ulens_opt_corner():
     eta_cands = np.array([c[6] for c in cands3], dtype=np.float32)
     eta_residual_cands = np.array([c[7] for c in cands3], dtype=np.float32)
     num_epochs_cands = np.array([c[8] for c in cands3], dtype=np.float32)
+    t0_cands = np.array([c[9] for c in cands3], dtype=np.float32)
 
     log_tE_cands = np.log10(tE_cands)
     log_piE_E_cands = np.log10(piE_E_cands)
@@ -49,7 +51,8 @@ def plot_ulens_opt_corner():
     
     chi_squared_delta_reduced_cands = chi_squared_delta_cands / num_epochs_cands
 
-    data_cands = np.vstack((log_tE_cands,
+    data_cands = np.vstack((t0_cands,
+                            log_tE_cands,
                             u0_amp_cands,
                             mag_src_cands,
                             chi_squared_delta_reduced_cands,
@@ -70,6 +73,7 @@ def plot_ulens_opt_corner():
     piE_N_ulens = stats['piE_N_level3']
     eta_ulens = stats['eta']
     eta_residual_ulens = stats['eta_residual_level3']
+    t0_ulens = stats['t0_level3']
 
     data = return_ulens_data(observableFlag=True, bhFlag=bhFlag, level3Flag=level3Flag)
     num_epochs_ulens = np.array([len(d) for d in data])
@@ -82,7 +86,8 @@ def plot_ulens_opt_corner():
     
     chi_squared_delta_reduced_ulens = chi_squared_delta_ulens / num_epochs_ulens
 
-    data_ulens = np.vstack((log_tE_ulens,
+    data_ulens = np.vstack((t0_ulens,
+                            log_tE_ulens,
                             u0_amp_ulens,
                             mag_src_ulens,
                             chi_squared_delta_reduced_ulens,
@@ -93,8 +98,8 @@ def plot_ulens_opt_corner():
                             eta_residual_ulens)).T
 
     # Plot it.
-    labels = ['LOG tE', 'u0_amp', 'mag_src', 'chi_squared_delta_reduced', 'LOG piE_E', 'LOG piE_N', 'LOG piE', 'eta', 'eta_residual']
-    data_range = [(.5, 4), (-3, 3), (10, 24), (0, 5), (-3, 2), (-3, 2), (-3, 2), (0, 1), (0, 4)]
+    labels = ['t0', 'LOG tE', 'u0_amp', 'mag_src', 'chi_squared_delta_reduced', 'LOG piE_E', 'LOG piE_N', 'LOG piE', 'eta', 'eta_residual']
+    data_range = [(57000, 60000), (.5, 4), (-3, 3), (10, 24), (0, 5), (-3, 2), (-3, 2), (-3, 2), (0, 1), (0, 4)]
 
     fig, ax = plt.subplots(5, 2, figsize=(8, 8))
     fig.suptitle(f'ulens red | cands black | bhFlag {bhFlag}')
@@ -950,7 +955,7 @@ def _plot_sigma_peaks_ulens(data, stats, metadata, cond, sigma_peaks_ulens, sigm
 def _plot_sigma_peaks_cands(cond, cands3, id_cands, sigma_peaks_cands, sigma_factor, sigma_peaks_thresh):
     idx_arr = np.random.choice(np.where(cond == True)[0], replace=False, size=10)
     fig, ax = plt.subplots(5, 2, figsize=(7, 7))
-    fig.suptitle(f'ulens {sigma_peaks_thresh} inside points above {sigma_factor} sigma',
+    fig.suptitle(f'cands {sigma_peaks_thresh} inside points above {sigma_factor} sigma',
                  fontsize=10)
     ax = ax.flatten()
     for i, idx in enumerate(idx_arr):
@@ -973,14 +978,17 @@ def _plot_sigma_peaks_cands(cond, cands3, id_cands, sigma_peaks_cands, sigma_fac
 
 
 def plot_ulens_opt_sigma_peaks():
-    sigma_factor = 3
-
-    name_column = f'num_{sigma_factor}sigma_peaks_inside_2tE_best'
-    cands3 = CandidateLevel3.query.\
-        filter(getattr(CandidateLevel3, name_column)!=None).\
+    query = apply_level3_cuts_to_query(CandidateLevel3.query)
+    cands3 = query.\
+        filter(CandidateLevel3.tE_best!=0).\
         order_by(CandidateLevel3.id).all()
-    sigma_peaks_cands = np.array([getattr(c, name_column) for c in cands3]).astype(int)
     id_cands = np.array([c.id for c in cands3])
+    sigma_peaks_cands_inside_3sigma = np.array([c.num_3sigma_peaks_inside_2tE_best for c in cands3], dtype=int)
+    sigma_peaks_cands_inside_5sigma = np.array([c.num_5sigma_peaks_inside_2tE_best for c in cands3], dtype=int)
+    sigma_peaks_cands_outside_3sigma = np.array([c.num_3sigma_peaks_outside_2tE_best for c in cands3], dtype=int)
+    sigma_peaks_cands_outside_5sigma = np.array([c.num_5sigma_peaks_outside_2tE_best for c in cands3], dtype=int)
+    t0_cands = np.array([c.t0_best for c in cands3])
+    tE_cands = np.array([c.tE_best for c in cands3])
 
     bhFlag = False
     data = return_ulens_data(observableFlag=True, bhFlag=bhFlag, level3Flag=True)
@@ -989,7 +997,10 @@ def plot_ulens_opt_sigma_peaks():
     t0_ulens = stats['t0_level3']
     tE_ulens = stats['tE_level3']
 
-    sigma_peaks_ulens = []
+    num_peaks_ulens_inside_3sigma = []
+    num_peaks_ulens_outside_3sigma = []
+    num_peaks_ulens_inside_5sigma = []
+    num_peaks_ulens_outside_5sigma = []
     idx_arr = np.arange(len(t0_ulens))
     for idx in idx_arr:
         if idx % 1000 == 0:
@@ -998,47 +1009,76 @@ def plot_ulens_opt_sigma_peaks():
         t0 = t0_ulens[idx]
         tE = tE_ulens[idx]
 
-        sigma_peaks = return_sigma_peaks(hmjd, mag, t0, tE,
-                                         tE_factor=2,
-                                         sigma_factor=sigma_factor)
-        sigma_peaks_ulens.append(sigma_peaks)
-    sigma_peaks_ulens = np.array(sigma_peaks_ulens)
+        sigma_peaks_inside, sigma_peaks_outside = return_sigma_peaks(hmjd, mag, t0, tE,
+                                                                     tE_factor=2,
+                                                                     sigma_factor=3)
+        num_peaks_ulens_inside_3sigma.append(sigma_peaks_inside)
+        num_peaks_ulens_outside_3sigma.append(sigma_peaks_outside)
+        sigma_peaks_inside,sigma_peaks_outside = return_sigma_peaks(hmjd, mag, t0, tE,
+                                                                    tE_factor=2,
+                                                                    sigma_factor=5)
+        num_peaks_ulens_inside_5sigma.append(sigma_peaks_inside)
+        num_peaks_ulens_outside_5sigma.append(sigma_peaks_outside)
+    num_peaks_ulens_inside_3sigma = np.array(num_peaks_ulens_inside_3sigma)
+    num_peaks_ulens_outside_3sigma = np.array(num_peaks_ulens_outside_3sigma)
+    num_peaks_ulens_inside_5sigma = np.array(num_peaks_ulens_inside_5sigma)
+    num_peaks_ulens_outside_5sigma = np.array(num_peaks_ulens_outside_5sigma)
 
-    fig, ax = plt.subplots(2, 1, figsize=(8, 6))
-    for a in ax: a.clear()
-    bins = np.arange(21)
-    ax[0].set_title(f'{sigma_factor} Sigma Peaks')
-    ax[0].hist(sigma_peaks_cands, color='k', label='cands', histtype='step', bins=bins, density=True)
-    ax[0].hist(sigma_peaks_ulens, color='r', label='ulens', histtype='step', bins=bins, density=True)
-    ax[1].plot(*return_CDF(sigma_peaks_cands), color='k', label='cands')
-    ax[1].plot(*return_CDF(sigma_peaks_ulens), color='r', label='ulens')
-    ax[1].set_ylabel('CDF')
-    for a in ax:
-        a.legend()
-        a.set_xlabel(f'{sigma_factor} Sigma Peaks Inside 2tE')
-        a.set_xlim(0, 10)
-    fig.tight_layout()
+    for sigma_factor in [3, 5]:
+        if sigma_factor == 3:
+            sigma_peaks_inside_ulens = num_peaks_ulens_inside_3sigma
+            sigma_peaks_inside_cands = sigma_peaks_cands_inside_3sigma
+        elif sigma_factor == 5:
+            sigma_peaks_inside_ulens = num_peaks_ulens_inside_5sigma
+            sigma_peaks_inside_cands = sigma_peaks_cands_inside_5sigma
 
-    sigma_peaks_thresh = 1
+        fig, ax = plt.subplots(2, 1, figsize=(8, 6))
+        for a in ax: a.clear()
+        bins = np.linspace(1, 100, 50)
+        ax[0].set_title(f'{sigma_factor} Sigma Inside Peaks')
+        ax[0].hist(sigma_peaks_inside_cands, color='k', label='cands', histtype='step', bins=bins, density=True)
+        ax[0].hist(sigma_peaks_inside_ulens, color='r', label='ulens', histtype='step', bins=bins, density=True)
+        ax[1].plot(*return_CDF(sigma_peaks_inside_cands), color='k', label='cands')
+        ax[1].plot(*return_CDF(sigma_peaks_inside_ulens), color='r', label='ulens')
+        ax[1].set_ylabel('CDF')
+        sigma_peaks_thresh = 5
+        for a in ax:
+            a.legend()
+            a.set_xlabel(f'{sigma_factor} Sigma Peaks Inside 2tE')
+            a.set_xlim(0, 100)
+            a.axvline(sigma_peaks_thresh, color='c', alpha=.3)
+        cands_frac = np.sum(sigma_peaks_inside_cands <= sigma_peaks_thresh) / len(sigma_peaks_inside_cands)
+        ulens_frac = np.sum(sigma_peaks_inside_ulens <= sigma_peaks_thresh) / len(sigma_peaks_inside_ulens)
+        ax[1].axhline(cands_frac, color='g', alpha=.3)
+        ax[1].axhline(ulens_frac, color='g', alpha=.3)
+        fig.tight_layout()
+
+    sigma_factor = 5
+    if sigma_factor == 3:
+        sigma_peaks_inside_ulens = num_peaks_ulens_inside_3sigma
+        sigma_peaks_inside_cands = sigma_peaks_cands_inside_3sigma
+    elif sigma_factor == 5:
+        sigma_peaks_inside_ulens = num_peaks_ulens_inside_5sigma
+        sigma_peaks_inside_cands = sigma_peaks_cands_inside_5sigma
 
     # ulens passing cut
-    cond = sigma_peaks_ulens >= sigma_peaks_thresh
+    cond = sigma_peaks_inside_ulens >= sigma_peaks_thresh
     _plot_sigma_peaks_ulens(data, stats, metadata, cond,
-                            sigma_peaks_ulens, sigma_factor, sigma_peaks_thresh)
+                            sigma_peaks_inside_ulens, sigma_factor, sigma_peaks_thresh)
 
     # ulens failing cut
-    cond = sigma_peaks_ulens < sigma_peaks_thresh
+    cond = sigma_peaks_inside_ulens < sigma_peaks_thresh
     _plot_sigma_peaks_ulens(data, stats, metadata, cond,
-                            sigma_peaks_ulens, sigma_factor, sigma_peaks_thresh)
+                            sigma_peaks_inside_ulens, sigma_factor, sigma_peaks_thresh)
 
     # cands passing cut
-    cond = sigma_peaks_cands >= sigma_peaks_thresh
-    _plot_sigma_peaks_cands(cond, cands3, id_cands, sigma_peaks_cands,
+    cond = sigma_peaks_inside_cands >= sigma_peaks_thresh
+    _plot_sigma_peaks_cands(cond, cands3, id_cands, sigma_peaks_inside_cands,
                             sigma_factor, sigma_peaks_thresh)
 
     # cands failing cut
-    cond = sigma_peaks_cands < sigma_peaks_thresh
-    _plot_sigma_peaks_cands(cond, cands3, id_cands, sigma_peaks_cands,
+    cond = sigma_peaks_inside_cands < sigma_peaks_thresh
+    _plot_sigma_peaks_cands(cond, cands3, id_cands, sigma_peaks_inside_cands,
                             sigma_factor, sigma_peaks_thresh)
 
 

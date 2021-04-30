@@ -46,9 +46,12 @@ def fit_level3_candidates_to_sigma_peaks():
 
         update_dct = {}
         for sigma_factor in [3, 5]:
-            sigma_peaks = return_sigma_peaks(hmjd, mag, t0, tE,
-                                             sigma_factor=sigma_factor, tE_factor=2)
-            update_dct[f'num_{sigma_factor}sigma_peaks_inside_2tE_best'] = int(sigma_peaks)
+            sigma_peaks_inside, sigma_peaks_outside = return_sigma_peaks(hmjd, mag, t0, tE,
+                                                                         sigma_factor=sigma_factor,
+                                                                         tE_factor=2)
+            print(idx, sigma_factor, sigma_peaks_inside, sigma_peaks_outside)
+            update_dct[f'num_{sigma_factor}sigma_peaks_inside_2tE_best'] = int(sigma_peaks_inside)
+            update_dct[f'num_{sigma_factor}sigma_peaks_outside_2tE_best'] = int(sigma_peaks_outside)
         db.session.query(CandidateLevel3).filter(CandidateLevel3.id==cand_id).update(update_dct)
     db.session.commit()
 

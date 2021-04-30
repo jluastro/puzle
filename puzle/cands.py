@@ -269,9 +269,16 @@ def return_sigma_peaks(hmjd, mag, t0, tE, sigma_factor=3, tE_factor=2):
     mean_flat = mag_round_masked.mean()
     std_flat = mag_round_masked.std()
     # We now add up the number of sigma peaks within tE
-    sigma_peaks = np.sum(mag_round[ulens_mask] <= mean_flat - sigma_factor * std_flat)
-    if type(sigma_peaks) == np.ma.core.MaskedConstant:
-        sigma_peaks = 0
+    sigma_peaks_inside = np.sum(mag_round[ulens_mask] <= mean_flat - sigma_factor * std_flat)
+    if type(sigma_peaks_inside) == np.ma.core.MaskedConstant:
+        sigma_peaks_inside = 0
     else:
-        sigma_peaks = int(sigma_peaks)
-    return sigma_peaks
+        sigma_peaks_inside = int(sigma_peaks_inside)
+    # And the number of peaks outside
+    sigma_peaks_outside = np.sum(mag_round[~ulens_mask] <= mean_flat - sigma_factor * std_flat)
+    sigma_peaks_outside += np.sum(mag_round[~ulens_mask] >= mean_flat + sigma_factor * std_flat)
+    if type(sigma_peaks_outside) == np.ma.core.MaskedConstant:
+        sigma_peaks_outside = 0
+    else:
+        sigma_peaks_outside = int(sigma_peaks_outside)
+    return sigma_peaks_inside, sigma_peaks_outside
