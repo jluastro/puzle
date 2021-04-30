@@ -267,6 +267,5 @@ def return_sigma_peaks(hmjd, mag, t0, tE, sigma_factor=3, tE_factor=2):
     mean_flat = mag_masked.mean()
     std_flat = mag_masked.std()
     # We now add up the number of sigma peaks within tE
-    ulens_cond = ~ulens_mask
-    sigma_peaks = np.sum(mag[ulens_cond] <= mean_flat - sigma_factor * std_flat)
+    sigma_peaks = np.sum(mag[ulens_mask] <= mean_flat - sigma_factor * std_flat)
     return sigma_peaks

@@ -125,7 +125,7 @@ def plot_ulens_opt_corner():
     plt.close(fig)
 
 
-def _plot_cands_model(ax, hmjd, mag, magerr, cand2, cand3):
+def _plot_cands_model(ax, hmjd, mag, magerr, cand3, cand2=None):
     t0 = cand3.t0_best
     u0_amp = cand3.u0_amp_best
     tE = cand3.tE_best
@@ -148,24 +148,26 @@ def _plot_cands_model(ax, hmjd, mag, magerr, cand2, cand3):
     ax.axvline(t0 + tE, color='g', alpha=.3, linestyle='--')
     ax.axvline(t0 - tE, color='g', alpha=.3, linestyle='--')
 
-    t0 = cand2.t_0_best
-    tE = cand2.t_E_best
-    f0 = cand2.f_0_best
-    f1 = cand2.f_1_best
-    a_type = cand2.a_type_best
+    if cand2 is not None:
+        t0 = cand2.t_0_best
+        tE = cand2.t_E_best
+        f0 = cand2.f_0_best
+        f1 = cand2.f_1_best
+        a_type = cand2.a_type_best
 
-    flux_model_minmax = return_flux_model(hmjd_model, t0, tE, a_type, f0, f1)
-    _, fluxerr = magnitudes_to_fluxes(mag, magerr)
-    fluxerr_model = np.interp(hmjd_model, hmjd, fluxerr)
-    mag_model_minmax, _ = fluxes_to_magnitudes(flux_model_minmax, fluxerr_model)
+        flux_model_minmax = return_flux_model(hmjd_model, t0, tE, a_type, f0, f1)
+        _, fluxerr = magnitudes_to_fluxes(mag, magerr)
+        fluxerr_model = np.interp(hmjd_model, hmjd, fluxerr)
+        mag_model_minmax, _ = fluxes_to_magnitudes(flux_model_minmax, fluxerr_model)
 
-    ax.plot(hmjd_model, mag_model_minmax, color='r')
-    ax.axvline(t0, color='r', alpha=.3)
-    ax.axvline(t0 + tE, color='r', alpha=.3, linestyle='--')
-    ax.axvline(t0 - tE, color='r', alpha=.3, linestyle='--')
+        ax.plot(hmjd_model, mag_model_minmax, color='r')
+        ax.axvline(t0, color='r', alpha=.3)
+        ax.axvline(t0 + tE, color='r', alpha=.3, linestyle='--')
+        ax.axvline(t0 - tE, color='r', alpha=.3, linestyle='--')
 
 
-def _plot_ulens_model(ax, hmjd, mag, magerr, stats_obs, metadata_obs, idx):
+def _plot_ulens_model(ax, hmjd, mag, magerr, stats_obs, metadata_obs, idx,
+                      plot_level2=True):
     t0 = metadata_obs['t0'][idx]
     u0_amp = metadata_obs['u0'][idx]
     tE = metadata_obs['tE'][idx]
@@ -210,21 +212,22 @@ def _plot_ulens_model(ax, hmjd, mag, magerr, stats_obs, metadata_obs, idx):
     ax.axvline(t0 + tE, color='g', alpha=.3, linestyle='--')
     ax.axvline(t0 - tE, color='g', alpha=.3, linestyle='--')
 
-    t0 = stats_obs['t0_level2'][idx]
-    tE = stats_obs['tE_level2'][idx]
-    f0 = stats_obs['f0_level2'][idx]
-    f1 = stats_obs['f1_level2'][idx]
-    a_type = stats_obs['atype_level2'][idx]
+    if plot_level2:
+        t0 = stats_obs['t0_level2'][idx]
+        tE = stats_obs['tE_level2'][idx]
+        f0 = stats_obs['f0_level2'][idx]
+        f1 = stats_obs['f1_level2'][idx]
+        a_type = stats_obs['atype_level2'][idx]
 
-    flux_model_minmax = return_flux_model(hmjd_model, t0, tE, a_type, f0, f1)
-    _, fluxerr = magnitudes_to_fluxes(mag, magerr)
-    fluxerr_model = np.interp(hmjd_model, hmjd, fluxerr)
-    mag_model_minmax, _ = fluxes_to_magnitudes(flux_model_minmax, fluxerr_model)
+        flux_model_minmax = return_flux_model(hmjd_model, t0, tE, a_type, f0, f1)
+        _, fluxerr = magnitudes_to_fluxes(mag, magerr)
+        fluxerr_model = np.interp(hmjd_model, hmjd, fluxerr)
+        mag_model_minmax, _ = fluxes_to_magnitudes(flux_model_minmax, fluxerr_model)
 
-    ax.plot(hmjd_model, mag_model_minmax, color='r', alpha=.3)
-    ax.axvline(t0, color='r', alpha=.3)
-    ax.axvline(t0 + tE, color='r', alpha=.3, linestyle='--')
-    ax.axvline(t0 - tE, color='r', alpha=.3, linestyle='--')
+        ax.plot(hmjd_model, mag_model_minmax, color='r', alpha=.3)
+        ax.axvline(t0, color='r', alpha=.3)
+        ax.axvline(t0 + tE, color='r', alpha=.3, linestyle='--')
+        ax.axvline(t0 - tE, color='r', alpha=.3, linestyle='--')
 
 
 def _plot_chi_samples_cands(log_reduced_chi_squared_outside_cands,
@@ -260,7 +263,7 @@ def _plot_chi_samples_cands(log_reduced_chi_squared_outside_cands,
         magerr = obj.lightcurve.magerr
 
         ax[i].scatter(hmjd, mag, s=1, color='b')
-        _plot_cands_model(ax[i], hmjd, mag, magerr, cand2, cand3)
+        _plot_cands_model(ax[i], hmjd, mag, magerr, cand3, cand2)
         ax[i].invert_yaxis()
         ax[i].set_xlim(np.min(hmjd), np.max(hmjd))
 
@@ -820,7 +823,7 @@ def _plot_eta_minmax_opt_samples_cands(eta_residual_minmax_cands,
         magerr = obj.lightcurve.magerr
 
         ax[i].scatter(hmjd, mag, s=1, color='b')
-        _plot_cands_model(ax[i], hmjd, mag, magerr, cand2, cand3)
+        _plot_cands_model(ax[i], hmjd, mag, magerr, cand3, cand2)
         ax[i].invert_yaxis()
         ax[i].set_xlim(np.min(hmjd), np.max(hmjd))
 
@@ -924,26 +927,121 @@ def plot_ulens_eta_residual_minmax_vs_opt():
                                        opt_low=0, opt_high=1)
 
 
+def _plot_sigma_peaks_ulens(data, stats, metadata, cond, sigma_peaks_ulens, sigma_factor, sigma_peaks_thresh):
+    idx_arr = np.random.choice(np.where(cond == True)[0], replace=False, size=10)
+    fig, ax = plt.subplots(5, 2, figsize=(7, 7))
+    fig.suptitle(f'ulens {sigma_peaks_thresh} inside points above {sigma_factor} sigma',
+                 fontsize=10)
+    ax = ax.flatten()
+    for i, idx in enumerate(idx_arr):
+        d = data[idx]
+        hmjd, mag, magerr = d[:, :3].T
+        sigma_peaks = sigma_peaks_ulens[idx]
+        ax[i].set_title(f'{sigma_peaks} Peaks | idx {idx}')
+        ax[i].scatter(hmjd, mag, s=1, color='b')
+        _plot_ulens_model(ax[i], hmjd, mag, magerr, stats, metadata, idx,
+                          plot_level2=False)
+        ax[i].invert_yaxis()
+        ax[i].set_xlim(np.min(hmjd), np.max(hmjd))
+    fig.tight_layout()
+    fig.subplots_adjust(top=.93)
+
+
+def _plot_sigma_peaks_cands(cond, cands3, id_cands, sigma_peaks_cands, sigma_factor, sigma_peaks_thresh):
+    idx_arr = np.random.choice(np.where(cond == True)[0], replace=False, size=10)
+    fig, ax = plt.subplots(5, 2, figsize=(7, 7))
+    fig.suptitle(f'ulens {sigma_peaks_thresh} inside points above {sigma_factor} sigma',
+                 fontsize=10)
+    ax = ax.flatten()
+    for i, idx in enumerate(idx_arr):
+        cand_id = id_cands[idx]
+        sigma_peaks = sigma_peaks_cands[idx]
+        cand3 = cands3[idx]
+
+        obj = fetch_cand_best_obj_by_id(cand_id)
+        hmjd = obj.lightcurve.hmjd
+        mag = obj.lightcurve.mag
+        magerr = obj.lightcurve.magerr
+
+        ax[i].set_title(f'{sigma_peaks} Peaks')
+        ax[i].scatter(hmjd, mag, s=1, color='b')
+        _plot_cands_model(ax[i], hmjd, mag, magerr, cand3)
+        ax[i].invert_yaxis()
+        ax[i].set_xlim(np.min(hmjd), np.max(hmjd))
+    fig.tight_layout()
+    fig.subplots_adjust(top=.93)
+
+
 def plot_ulens_opt_sigma_peaks():
+    sigma_factor = 3
+
+    name_column = f'num_{sigma_factor}sigma_peaks_inside_2tE_best'
+    cands3 = CandidateLevel3.query.\
+        filter(getattr(CandidateLevel3, name_column)!=None).\
+        order_by(CandidateLevel3.id).all()
+    sigma_peaks_cands = np.array([getattr(c, name_column) for c in cands3]).astype(int)
+    id_cands = np.array([c.id for c in cand3])
+
     bhFlag = False
     data = return_ulens_data(observableFlag=True, bhFlag=bhFlag, level3Flag=True)
-    metadata = return_ulens_metadata(observableFlag=True, bhFlag=bhFlag, level3Flag=True)
     stats = return_ulens_stats(observableFlag=True, bhFlag=bhFlag, level3Flag=True)
+    metadata = return_ulens_metadata(observableFlag=True, bhFlag=bhFlag, level3Flag=True)
     t0_ulens = stats['t0_level3']
     tE_ulens = stats['tE_level3']
 
-    sigma_factor = 3
-    sigma_peaks_arr = []
-    for i, t0 in enumerate(t0_ulens):
-        # if i % 1000 == 0:
-        #     print('ulens', i, len(t0_ulens))
-        hmjd, mag, magerr = data[i][:, :3].T
-        tE = tE_ulens[i]
+    sigma_peaks_ulens = []
+    idx_arr = np.arange(len(t0_ulens))
+    for idx in idx_arr:
+        if idx % 1000 == 0:
+            print('ulens', idx, len(idx_arr))
+        hmjd, mag, magerr = data[idx][:, :3].T
+        t0 = t0_ulens[idx]
+        tE = tE_ulens[idx]
 
         sigma_peaks = return_sigma_peaks(hmjd, mag, t0, tE,
                                          tE_factor=2,
                                          sigma_factor=sigma_factor)
-        sigma_peaks_arr.append(sigma_peaks)
+        sigma_peaks_ulens.append(sigma_peaks)
+    sigma_peaks_ulens = np.array(sigma_peaks_ulens)
+
+    fig, ax = plt.subplots(2, 1, figsize=(8, 6))
+    for a in ax: a.clear()
+    bins = np.arange(21)
+    ax[0].set_title(f'{sigma_factor} Sigma Peaks')
+    ax[0].hist(sigma_peaks_cands, color='k', label='cands', histtype='step', bins=bins, density=True)
+    ax[0].hist(sigma_peaks_ulens, color='r', label='ulens', histtype='step', bins=bins, density=True)
+    ax[1].plot(*return_CDF(sigma_peaks_cands), color='k', label='cands')
+    ax[1].plot(*return_CDF(sigma_peaks_ulens), color='r', label='ulens')
+    ax[1].set_ylabel('CDF')
+    for a in ax:
+        a.legend()
+        a.set_xlabel(f'{sigma_factor} Sigma Peaks Inside 2tE')
+        a.set_xlim(0, 10)
+    fig.tight_layout()
+
+    sigma_peaks_thresh = 1
+
+    # ulens passing cut
+    cond = sigma_peaks_ulens >= sigma_peaks_thresh
+    _plot_sigma_peaks_ulens(data, stats, metadata, cond,
+                            sigma_peaks_ulens, sigma_factor, sigma_peaks_thresh)
+
+    # ulens failing cut
+    cond = sigma_peaks_ulens < sigma_peaks_thresh
+    _plot_sigma_peaks_ulens(data, stats, metadata, cond,
+                            sigma_peaks_ulens, sigma_factor, sigma_peaks_thresh)
+
+    # cands passing cut
+    cond = sigma_peaks_cands >= sigma_peaks_thresh
+    _plot_sigma_peaks_cands(cond, cands3, id_cands, sigma_peaks_cands,
+                            sigma_factor, sigma_peaks_thresh)
+
+    # cands failing cut
+    cond = sigma_peaks_cands < sigma_peaks_thresh
+    _plot_sigma_peaks_cands(cond, cands3, id_cands, sigma_peaks_cands,
+                            sigma_factor, sigma_peaks_thresh)
+
+
 
 
 def generate_all_figures():
