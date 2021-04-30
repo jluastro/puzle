@@ -639,6 +639,8 @@ class CandidateLevel3(db.Model):
     num_epochs_inside_1tE_best = db.Column(db.Integer)
     num_epochs_inside_2tE_best = db.Column(db.Integer)
     num_epochs_inside_3tE_best = db.Column(db.Integer)
+    num_3sigma_peaks_inside_2tE_best = db.Column(db.Integer)
+    num_5sigma_peaks_inside_2tE_best = db.Column(db.Integer)
     comments = db.Column(db.String(1024))
     _ztf_ids = db.Column(db.String(256))
     ogle_target = db.Column(db.String(128))
@@ -662,6 +664,8 @@ class CandidateLevel3(db.Model):
                  num_epochs_inside_1tE_best=None,
                  num_epochs_inside_2tE_best=None,
                  num_epochs_inside_3tE_best=None,
+                 num_3sigma_peaks_inside_2tE_best=None,
+                 num_5sigma_peaks_inside_2tE_best=None,
                  comments=None, _ztf_ids=None, ogle_target=None):
         self.id = id
         self.ra = ra
@@ -693,6 +697,8 @@ class CandidateLevel3(db.Model):
         self.num_epochs_inside_1tE_best = num_epochs_inside_1tE_best
         self.num_epochs_inside_2tE_best = num_epochs_inside_2tE_best
         self.num_epochs_inside_3tE_best = num_epochs_inside_3tE_best
+        self.num_3sigma_peaks_inside_2tE_best = num_3sigma_peaks_inside_2tE_best
+        self.num_5sigma_peaks_inside_2tE_best = num_5sigma_peaks_inside_2tE_best
         self.comments = comments
         self._ztf_ids = _ztf_ids
         self.ogle_target = ogle_target
