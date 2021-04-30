@@ -641,6 +641,8 @@ class CandidateLevel3(db.Model):
     num_epochs_inside_3tE_best = db.Column(db.Integer)
     num_3sigma_peaks_inside_2tE_best = db.Column(db.Integer)
     num_5sigma_peaks_inside_2tE_best = db.Column(db.Integer)
+    num_3sigma_peaks_outside_2tE_best = db.Column(db.Integer)
+    num_5sigma_peaks_outside_2tE_best = db.Column(db.Integer)
     comments = db.Column(db.String(1024))
     _ztf_ids = db.Column(db.String(256))
     ogle_target = db.Column(db.String(128))

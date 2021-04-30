@@ -1092,6 +1092,7 @@ def generate_all_figures():
     plot_ulens_opt_chi2_cut()
     plot_ulens_opt_tE_cut()
     plot_ulens_opt_piE_cut()
+    plot_ulens_opt_sigma_peaks()
 
 
 if __name__ == '__main__':
