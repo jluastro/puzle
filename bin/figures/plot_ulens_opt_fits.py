@@ -58,8 +58,9 @@ def plot_ulens_opt_corner():
                             eta_cands,
                             eta_residual_cands)).T
 
-    bhFlag = False
-    stats = return_ulens_stats(observableFlag=True, bhFlag=bhFlag, )
+    bhFlag = True
+    level3Flag = True
+    stats = return_ulens_stats(observableFlag=True, bhFlag=bhFlag, level3Flag=level3Flag)
     tE_ulens = stats['tE_level3']
     u0_amp_ulens = stats['u0_amp_level3']
     mag_src_ulens = stats['mag_src_level3']
@@ -69,7 +70,7 @@ def plot_ulens_opt_corner():
     eta_ulens = stats['eta']
     eta_residual_ulens = stats['eta_residual_level3']
 
-    data = return_ulens_data(observableFlag=True, bhFlag=bhFlag)
+    data = return_ulens_data(observableFlag=True, bhFlag=bhFlag, level3Flag=level3Flag)
     num_epochs_ulens = np.array([len(d) for d in data])
     
     log_tE_ulens = np.log10(tE_ulens)
@@ -90,9 +91,6 @@ def plot_ulens_opt_corner():
                             eta_ulens,
                             eta_residual_ulens)).T
 
-    idx_sample = np.random.choice(np.arange(len(data_cands)), replace=False, size=len(data_ulens))
-    data_cands_sample = data_cands[idx_sample]
-
     # Plot it.
     labels = ['LOG tE', 'u0_amp', 'mag_src', 'chi_squared_delta_reduced', 'LOG piE_E', 'LOG piE_N', 'LOG piE', 'eta', 'eta_residual']
     data_range = [(.5, 4), (-3, 3), (10, 24), (0, 5), (-3, 2), (-3, 2), (-3, 2), (0, 1), (0, 4)]
@@ -105,16 +103,16 @@ def plot_ulens_opt_corner():
         bins = np.linspace(data_range[i][0],
                            data_range[i][1], 25)
         ax[i].hist(data_ulens[:, i], histtype='step',
-                   bins=bins, color='r')
-        ax[i].hist(data_cands_sample[:, i], histtype='step',
-                   bins=bins, color='k')
+                   bins=bins, color='r', density=True)
+        ax[i].hist(data_cands[:, i], histtype='step',
+                   bins=bins, color='k', density=True)
         ax[i].set_xlim(data_range[i])
     fig.tight_layout()
 
     fig = corner.corner(data_ulens, labels=labels, range=data_range,
                         show_titles=True, title_kwargs={"fontsize": 6},
                         label_kwargs={'fontsize': 6}, color='r')
-    fig = corner.corner(data_cands_sample, labels=labels, range=data_range,
+    fig = corner.corner(data_cands, labels=labels, range=data_range,
                         show_titles=True, title_kwargs={"fontsize": 6},
                         label_kwargs={'fontsize': 6}, color='k',
                         fig=fig)

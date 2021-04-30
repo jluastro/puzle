@@ -215,7 +215,7 @@ def edit_candidate_comments(candid):
         cand.comments = form.comments.data
         db.session.commit()
         flash('Your changes have been saved.', 'success')
-        return redirect(url_for('candidate', candid=candid))
+        return redirect(url_for('candidate_level3', candid=candid))
     elif request.method == 'GET':
         form.comments.data = cand.comments
     return render_template('edit_candidate_comments.html',
@@ -239,7 +239,7 @@ def fetch_candidate_ztf_ids(candid):
     n_ids = cand.fetch_ztf_ids()
     flash('%i ZTF IDs Found' % n_ids, 'success')
     db.session.commit()
-    return redirect(url_for('candidate', candid=candid))
+    return redirect(url_for('candidate_level3', candid=candid))
 
 
 @app.route('/fetch_candidate_ogle_target/<candid>', methods=['POST'])
@@ -252,7 +252,7 @@ def fetch_candidate_ogle_target(candid):
     else:
         flash('No OGLE Target Found', 'success')
     db.session.commit()
-    return redirect(url_for('candidate', candid=candid))
+    return redirect(url_for('candidate_level3', candid=candid))
 
 
 @app.route('/follow_source/<sourceid>', methods=['POST'])
