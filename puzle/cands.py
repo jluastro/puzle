@@ -5,6 +5,7 @@ cands.py
 
 import numpy as np
 import scipy.optimize as op
+from astropy.stats import sigma_clip
 from sqlalchemy.sql.expression import func
 import matplotlib.pyplot as plt
 
@@ -249,3 +250,23 @@ def apply_level3_cuts_to_query(query):
                          func.sqrt(func.pow(CandidateLevel3.piE_E_best, 2.) +
                                    func.pow(CandidateLevel3.piE_N_best, 2.)) <= 2.877)
     return query
+
+
+def return_sigma_peaks(hmjd, mag, t0, tE, sigma_factor=3, tE_factor=2):
+    # Mask out those points that are within the microlensing event
+    ulens_mask = hmjd > t0 - tE_factor * tE
+    ulens_mask *= hmjd < t0 + tE_factor * tE
+    # Use this mask to generated a masked array for sigma clipping
+    # By applying this mask, the 3-sigma will not be calculated using these points
+    mag_masked = np.ma.array(mag, mask=ulens_mask)
+    # Perform the sigma clipping
+    mag_masked = sigma_clip(mag_masked, sigma=3, maxiters=5)
+    # This masked array is now a mask that includes BOTH the mirolensing event and
+    # the 3-sigma outliers that we want removed. This is the "flats" where we
+    # want to calculate the mean and sigma
+    mean_flat = mag_masked.mean()
+    std_flat = mag_masked.std()
+    # We now add up the number of sigma peaks within tE
+    ulens_cond = ~ulens_mask
+    sigma_peaks = np.sum(mag[ulens_cond] <= mean_flat - sigma_factor * std_flat)
+    return sigma_peaks

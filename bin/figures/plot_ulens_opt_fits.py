@@ -11,7 +11,8 @@ from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle.ulens import return_ulens_data, return_ulens_metadata, return_ulens_stats
 from puzle.cands import return_cands_eta_resdiual_arrs, \
-    fetch_cand_best_obj_by_id, calculate_chi2, apply_level3_cuts_to_query
+    fetch_cand_best_obj_by_id, calculate_chi2, apply_level3_cuts_to_query, \
+    return_sigma_peaks
 from puzle.models import CandidateLevel2, CandidateLevel3
 from puzle.utils import return_figures_dir
 from puzle.stats import calculate_chi_squared_inside_outside
@@ -921,6 +922,28 @@ def plot_ulens_eta_residual_minmax_vs_opt():
                                        data_ulens, stats_ulens, metadata_ulens,
                                        minmax_low=0, minmax_high=1,
                                        opt_low=0, opt_high=1)
+
+
+def plot_ulens_opt_sigma_peaks():
+    bhFlag = False
+    data = return_ulens_data(observableFlag=True, bhFlag=bhFlag, level3Flag=True)
+    metadata = return_ulens_metadata(observableFlag=True, bhFlag=bhFlag, level3Flag=True)
+    stats = return_ulens_stats(observableFlag=True, bhFlag=bhFlag, level3Flag=True)
+    t0_ulens = stats['t0_level3']
+    tE_ulens = stats['tE_level3']
+
+    sigma_factor = 3
+    sigma_peaks_arr = []
+    for i, t0 in enumerate(t0_ulens):
+        # if i % 1000 == 0:
+        #     print('ulens', i, len(t0_ulens))
+        hmjd, mag, magerr = data[i][:, :3].T
+        tE = tE_ulens[i]
+
+        sigma_peaks = return_sigma_peaks(hmjd, mag, t0, tE,
+                                         tE_factor=2,
+                                         sigma_factor=sigma_factor)
+        sigma_peaks_arr.append(sigma_peaks)
 
 
 def generate_all_figures():
