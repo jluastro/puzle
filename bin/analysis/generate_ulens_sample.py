@@ -371,7 +371,10 @@ def consolidate_lightcurves():
     data_dir = return_data_dir()
     fname_total_arr = glob.glob(f'{data_dir}/ulens_sample.??.total.npz')
     fname_total_arr.sort()
-    idx = int(os.path.basename(fname_total_arr[-1]).split('.')[1]) + 1
+    if len(fname_total_arr) == 0:
+        idx = 0
+    else:
+        idx = int(os.path.basename(fname_total_arr[-1]).split('.')[1]) + 1
 
     # load existing totals into memory
     lightcurves_arr = []
@@ -449,7 +452,16 @@ def test_for_three_consecutive_decreases(arr):
     return any(three_consecutive_decreases(arr))
 
 
-def _calculate_stats_on_lightcurves(rank, size, sibsFlag=False):
+def _calculate_stats_on_lightcurves(sibsFlag=False):
+    if 'SLURMD_NODENAME' in os.environ:
+        from mpi4py import MPI
+        comm = MPI.COMM_WORLD
+        rank = comm.rank
+        size = comm.size
+    else:
+        rank = 0
+        size = 1
+
     # run consolidate lightcurves first
     data_dir = return_data_dir()
     my_stats_complete_fname = f'{data_dir}/ulens_samples/stats.{rank:02d}.txt'
@@ -688,26 +700,23 @@ def _calculate_stats_on_lightcurves(rank, size, sibsFlag=False):
                  idx=idx_arr)
 
 
-
-def _calculate_stats_on_lightcurves(sibsFlag=False):
+def calculate_stats_on_lightcurves():
     # run consolidate lightcurves first
 
     if 'SLURMD_NODENAME' in os.environ:
         from mpi4py import MPI
         comm = MPI.COMM_WORLD
         rank = comm.rank
-        size = comm.size
     else:
         rank = 0
-        size = 1
 
     data_dir = return_data_dir()
     my_stats_complete_fname = f'{data_dir}/ulens_samples/stats.{rank:02d}.txt'
     if os.path.exists(my_stats_complete_fname):
         os.remove(my_stats_complete_fname)
 
-    _calculate_stats_on_lightcurves(rank, size, sibsFlag=False)
-    _calculate_stats_on_lightcurves(rank, size, sibsFlag=True)
+    _calculate_stats_on_lightcurves(sibsFlag=False)
+    _calculate_stats_on_lightcurves(sibsFlag=True)
 
 
 def _test_lightcurve_stats(data_lightcurves, observable_arr, idx_sample):
@@ -762,6 +771,6 @@ def test_lightcurve_stats(N_samples=1000):
 
 
 if __name__ == '__main__':
-    generate_random_lightcurves()
+    # generate_random_lightcurves()
     # consolidate_lightcurves()
-    # calculate_stats_on_lightcurves()
+    calculate_stats_on_lightcurves()
