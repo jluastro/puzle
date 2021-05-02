@@ -449,30 +449,22 @@ def test_for_three_consecutive_decreases(arr):
     return any(three_consecutive_decreases(arr))
 
 
-def calculate_stats_on_lightcurves():
+def _calculate_stats_on_lightcurves(rank, size, sibsFlag=False):
     # run consolidate lightcurves first
-
-    if 'SLURMD_NODENAME' in os.environ:
-        from mpi4py import MPI
-        comm = MPI.COMM_WORLD
-        rank = comm.rank
-        size = comm.size
-    else:
-        rank = 0
-        size = 1
-
     data_dir = return_data_dir()
     my_stats_complete_fname = f'{data_dir}/ulens_samples/stats.{rank:02d}.txt'
-    if os.path.exists(my_stats_complete_fname):
-        os.remove(my_stats_complete_fname)
 
     fname = return_ulens_data_fname('ulens_sample')
+    if sibsFlag:
+        fname = fname.replace('sample', 'sample.sibs')
     data = load_stacked_array(fname)
     lightcurve_data = []
     for i, d in enumerate(data):
         lightcurve_data.append(d)
 
     fname = return_ulens_data_fname('ulens_sample_metadata')
+    if sibsFlag:
+        fname = fname.replace('metadata', 'metadata.sibs')
     metadata = np.load(fname)
 
     idx_arr = np.arange(len(lightcurve_data))
@@ -667,6 +659,8 @@ def calculate_stats_on_lightcurves():
         idx_arr = list(itertools.chain(*total_idx_arr))
         fname_data = return_ulens_data_fname('ulens_sample')
         fname_stats = fname_data.replace('ulens_sample', 'ulens_sample_stats')
+        if sibsFlag:
+            fname_stats = fname_stats.replace('stats', 'stats.sibs')
         np.savez(fname_stats,
                  chi_squared_modeled=chi_squared_modeled_arr,
                  num_days=num_days_arr,
@@ -692,6 +686,28 @@ def calculate_stats_on_lightcurves():
                  chi_squared_delta_level3=chi_squared_delta_level3_arr,
                  eta_residual_level3=eta_residual_level3_arr,
                  idx=idx_arr)
+
+
+
+def _calculate_stats_on_lightcurves(sibsFlag=False):
+    # run consolidate lightcurves first
+
+    if 'SLURMD_NODENAME' in os.environ:
+        from mpi4py import MPI
+        comm = MPI.COMM_WORLD
+        rank = comm.rank
+        size = comm.size
+    else:
+        rank = 0
+        size = 1
+
+    data_dir = return_data_dir()
+    my_stats_complete_fname = f'{data_dir}/ulens_samples/stats.{rank:02d}.txt'
+    if os.path.exists(my_stats_complete_fname):
+        os.remove(my_stats_complete_fname)
+
+    _calculate_stats_on_lightcurves(rank, size, sibsFlag=False)
+    _calculate_stats_on_lightcurves(rank, size, sibsFlag=True)
 
 
 def _test_lightcurve_stats(data_lightcurves, observable_arr, idx_sample):
