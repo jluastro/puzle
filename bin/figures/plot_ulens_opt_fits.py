@@ -482,11 +482,11 @@ def plot_ulens_opt_piE_cut():
     piE_measured_ulens = np.hypot(stats['piE_E_level3'], stats['piE_N_level3'])
     log_piE_measured_ulens = np.log10(piE_measured_ulens)
 
-    log_piE_thresh = np.percentile(log_piE_measured_ulens, 99)
+    log_piE_thresh = np.percentile(log_piE_measured_ulens, 95)
     cand_frac = np.sum(log_piE_measured_cands <= log_piE_thresh) / len(log_piE_measured_cands)
 
     fig, ax = plt.subplots(2, 1, figsize=(8, 8))
-    fig.suptitle('%.2f%% Percent of Cands below 99th Percentile' % (100 * cand_frac))
+    fig.suptitle('%.2f%% Percent of Cands below 95th Percentile' % (100 * cand_frac))
     for a in ax: a.clear()
     bins = np.linspace(-3, 3, 50)
     ax[0].hist(log_piE_measured_ulens, label='ulens measured',
@@ -499,7 +499,7 @@ def plot_ulens_opt_piE_cut():
     ax[1].plot(*return_CDF(log_piE_measured_ulens), label='ulens measured')
     ax[1].plot(*return_CDF(log_piE_modeled_ulens), label='ulens modeled')
     ax[1].plot(*return_CDF(log_piE_measured_cands), label='cands measured')
-    ax[1].axhline(0.99, color='k', alpha=.3, label='ulens measured 99th percentile')
+    ax[1].axhline(0.95, color='k', alpha=.3, label='ulens measured 99th percentile')
     ax[1].axvline(log_piE_thresh, color='k', alpha=.3)
 
     for a in ax:
