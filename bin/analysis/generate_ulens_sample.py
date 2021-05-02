@@ -123,6 +123,8 @@ def fetch_objects(ra, dec, radius, limit, n_days_min=50):
                                    replace=False)
         for idx in idx_arr:
             source = csv_line_to_source(lines[idx], lightcurve_file_pointers)
+            if source.object_id_g is None or source.object_id_r is None:
+                continue
             zort_source = source.load_zort_source()
             n_days_arr = []
             for obj in zort_source.objects:
@@ -131,6 +133,10 @@ def fetch_objects(ra, dec, radius, limit, n_days_min=50):
             if (len(n_days_arr) == 0) or (np.max(n_days_arr) < n_days_min):
                 continue
             obj = zort_source.objects[np.argmax(n_days_arr)]
+            if obj.color == 'r':
+                obj.siblings = [zort_source.object_g]
+            else:
+                obj.siblings = [zort_source.object_r]
             objects.append(obj)
 
         if len(objects) >= limit:
@@ -161,10 +167,12 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000,
     import astropy.units as u
     from astropy.table import Table
 
-    popsycle_fname = f'{popsycle_base_folder}/l{l:.1f}_b{b:.1f}_refined_events_ztf_r_Damineli16.fits'
-    popsycle_catalog = Table.read(popsycle_fname, format='fits')
+    popsycle_r_fname = f'{popsycle_base_folder}/l{l:.1f}_b{b:.1f}_refined_events_ztf_r_Damineli16.fits'
+    popsycle_r_catalog = Table.read(popsycle_r_fname, format='fits')
+    # popsycle_g_fname = f'{popsycle_base_folder}/l{l:.1f}_b{b:.1f}_refined_events_ztf_g_Damineli16.fits'
+    # popsycle_g_catalog = Table.read(popsycle_g_fname, format='fits')
 
-    tE_log_catalog = np.log10(popsycle_catalog['t_E'])
+    tE_log_catalog = np.log10(popsycle_r_catalog['t_E'])
     tE_log_median = np.median(tE_log_catalog)
     tE_log_std = np.std(tE_log_catalog)
     tE_arr = 10 ** np.random.normal(tE_log_median, tE_log_std, size=N_samples*10)
@@ -172,7 +180,7 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000,
     tE_arr_idx = np.random.choice(tE_arr_idx, size=N_samples, replace=False)
     tE_arr = tE_arr[tE_arr_idx]
 
-    pi_E_catalog = popsycle_catalog['pi_E']
+    pi_E_catalog = popsycle_r_catalog['pi_E']
     loc, scale = expon.fit(pi_E_catalog)
     pi_E = expon.rvs(loc, scale, N_samples)
     theta = np.random.uniform(0, 2 * np.pi, N_samples)
@@ -194,7 +202,9 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000,
     objects = fetch_objects(ra, dec, radius,
                             limit=N_samples, n_days_min=n_days_min)
     lightcurves = []
+    lightcurves_sibs = []
     metadata = []
+    metadata_sibs = []
 
     increment = N_samples / 10
     for i, obj in enumerate(objects):
@@ -235,7 +245,6 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000,
 
             amp = model.get_amplification(obj_t)
             obj_flux_micro = amp * b_sff * obj_flux + (1 - b_sff) * obj_flux
-
             obj_mag_micro, _ = fluxes_to_magnitudes(obj_flux_micro, obj_fluxerr)
             delta_m = obj_mag - obj_mag_micro
             delta_m_min_cond = delta_m >= delta_m_min
@@ -247,9 +256,32 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000,
                     lightcurves.append((obj_t, obj_mag_micro, obj_magerr))
                     metadata.append((obj.filename, obj.object_id, obj.lightcurve_position,
                                      t0, u0, tE, mag_src, piE_E, piE_N, b_sff, obj.ra, obj.dec, eta_residual))
+
+                    # append sibling data
+                    sib = obj.siblings[0]
+                    obj_sib_t = sib.lightcurve.hmjd
+                    obj_sib_mag = sib.lightcurve.mag
+                    obj_sib_magerr = sib.lightcurve.magerr
+                    obj_sib_flux = sib.lightcurve.flux
+                    obj_sib_fluxerr = sib.lightcurve.fluxerr
+
+                    flux_src_sib = np.median(obj_sib_flux) * b_sff
+                    mag_src_sib, _ = fluxes_to_magnitudes(flux_src_sib)
+                    model_sib = PSPL_Phot_Par_Param1(t0=t0, u0_amp=u0, tE=tE, mag_src=mag_src_sib,
+                                                     piE_E=piE_E, piE_N=piE_N, b_sff=b_sff,
+                                                     raL=sib.ra, decL=sib.dec)
+
+                    amp_sib = model_sib.get_amplification(obj_sib_t)
+                    obj_sib_flux_micro = amp_sib * b_sff * obj_sib_flux + (1 - b_sff) * obj_sib_flux
+                    obj_sib_mag_micro, _ = fluxes_to_magnitudes(obj_sib_flux_micro, obj_sib_fluxerr)
+                    eta_residual_sib = calculate_eta_on_daily_avg(obj_sib_t, obj_sib_mag)
+
+                    lightcurves_sibs.append((obj_sib_t, obj_sib_mag_micro, obj_sib_magerr))
+                    metadata_sibs.append((sib.filename, sib.object_id, sib.lightcurve_position,
+                                          t0, u0, tE, mag_src, piE_E, piE_N, b_sff, sib.ra, sib.dec, eta_residual_sib))
                     break
 
-    return lightcurves, metadata
+    return lightcurves, metadata, lightcurves_sibs, metadata_sibs
 
 
 def generate_random_lightcurves():
@@ -273,15 +305,20 @@ def generate_random_lightcurves():
 
     lightcurves_arr = []
     metadata_arr = []
+    lightcurves_sibs_arr = []
+    metadata_sibs_arr = []
     for i, (l, b) in enumerate(my_lb_arr):
         print('%i) Processing (l, b) = (%.2f, %.2f) |  %i / %i' % (rank, l, b, i, len(my_lb_arr)))
-        lightcurves, metadata = generate_random_lightcurves_lb(l, b,
-                                                               N_samples=N_samples, tE_min=tE_min,
-                                                               delta_m_min=delta_m_min, delta_m_min_cut=delta_m_min_cut,
-                                                               n_days_min=n_days_min)
+        results = generate_random_lightcurves_lb(l, b,
+                                                 N_samples=N_samples, tE_min=tE_min,
+                                                 delta_m_min=delta_m_min, delta_m_min_cut=delta_m_min_cut,
+                                                 n_days_min=n_days_min)
+        lightcurves, metadata, lightcurves_sibs, metadata_sibs = results
         print('%i) Processing (l, b) = (%.2f, %.2f) |  %i lightcurves' % (rank, l, b, len(lightcurves)))
         lightcurves_arr += lightcurves
         metadata_arr += metadata
+        lightcurves_sibs_arr += lightcurves_sibs
+        metadata_sibs_arr += metadata_sibs
 
     if len(lightcurves_arr) == 0:
         print('%i) No lightcurves generated!' % rank)
@@ -289,11 +326,17 @@ def generate_random_lightcurves():
     else:
         print('%i) %i lightcurves generated' % (rank, len(lightcurves_arr)))
 
+
     data_dir = return_data_dir()
     fname = f'{data_dir}/ulens_samples/ulens_sample.{rank:02d}.npz'
     if os.path.exists(fname):
         os.remove(fname)
     save_stacked_array(fname, lightcurves_arr)
+
+    fname = f'{data_dir}/ulens_samples/ulens_sample.sibs.{rank:02d}.npz'
+    if os.path.exists(fname):
+        os.remove(fname)
+    save_stacked_array(fname, lightcurves_sibs_arr)
 
     dtype = [('filename', str), ('id', int), ('lightcurve_position', int),
              ('t0', float), ('u0', float),
@@ -303,11 +346,18 @@ def generate_random_lightcurves():
              ('dec', float), ('eta_residual', float)]
     metadata_arr = np.array(metadata_arr, dtype=dtype)
     metadata_dct = {k: metadata_arr[k] for k in metadata_arr.dtype.names}
+    metadata_sibs_arr = np.array(metadata_sibs_arr, dtype=dtype)
+    metadata_sibs_dct = {k: metadata_sibs_arr[k] for k in metadata_sibs_arr.dtype.names}
 
     fname = f'{data_dir}/ulens_samples/ulens_sample_metadata.{rank:02d}.npz'
     if os.path.exists(fname):
         os.remove(fname)
     np.savez(fname, **metadata_dct)
+
+    fname = f'{data_dir}/ulens_samples/ulens_sample_metadata.sibs.{rank:02d}.npz'
+    if os.path.exists(fname):
+        os.remove(fname)
+    np.savez(fname, **metadata_sibs_dct)
 
 
 def consolidate_lightcurves():
@@ -666,6 +716,6 @@ def test_lightcurve_stats(N_samples=1000):
 
 
 if __name__ == '__main__':
-    # generate_random_lightcurves()
+    generate_random_lightcurves()
     # consolidate_lightcurves()
-    calculate_stats_on_lightcurves()
+    # calculate_stats_on_lightcurves()

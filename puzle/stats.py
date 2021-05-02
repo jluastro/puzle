@@ -27,7 +27,7 @@ from puzle import db
 RF_THRESHOLD = 0.645
 
 
-def gather_PopSyCLE_refined_events():
+def gather_PopSyCLE_refined_events(band='r'):
     from astropy.table import Table, vstack
     folders = glob.glob('PopSyCLE_runs_v3/l*')
     folders.sort()
@@ -36,7 +36,8 @@ def gather_PopSyCLE_refined_events():
     for i, folder in enumerate(folders):
         print(f'Processing {folder} ({i}/{N_folders})')
         lb = os.path.basename(folder)
-        fis = glob.glob(f'{folder}/*_5yrs_refined_events_ztf_r_Damineli16.fits')
+        fis = glob.glob(f'{folder}/*_5yrs_refined_events_ztf_{band}_Damineli16.fits')
+        fis.sort()
 
         tables = []
         for fi in fis:
@@ -45,7 +46,7 @@ def gather_PopSyCLE_refined_events():
             tables.append(t)
         table_new = vstack(tables)
 
-        fi_new = f'{popsycle_base_folder}/{lb}_refined_events_ztf_r_Damineli16.fits'
+        fi_new = f'{popsycle_base_folder}/{lb}_refined_events_ztf_{band}_Damineli16.fits'
         table_new.write(fi_new, overwrite=True)
 
     print(f'{N_samples} Samples')
