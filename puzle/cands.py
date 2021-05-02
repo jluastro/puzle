@@ -63,6 +63,22 @@ def fetch_cand_best_obj_by_id(cand_id):
     return obj
 
 
+# def return_sources(cand):
+#     source_ids = list(set(cand.source_id_arr))
+#     sources = []
+#     for source in source_ids:
+#
+#
+#
+# def fetch_cand_sources_by_id(cand_id):
+#     cand = fetch_cand_by_id(cand_id)
+#     if cand is None:
+#         objs = None
+#     else:
+#         objs = return_sources(cand)
+#     return objs
+
+
 def return_eta_residual_slope_offset():
     slope = 3.8187919463087248
     offset = -0.07718120805369133
