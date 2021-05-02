@@ -804,3 +804,181 @@ class CandidateLevel3(db.Model):
     def fetch_ogle_target(self):
         self.ogle_target = fetch_ogle_target(self.ra, self.dec)
         return self.ogle_target
+
+
+class CandidateLevel4(db.Model):
+    __tablename__ = 'candidate_level4'
+    __table_args__ = {'schema': 'puzle'}
+
+    id = db.Column(db.String(128), primary_key=True, nullable=False)
+    ra = db.Column(db.Float, nullable=False)
+    dec = db.Column(db.Float, nullable=False)
+    source_id_arr = db.Column(db.ARRAY(db.String(128)))
+    color_arr = db.Column(db.ARRAY(db.String(8)))
+    pass_arr = db.Column(db.ARRAY(db.Boolean))
+    idx_best = db.Column(db.Integer)
+    num_objs_pass = db.Column(db.Integer)
+    num_objs_tot = db.Column(db.Integer)
+    num_epochs_arr = db.Column(db.ARRAY(db.Integer))
+    num_days_arr = db.Column(db.ARRAY(db.Integer))
+    eta_arr = db.Column(db.ARRAY(db.Float))
+    eta_residual_arr = db.Column(db.ARRAY(db.Float))
+    t0_arr = db.Column(db.ARRAY(db.Float))
+    u0_amp_arr = db.Column(db.ARRAY(db.Float))
+    tE_arr = db.Column(db.ARRAY(db.Float))
+    mag_src_arr = db.Column(db.ARRAY(db.Float))
+    b_sff_arr = db.Column(db.ARRAY(db.Float))
+    piE_E_arr = db.Column(db.ARRAY(db.Float))
+    piE_N_arr = db.Column(db.ARRAY(db.Float))
+    chi_squared_ulens_arr = db.Column(db.ARRAY(db.Float))
+    chi_squared_flat_arr = db.Column(db.ARRAY(db.Float))
+    chi_squared_ulens_inside_arr = db.Column(db.ARRAY(db.Float))
+    chi_squared_flat_outside_arr = db.Column(db.ARRAY(db.Float))
+    num_epochs_inside_arr = db.Column(db.Integer)
+    num_3sigma_peaks_inside_arr = db.Column(db.Integer)
+    num_3sigma_peaks_outside_arr = db.Column(db.Integer)
+    num_5sigma_peaks_inside_arr = db.Column(db.Integer)
+    num_5sigma_peaks_outside_arr = db.Column(db.Integer)
+    comments = db.Column(db.String(1024))
+    _ztf_ids = db.Column(db.String(256))
+    ogle_target = db.Column(db.String(128))
+
+    def __init__(self, id=None, ra=None, dec=None, source_id_arr=None, color_arr=None,
+                 pass_arr=None, idx_best=None, num_objs_pass=None, num_objs_tot=None,
+                 num_epochs_arr=None, num_days_arr=None, eta_arr=None,
+                 eta_residual_arr=None, t0_arr=None, u0_amp_arr=None,
+                 tE_arr=None, mag_src_arr=None, b_sff_arr=None, piE_E_arr=None,
+                 piE_N_arr=None, chi_squared_ulens_arr=None, chi_squared_flat_arr=None,
+                 chi_squared_ulens_inside_arr=None, chi_squared_flat_outside_arr=None,
+                 num_epochs_inside_arr=None,
+                 num_3sigma_peaks_inside_arr=None, num_3sigma_peaks_outside_arr=None,
+                 num_5sigma_peaks_inside_arr=None, num_5sigma_peaks_outside_arr=None,
+                 comments=None, _ztf_ids=None, ogle_target=None):
+        self.id = id
+        self.ra = ra
+        self.dec = dec
+        self.source_id_arr = source_id_arr
+        self.color_arr = color_arr
+        self.pass_arr = pass_arr
+        self.idx_best = idx_best
+        self.num_objs_pass = num_objs_pass
+        self.num_objs_tot = num_objs_tot
+        self.num_epochs_arr = num_epochs_arr
+        self.num_days_arr = num_days_arr
+        self.eta_arr = eta_arr
+        self.eta_residual_arr = eta_residual_arr
+        self.t0_arr = t0_arr
+        self.u0_amp_arr = u0_amp_arr
+        self.tE_arr = tE_arr
+        self.mag_src_arr = mag_src_arr
+        self.b_sff_arr = b_sff_arr
+        self.piE_E_arr = piE_E_arr
+        self.piE_N_arr = piE_N_arr
+        self.chi_squared_ulens_arr = chi_squared_ulens_arr
+        self.chi_squared_flat_arr = chi_squared_flat_arr
+        self.chi_squared_ulens_inside_arr = chi_squared_ulens_inside_arr
+        self.chi_squared_flat_outside_arr = chi_squared_flat_outside_arr
+        self.num_epochs_inside_arr = num_epochs_inside_arr
+        self.num_3sigma_peaks_inside_arr = num_3sigma_peaks_inside_arr
+        self.num_3sigma_peaks_outside_arr = num_3sigma_peaks_outside_arr
+        self.num_5sigma_peaks_inside_arr = num_5sigma_peaks_inside_arr
+        self.num_5sigma_peaks_outside_arr = num_5sigma_peaks_outside_arr
+        self.comments = comments
+        self._ztf_ids = _ztf_ids
+        self.ogle_target = ogle_target
+
+    def __repr__(self):
+        str = f'Candidate {self.id}\n'
+        str += f'Ra/Dec: ({self.ra:.5f}, {self.dec:.5f}) \n'
+        return str
+
+    @property
+    def piE_best(self):
+        if self.piE_E_best is None:
+            return None
+        else:
+            return np.hypot(self.piE_E_best, self.piE_N_best)
+
+    @hybrid_property
+    def glonlat(self):
+        from astropy.coordinates import SkyCoord
+        import astropy.units as u
+        try:
+            return self._glonlat
+        except AttributeError:
+            coord = SkyCoord(self.ra, self.dec, unit=u.degree, frame='icrs')
+            glon, glat = coord.galactic.l.value, coord.galactic.b.value
+            if glon > 180:
+                glon -= 360
+            self._glonlat = (glon, glat)
+            return self._glonlat
+
+    @property
+    def glon(self):
+        return self.glonlat[0]
+
+    @property
+    def glat(self):
+        return self.glonlat[1]
+
+    @property
+    def ztf_ids(self):
+        return [x for x in self._ztf_ids.split(';') if len(x) != 0]
+
+    @ztf_ids.setter
+    def ztf_ids(self, ztf_id):
+        if ztf_id:
+            self._ztf_ids += ';%s' % ztf_id
+        else:
+            self._ztf_ids = ''
+
+    @hybrid_method
+    def cone_search(self, ra, dec, radius=2):
+        radius_deg = radius / 3600.
+        return func.q3c_radial_query(text('ra'), text('dec'), ra, dec, radius_deg)
+
+    def _fetch_mars_results(self):
+        radius_deg = 2. / 3600.
+        cone = '%f,%f,%f' % (self.ra, self.dec, radius_deg)
+        query = {"queries": [{"cone": cone}]}
+        results = requests.post('https://mars.lco.global/', json=query).json()
+        if results['total'] == 0:
+            return None
+        else:
+            return results
+
+    def fetch_ztf_ids(self):
+        results = self._fetch_mars_results()
+        if results is None:
+            return 0
+        ztf_ids = [str(r['objectId']) for r in
+                   results['results'][0]['results']]
+        ztf_ids = list(set(ztf_ids))
+        self.ztf_ids = None
+        for ztf_id in ztf_ids:
+            self.ztf_ids = ztf_id
+
+        return len(ztf_ids)
+
+    @hybrid_method
+    def return_source_dct(self):
+        source_dct = defaultdict(list)
+        for source_id, color, pass_id, idx in zip(self.source_id_arr, self.color_arr, self.pass_arr, range(self.num_objs_tot)):
+            source_dct[source_id].append((color, pass_id, idx))
+        return source_dct
+
+    @property
+    def best_source_id(self):
+        best_source_id = None
+        for i, (source_id, color) in enumerate(zip(self.source_id_arr, self.color_arr)):
+            if i == self.idx_best:
+                best_source_id = source_id
+        return best_source_id
+
+    @property
+    def unique_source_id_arr(self):
+        return list(set(self.source_id_arr))
+
+    def fetch_ogle_target(self):
+        self.ogle_target = fetch_ogle_target(self.ra, self.dec)
+        return self.ogle_target
