@@ -134,9 +134,13 @@ def fetch_objects(ra, dec, radius, limit, n_days_min=50):
                 continue
             obj = zort_source.objects[np.argmax(n_days_arr)]
             if obj.color == 'r':
-                obj.siblings = [zort_source.object_g]
+                sib = zort_source.object_g
             else:
-                obj.siblings = [zort_source.object_r]
+                sib = zort_source.object_r
+            n_days = len(np.unique(np.round(sib.lightcurve.hmjd)))
+            if n_days < n_days_min:
+                continue
+            obj.siblings = [sib]
             objects.append(obj)
 
         if len(objects) >= limit:
@@ -372,15 +376,26 @@ def consolidate_lightcurves():
     # load existing totals into memory
     lightcurves_arr = []
     metadata_dct = defaultdict(list)
+    lightcurves_sibs_arr = []
+    metadata_sibs_dct = defaultdict(list)
     for fname in fname_total_arr:
         data = load_stacked_array(fname)
         for d in data:
             lightcurves_arr.append((d[:, 0], d[:, 1], d[:, 2]))
 
+        data = load_stacked_array(fname.replace('sample.', 'sample.sibs.'))
+        for d in data:
+            lightcurves_sibs_arr.append((d[:, 0], d[:, 1], d[:, 2]))
+
         fname_metadata = fname.replace('sample.', 'sample_metadata.')
         metadata = np.load(fname_metadata)
         for key in metadata:
             metadata_dct[key].extend(list(metadata[key]))
+
+        fname_metadata = fname.replace('sample.', 'sample_metadata.sibs.')
+        metadata_sibs = np.load(fname_metadata)
+        for key in metadata:
+            metadata_sibs_dct[key].extend(list(metadata_sibs[key]))
 
     # append with new samples
     ulens_sample_fnames = glob.glob(f'{data_dir}/ulens_samples/ulens_sample.??.npz')
@@ -391,16 +406,31 @@ def consolidate_lightcurves():
         for d in data:
             lightcurves_arr.append((d[:, 0], d[:, 1], d[:, 2]))
 
+        data = load_stacked_array(fname.replace('sample.', 'sample.sibs.'))
+        for d in data:
+            lightcurves_sibs_arr.append((d[:, 0], d[:, 1], d[:, 2]))
+
         fname_metadata = fname.replace('sample.', 'sample_metadata.')
         metadata = np.load(fname_metadata)
         for key in metadata:
             metadata_dct[key].extend(list(metadata[key]))
 
+        fname_metadata = fname.replace('sample.', 'sample_metadata.sibs.')
+        metadata_sibs = np.load(fname_metadata)
+        for key in metadata:
+            metadata_sibs_dct[key].extend(list(metadata_sibs[key]))
+
     fname_total = f'{data_dir}/ulens_sample.{idx:02d}.total.npz'
     save_stacked_array(fname_total, lightcurves_arr)
 
+    fname_total = f'{data_dir}/ulens_sample.sibs.{idx:02d}.total.npz'
+    save_stacked_array(fname_total, lightcurves_sibs_arr)
+
     fname_metadata_total = f'{data_dir}/ulens_sample_metadata.{idx:02d}.total.npz'
     np.savez(fname_metadata_total, **metadata_dct)
+
+    fname_metadata_total = f'{data_dir}/ulens_sample_metadata.sibs.{idx:02d}.total.npz'
+    np.savez(fname_metadata_total, **metadata_sibs_dct)
 
     num_samples = len(lightcurves_arr)
     print(f'{num_samples} Samples in Total')
