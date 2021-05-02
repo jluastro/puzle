@@ -75,7 +75,10 @@ def calculate_chi2(best_params, data):
 def populate_candidate_level4():
     insert_db_id()
     query = apply_level3_cuts_to_query(CandidateLevel3.query)
-    cands_level3 = query.all()
+    cands_level3 = query.order_by(CandidateLevel3.id).all()
+    cands_level4 = CandidateLevel4.query.with_entities(CandidateLevel4.id).all()
+    cand_ids_level4 = set([c[0] for c in cands_level4])
+    cands_level3 = [c for c in cands_level3 if c.id not in cand_ids_level4]
     remove_db_id()
 
     if 'SLURMD_NODENAME' in os.environ:
