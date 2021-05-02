@@ -16,7 +16,7 @@ from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle import db
 from puzle.ulens import return_ulens_data, return_ulens_metadata, return_ulens_data_fname
-from puzle.cands import fit_data_to_ulens_opt
+from puzle.cands import fit_data_to_ulens_opt, calculate_chi2
 from puzle.models import Source, SourceIngestJob
 from puzle.utils import return_data_dir, save_stacked_array, return_DR5_dir, load_stacked_array
 from puzle.stats import calculate_eta_on_daily_avg, \
@@ -399,6 +399,11 @@ def calculate_stats_on_lightcurves():
 
     print('Rank %i) Processing %i lightcurves' % (rank, len(my_data)))
 
+    param_names = ['t0', 'u0_amp', 'tE', 'mag_src',
+                   'b_sff', 'piE_E', 'piE_N']
+    model_class = PSPL_Phot_Par_Param1
+    my_chi_squared_modeled_arr = []
+    my_num_days_arr = []
     my_eta_arr = []
     my_eta_residual_level2_arr = []
     my_t0_level2_arr = []
@@ -425,8 +430,26 @@ def calculate_stats_on_lightcurves():
         mag = d[:, 1]
         magerr = d[:, 2]
         idx = my_idx_arr[i]
+
+        # calculated chi2 modeled
+        t0 = metadata['t0'][idx]
+        u0 = metadata['u0'][idx]
+        tE = metadata['tE'][idx]
+        mag_src = metadata['mag_src'][idx]
+        piE_E = metadata['piE_E'][idx]
+        piE_N = metadata['piE_N'][idx]
+        b_sff = metadata['b_sff'][idx]
         ra = metadata['ra'][idx]
         dec = metadata['dec'][idx]
+
+        hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
+        _, magerr_round = average_xy_on_round_x(hmjd, mag)
+
+        data_fit = {'hmjd': hmjd_round, 'mag': mag_round, 'magerr': magerr_round, 'raL': ra, 'decL': dec}
+        param_values = [t0, u0, tE, mag_src, b_sff, piE_E, piE_N]
+        chi2 = calculate_chi2(param_values, param_names, model_class, data_fit)
+        my_chi_squared_modeled_arr.append(chi2)
+        my_num_days_arr.append(len(hmjd_round))
 
         # calculate and append eta and level2 fit data
         eta_daily = calculate_eta_on_daily_avg(hmjd, mag)
@@ -510,6 +533,8 @@ def calculate_stats_on_lightcurves():
         with open(my_stats_complete_fname, 'a+') as f:
             f.write(f'{i}\n')
 
+    total_chi_squared_modeled_arr = comm.gather(my_chi_squared_modeled_arr, root=0)
+    total_num_days_arr = comm.gather(my_num_days_arr, root=0)
     total_eta_arr = comm.gather(my_eta_arr, root=0)
     total_eta_residual_level2_arr = comm.gather(my_eta_residual_level2_arr, root=0)
     total_observable_arr1 = comm.gather(my_observable_arr1, root=0)
@@ -534,6 +559,8 @@ def calculate_stats_on_lightcurves():
     total_idx_arr = comm.gather(my_idx_arr, root=0)
 
     if rank == 0:
+        chi_squared_modeled_arr = list(itertools.chain(*total_chi_squared_modeled_arr))
+        num_days_arr = list(itertools.chain(*total_num_days_arr))
         eta_arr = list(itertools.chain(*total_eta_arr))
         eta_residual_level2_arr = list(itertools.chain(*total_eta_residual_level2_arr))
         observable_arr1 = list(itertools.chain(*total_observable_arr1))
@@ -559,6 +586,8 @@ def calculate_stats_on_lightcurves():
         fname_data = return_ulens_data_fname('ulens_sample')
         fname_stats = fname_data.replace('ulens_sample', 'ulens_sample_stats')
         np.savez(fname_stats,
+                 chi_squared_modeled=chi_squared_modeled_arr,
+                 num_days=num_days_arr,
                  eta=eta_arr,
                  eta_residual_level2=eta_residual_level2_arr,
                  observable1=observable_arr1,
