@@ -52,7 +52,7 @@ def gather_PopSyCLE_refined_events():
 
 
 def gather_PopSyCLE_lb():
-    fis = glob.glob(f'{popsycle_base_folder}/*fits')
+    fis = glob.glob(f'{popsycle_base_folder}/*ztf_r*fits')
     fis.sort()
     lb_arr = []
     for fi in fis:
@@ -289,7 +289,7 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000,
 
 
 def generate_random_lightcurves():
-    N_samples = 2000
+    N_samples = 500
     tE_min = 20
     delta_m_min = 0.1
     delta_m_min_cut = 3
@@ -787,5 +787,5 @@ def test_lightcurve_stats(N_samples=1000):
 
 if __name__ == '__main__':
     generate_random_lightcurves()
-    consolidate_lightcurves()
-    calculate_stats_on_lightcurves()
+    # consolidate_lightcurves()
+    # calculate_stats_on_lightcurves()
