@@ -245,7 +245,8 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000,
                 eta_residual_daily = calculate_eta_on_daily_avg_residuals(obj_t, obj_mag_micro, obj_magerr)
                 if eta_residual_daily is not None and not np.isnan(eta_residual_daily):
                     lightcurves.append((obj_t, obj_mag_micro, obj_magerr))
-                    metadata.append((t0, u0, tE, mag_src, piE_E, piE_N, b_sff, obj.ra, obj.dec, eta_residual))
+                    metadata.append((obj.filename, obj.object_id, obj.lightcurve_position,
+                                     t0, u0, tE, mag_src, piE_E, piE_N, b_sff, obj.ra, obj.dec, eta_residual))
                     break
 
     return lightcurves, metadata
@@ -294,7 +295,8 @@ def generate_random_lightcurves():
         os.remove(fname)
     save_stacked_array(fname, lightcurves_arr)
 
-    dtype = [('t0', float), ('u0', float),
+    dtype = [('filename', str), ('id', int), ('lightcurve_position', int),
+             ('t0', float), ('u0', float),
              ('tE', float), ('mag_src', float),
              ('piE_E', float), ('piE_N', float),
              ('b_sff', float), ('ra', float),
