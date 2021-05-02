@@ -289,7 +289,7 @@ def generate_random_lightcurves_lb(l, b, N_samples=1000,
 
 
 def generate_random_lightcurves():
-    N_samples = 100
+    N_samples = 2000
     tE_min = 20
     delta_m_min = 0.1
     delta_m_min_cut = 3
@@ -363,81 +363,96 @@ def generate_random_lightcurves():
         os.remove(fname)
     np.savez(fname, **metadata_sibs_dct)
 
+    if 'SLURMD_NODENAME' in os.environ:
+        comm.Barrier()
+
 
 def consolidate_lightcurves():
     # run generate_random_lightcurves first
-
-    # get list of already existing totals
-    data_dir = return_data_dir()
-    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample.??.total.npz')
-    fname_total_arr.sort()
-    if len(fname_total_arr) == 0:
-        idx = 0
+    if 'SLURMD_NODENAME' in os.environ:
+        from mpi4py import MPI
+        comm = MPI.COMM_WORLD
+        rank = comm.rank
+        size = comm.size
     else:
-        idx = int(os.path.basename(fname_total_arr[-1]).split('.')[1]) + 1
+        rank = 0
+        size = 1
 
-    # load existing totals into memory
-    lightcurves_arr = []
-    metadata_dct = defaultdict(list)
-    lightcurves_sibs_arr = []
-    metadata_sibs_dct = defaultdict(list)
-    for fname in fname_total_arr:
-        data = load_stacked_array(fname)
-        for d in data:
-            lightcurves_arr.append((d[:, 0], d[:, 1], d[:, 2]))
+    if rank == 0:
 
-        data = load_stacked_array(fname.replace('sample.', 'sample.sibs.'))
-        for d in data:
-            lightcurves_sibs_arr.append((d[:, 0], d[:, 1], d[:, 2]))
+        # get list of already existing totals
+        data_dir = return_data_dir()
+        fname_total_arr = glob.glob(f'{data_dir}/ulens_sample.??.total.npz')
+        fname_total_arr.sort()
+        if len(fname_total_arr) == 0:
+            idx = 0
+        else:
+            idx = int(os.path.basename(fname_total_arr[-1]).split('.')[1]) + 1
 
-        fname_metadata = fname.replace('sample.', 'sample_metadata.')
-        metadata = np.load(fname_metadata)
-        for key in metadata:
-            metadata_dct[key].extend(list(metadata[key]))
+        # load existing totals into memory
+        lightcurves_arr = []
+        metadata_dct = defaultdict(list)
+        lightcurves_sibs_arr = []
+        metadata_sibs_dct = defaultdict(list)
+        for fname in fname_total_arr:
+            data = load_stacked_array(fname)
+            for d in data:
+                lightcurves_arr.append((d[:, 0], d[:, 1], d[:, 2]))
 
-        fname_metadata = fname.replace('sample.', 'sample_metadata.sibs.')
-        metadata_sibs = np.load(fname_metadata)
-        for key in metadata:
-            metadata_sibs_dct[key].extend(list(metadata_sibs[key]))
+            data = load_stacked_array(fname.replace('sample.', 'sample.sibs.'))
+            for d in data:
+                lightcurves_sibs_arr.append((d[:, 0], d[:, 1], d[:, 2]))
 
-    # append with new samples
-    ulens_sample_fnames = glob.glob(f'{data_dir}/ulens_samples/ulens_sample.??.npz')
-    ulens_sample_fnames.sort()
+            fname_metadata = fname.replace('sample.', 'sample_metadata.')
+            metadata = np.load(fname_metadata)
+            for key in metadata:
+                metadata_dct[key].extend(list(metadata[key]))
 
-    for fname in ulens_sample_fnames:
-        data = load_stacked_array(fname)
-        for d in data:
-            lightcurves_arr.append((d[:, 0], d[:, 1], d[:, 2]))
+            fname_metadata = fname.replace('sample.', 'sample_metadata.sibs.')
+            metadata_sibs = np.load(fname_metadata)
+            for key in metadata:
+                metadata_sibs_dct[key].extend(list(metadata_sibs[key]))
 
-        data = load_stacked_array(fname.replace('sample.', 'sample.sibs.'))
-        for d in data:
-            lightcurves_sibs_arr.append((d[:, 0], d[:, 1], d[:, 2]))
+        # append with new samples
+        ulens_sample_fnames = glob.glob(f'{data_dir}/ulens_samples/ulens_sample.??.npz')
+        ulens_sample_fnames.sort()
 
-        fname_metadata = fname.replace('sample.', 'sample_metadata.')
-        metadata = np.load(fname_metadata)
-        for key in metadata:
-            metadata_dct[key].extend(list(metadata[key]))
+        for fname in ulens_sample_fnames:
+            data = load_stacked_array(fname)
+            for d in data:
+                lightcurves_arr.append((d[:, 0], d[:, 1], d[:, 2]))
 
-        fname_metadata = fname.replace('sample.', 'sample_metadata.sibs.')
-        metadata_sibs = np.load(fname_metadata)
-        for key in metadata:
-            metadata_sibs_dct[key].extend(list(metadata_sibs[key]))
+            data = load_stacked_array(fname.replace('sample.', 'sample.sibs.'))
+            for d in data:
+                lightcurves_sibs_arr.append((d[:, 0], d[:, 1], d[:, 2]))
 
-    fname_total = f'{data_dir}/ulens_sample.{idx:02d}.total.npz'
-    save_stacked_array(fname_total, lightcurves_arr)
+            fname_metadata = fname.replace('sample.', 'sample_metadata.')
+            metadata = np.load(fname_metadata)
+            for key in metadata:
+                metadata_dct[key].extend(list(metadata[key]))
 
-    fname_total = f'{data_dir}/ulens_sample.sibs.{idx:02d}.total.npz'
-    save_stacked_array(fname_total, lightcurves_sibs_arr)
+            fname_metadata = fname.replace('sample.', 'sample_metadata.sibs.')
+            metadata_sibs = np.load(fname_metadata)
+            for key in metadata:
+                metadata_sibs_dct[key].extend(list(metadata_sibs[key]))
 
-    fname_metadata_total = f'{data_dir}/ulens_sample_metadata.{idx:02d}.total.npz'
-    np.savez(fname_metadata_total, **metadata_dct)
+        fname_total = f'{data_dir}/ulens_sample.{idx:02d}.total.npz'
+        save_stacked_array(fname_total, lightcurves_arr)
 
-    fname_metadata_total = f'{data_dir}/ulens_sample_metadata.sibs.{idx:02d}.total.npz'
-    np.savez(fname_metadata_total, **metadata_sibs_dct)
+        fname_total = f'{data_dir}/ulens_sample.sibs.{idx:02d}.total.npz'
+        save_stacked_array(fname_total, lightcurves_sibs_arr)
 
-    num_samples = len(lightcurves_arr)
-    print(f'{num_samples} Samples in Total')
+        fname_metadata_total = f'{data_dir}/ulens_sample_metadata.{idx:02d}.total.npz'
+        np.savez(fname_metadata_total, **metadata_dct)
 
+        fname_metadata_total = f'{data_dir}/ulens_sample_metadata.sibs.{idx:02d}.total.npz'
+        np.savez(fname_metadata_total, **metadata_sibs_dct)
+
+        num_samples = len(lightcurves_arr)
+        print(f'{num_samples} Samples in Total')
+
+    if 'SLURMD_NODENAME' in os.environ:
+        comm.Barrier()
 
 
 def strictly_decreasing(L):
@@ -771,6 +786,6 @@ def test_lightcurve_stats(N_samples=1000):
 
 
 if __name__ == '__main__':
-    # generate_random_lightcurves()
-    # consolidate_lightcurves()
+    generate_random_lightcurves()
+    consolidate_lightcurves()
     calculate_stats_on_lightcurves()
