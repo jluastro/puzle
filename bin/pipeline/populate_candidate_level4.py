@@ -145,12 +145,24 @@ def populate_candidate_level4():
             num_epochs_arr.append(num_epochs)
             num_days_arr.append(num_days)
 
-            hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
-            eta = calculate_eta(mag_round)
-            eta_arr.append(eta)
+            if num_days > 1:
+                hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
+                eta = calculate_eta(mag_round)
+                best_params = fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec,
+                                                    t0_guess=t0_level3, tE_guess=tE_level3)
+                ulens_cond = hmjd > best_params['t0'] - 2 * best_params['tE']
+                ulens_cond *= hmjd < best_params['t0'] + 2 * best_params['tE']
+                num_epochs_inside = int(np.sum(ulens_cond))
+            else:
+                eta = 0
+                param_names_to_fit = ['t0', 'u0_amp', 'tE', 'mag_src',
+                                      'b_sff', 'piE_E', 'piE_N']
+                best_params = {k: 0 for k in param_names_to_fit}
+                best_params['chi_squared_delta'] = 0
+                best_params['eta_residual'] = 0
+                num_epochs_inside = 0
 
-            best_params = fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec,
-                                                t0_guess=t0_level3, tE_guess=tE_level3)
+            eta_arr.append(eta)
             t0_arr.append(best_params['t0'])
             u0_amp_arr.append(best_params['u0_amp'])
             tE_arr.append(best_params['tE'])
@@ -160,10 +172,6 @@ def populate_candidate_level4():
             piE_N_arr.append(best_params['piE_N'])
             eta_residual_arr.append(best_params['eta_residual'])
             chi_squared_ulens_arr.append(best_params['chi_squared_delta'])
-
-            ulens_cond = hmjd > best_params['t0'] - 2 * best_params['tE']
-            ulens_cond *= hmjd < best_params['t0'] + 2 * best_params['tE']
-            num_epochs_inside = int(np.sum(ulens_cond))
             num_epochs_inside_arr.append(num_epochs_inside)
 
             if num_epochs_inside > 0:
