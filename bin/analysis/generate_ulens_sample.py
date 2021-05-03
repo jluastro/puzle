@@ -585,8 +585,8 @@ def _calculate_stats_on_lightcurves(sibsFlag=False):
         median = np.median([np.median(mag) for mag in mag_splits])
         std = np.median([np.std(mag) for mag in mag_splits])
         cond_three_sigma = mag_round <= median - 3 * std
-        cond_descreasing = three_consecutive_decreases(mag_round)
-        count_cond = np.sum(cond_three_sigma[:-2] * cond_descreasing)
+        cond_decreasing = three_consecutive_decreases(mag_round)
+        count_cond = np.sum(cond_three_sigma[:-2] * cond_decreasing)
 
         if count_cond == 0:
             my_observable_arr1.append(False)

@@ -32,7 +32,8 @@ def return_ulens_data_fname(prefix):
     return fname
 
 
-def return_ulens_data(observableFlag=True, bhFlag=False, level3Flag=False):
+def return_ulens_data(observableFlag=True, bhFlag=False,
+                      level3Flag=False, sibsFlag=False):
     fname = return_ulens_data_fname('ulens_sample')
     data = load_stacked_array(fname)
 
@@ -58,10 +59,21 @@ def return_ulens_data(observableFlag=True, bhFlag=False, level3Flag=False):
         if i in idx_arr:
             lightcurve_data.append(d)
 
-    return lightcurve_data
+    if not sibsFlag:
+        return lightcurve_data
+
+    fname_sibs = fname.replace('ulens_sample', 'ulens_sample.sibs')
+    data_sibs = load_stacked_array(fname_sibs)
+    lightcurve_sibs_data = []
+    for i, d in enumerate(data_sibs):
+        if i in idx_arr:
+            lightcurve_sibs_data.append(d)
+
+    return lightcurve_data, lightcurve_sibs_data
 
 
-def return_ulens_stats(observableFlag=True, bhFlag=False, level3Flag=False):
+def return_ulens_stats(observableFlag=True, bhFlag=False, level3Flag=False,
+                       sibsFlag=False):
     fname = return_ulens_data_fname('ulens_sample')
     data = load_stacked_array(fname)
 
@@ -85,18 +97,28 @@ def return_ulens_stats(observableFlag=True, bhFlag=False, level3Flag=False):
     for key in stats.keys():
         stats_dct[key] = stats[key][cond]
 
-    return stats_dct
+    if not sibsFlag:
+        return stats_dct
+
+    fname_sibs = fname.replace('ulens_sample_stats', 'ulens_sample_stats.sibs')
+    stats_sibs = np.load(fname_sibs)
+    stats_sibs_dct = {}
+    for key in stats_sibs.keys():
+        stats_sibs_dct[key] = stats_sibs[key][cond]
+
+    return stats_dct, stats_sibs_dct
 
 
-def return_ulens_metadata(observableFlag=True, bhFlag=False, level3Flag=False):
+def return_ulens_metadata(observableFlag=True, bhFlag=False,
+                          level3Flag=False, sibsFlag=False):
     stats = return_ulens_stats(observableFlag=False,
                                bhFlag=False)
 
-    fname = return_ulens_data_fname('ulens_sample_metadata')
-    metadata = np.load(fname)
+    fname_metadata = return_ulens_data_fname('ulens_sample_metadata')
+    metadata = np.load(fname_metadata)
 
-    fname = return_ulens_data_fname('ulens_sample')
-    data = load_stacked_array(fname)
+    fname_data = return_ulens_data_fname('ulens_sample')
+    data = load_stacked_array(fname_data)
 
     cond = np.ones(len(metadata['tE'])).astype(bool)
     if observableFlag:
@@ -115,7 +137,16 @@ def return_ulens_metadata(observableFlag=True, bhFlag=False, level3Flag=False):
     for key in metadata.keys():
         metadata_dct[key] = metadata[key][cond]
 
-    return metadata_dct
+    if not sibsFlag:
+        return metadata_dct
+
+    fname_metadata_sibs = fname_metadata.replace('ulens_sample_metadata', 'ulens_sample_metadata.sibs')
+    metadata_sibs = np.load(fname_metadata_sibs)
+    metadata_sibs_dct = {}
+    for key in metadata_sibs.keys():
+        metadata_sibs_dct[key] = metadata_sibs[key][cond]
+
+    return metadata_dct, metadata_sibs_dct
 
 
 def return_cond_BH(tE_min=150, piE_max=0.08):
