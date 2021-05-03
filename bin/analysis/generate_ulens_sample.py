@@ -15,10 +15,11 @@ from zort.photometry import fluxes_to_magnitudes
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle import db
-from puzle.ulens import return_ulens_data, return_ulens_metadata, return_ulens_data_fname
+from puzle.ulens import return_ulens_data_fname
 from puzle.cands import fit_data_to_ulens_opt, calculate_chi2
 from puzle.models import Source, SourceIngestJob
-from puzle.utils import return_data_dir, save_stacked_array, return_DR5_dir, load_stacked_array
+from puzle.utils import return_data_dir, save_stacked_array, \
+    return_DR5_dir, load_stacked_array, sortsplit
 from puzle.stats import calculate_eta_on_daily_avg, \
     calculate_eta_on_daily_avg_residuals, average_xy_on_round_x
 
@@ -54,13 +55,17 @@ def gather_PopSyCLE_refined_events():
 def gather_PopSyCLE_lb():
     fis = glob.glob(f'{popsycle_base_folder}/*ztf_r*fits')
     fis.sort()
+    lb_skip_arr = [(2.0, -1.0), (2.0, 1.0), (6.0, -1.0),
+                   (6.0, -3.0), (6.0, -6.0), (6.0, 1.0)]
     lb_arr = []
     for fi in fis:
         lb = os.path.basename(fi).split('_')
         l = float(lb[0].replace('l', ''))
         b = float(lb[1].replace('b', ''))
+        if (l, b) in lb_skip_arr:
+            continue
         lb_arr.append((l, b))
-    return lb_arr
+    return np.array(lb_arr)
 
 
 def _parse_object_int(attr):
@@ -99,7 +104,7 @@ def fetch_objects(ra, dec, radius, limit, n_days_min=50):
     cone_filter = SourceIngestJob.cone_search(ra, dec, radius)
     jobs = db.session.query(SourceIngestJob).filter(cone_filter).order_by(func.random()).all()
 
-    n_samples_per_source = max(1, int(10 * (limit / len(jobs))))
+    n_samples_per_source = max(1, int(5 * (limit / len(jobs))))
     DR5_dir = return_DR5_dir()
 
     lightcurve_file_pointers = {}
@@ -305,7 +310,7 @@ def generate_random_lightcurves():
         rank = 0
         size = 1
 
-    my_lb_arr = np.array_split(lb_arr, size)[rank]
+    my_lb_arr = sortsplit(lb_arr, size)[rank]
 
     lightcurves_arr = []
     metadata_arr = []
