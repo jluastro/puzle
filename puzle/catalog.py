@@ -236,14 +236,14 @@ def return_ps1_psc(dec, ps1_psc_dct=None):
     ps1_psc_fname = f'{ps1_psc_dir}/' \
                     f'dec_{dec_prefix}{dec_floor_str}_{dec_ext_str}_classifications.map'
     if ps1_psc_dct is not None and ps1_psc_fname in ps1_psc_dct:
-        print('CACHE %s' % ps1_psc_fname)
+        # print('CACHE %s' % ps1_psc_fname)
         ps1_psc_kdtree, rf_scores = ps1_psc_dct[ps1_psc_fname]
     else:
-        print('LOADING %s' % ps1_psc_fname)
+        # print('LOADING %s' % ps1_psc_fname)
         ps1_psc_kdtree, rf_scores = pickle.load(open(ps1_psc_fname, 'rb'))
 
     if ps1_psc_dct is not None and ps1_psc_fname not in ps1_psc_dct:
-        print('SAVING TO CACHE %s' % ps1_psc_fname)
+        # print('SAVING TO CACHE %s' % ps1_psc_fname)
         ps1_psc_dct[ps1_psc_fname] = ps1_psc_kdtree, rf_scores
 
     return ps1_psc_kdtree, rf_scores
