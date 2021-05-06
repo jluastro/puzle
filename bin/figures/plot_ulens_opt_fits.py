@@ -430,26 +430,27 @@ def plot_ulens_opt_chi2_flat_cut():
     reduced_chi2_flat_outside_cands = chi2_flat_outside_cands / num_days_outside_cands
 
     bhFlag = False
-    data = return_ulens_data(observableFlag=True, bhFlag=bhFlag)
     stats = return_ulens_stats(observableFlag=True, bhFlag=bhFlag)
 
-    chi2_flat_outside_ulens = stats['chi_squared_ulens_level3']
-    # num_days_ulens = np.array([len(np.unique(np.floor(d))) for d in data])
-    reduced_chi2_measured_ulens = chi2_measured_ulens / num_days_ulens
+    chi2_flat_outside_ulens = stats['chi_squared_outside_level3']
+    num_days_outside_ulens = stats['num_days_outside_level3']
+    reduced_chi2_flat_outside_ulens = chi2_flat_outside_ulens / num_days_outside_ulens
 
-    chi2_thresh = np.percentile(reduced_chi2_measured_ulens, 95)
+    chi2_thresh = np.percentile(reduced_chi2_flat_outside_ulens, 95)
+    # cond = stats['delta_hmjd_outside_level3'] > 2 * stats['tE_level3']
+    # chi2_thresh = np.percentile(reduced_chi2_flat_outside_ulens[cond], 95)
     cand_frac = 100 * np.sum(reduced_chi2_flat_outside_cands <= chi2_thresh) / len(reduced_chi2_flat_outside_cands)
 
     fig, ax = plt.subplots(2, 1, figsize=(8, 8))
     fig.suptitle('%.2f%% Percent of Cands below %.3f (95th Percentile)' % (cand_frac, chi2_thresh))
     for a in ax: a.clear()
     bins = np.linspace(0, 5, 50)
-    ax[0].hist(reduced_chi2_measured_ulens, label='ulens measured',
+    ax[0].hist(reduced_chi2_flat_outside_ulens, label='ulens measured',
                bins=bins, histtype='step', density=True)
     ax[0].hist(reduced_chi2_flat_outside_cands, label='cands measured',
                bins=bins, histtype='step', density=True)
     ax[0].axvline(chi2_thresh, color='k', alpha=.3, label='ulens measured 95th percentile')
-    ax[1].plot(*return_CDF(reduced_chi2_measured_ulens), label='ulens measured')
+    ax[1].plot(*return_CDF(reduced_chi2_flat_outside_ulens), label='ulens measured')
     ax[1].plot(*return_CDF(reduced_chi2_flat_outside_cands), label='cands measured')
     ax[1].axhline(0.95, color='k', alpha=.3, label='ulens measured 95th percentile')
     ax[1].axvline(chi2_thresh, color='k', alpha=.3)
