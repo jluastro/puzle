@@ -630,7 +630,6 @@ class CandidateLevel3(db.Model):
     piE_E_best = db.Column(db.Float)
     piE_N_best = db.Column(db.Float)
     chi_squared_ulens_best = db.Column(db.Float)
-    chi_squared_dof_best = db.Column(db.Integer)
     chi_squared_inside_1tE_best = db.Column(db.Float)
     chi_squared_inside_2tE_best = db.Column(db.Float)
     chi_squared_inside_3tE_best = db.Column(db.Float)
@@ -658,7 +657,6 @@ class CandidateLevel3(db.Model):
                  tE_best=None, mag_src_best=None,
                  b_sff_best=None, piE_E_best=None, piE_N_best=None,
                  chi_squared_ulens_best=None,
-                 chi_squared_dof_best=None,
                  chi_squared_inside_1tE_best=None,
                  chi_squared_inside_2tE_best=None,
                  chi_squared_inside_3tE_best=None,
@@ -694,7 +692,6 @@ class CandidateLevel3(db.Model):
         self.piE_E_best = piE_E_best
         self.piE_N_best = piE_N_best
         self.chi_squared_ulens_best = chi_squared_ulens_best
-        self.chi_squared_dof_best = chi_squared_dof_best
         self.chi_squared_inside_1tE_best = chi_squared_inside_1tE_best
         self.chi_squared_inside_2tE_best = chi_squared_inside_2tE_best
         self.chi_squared_inside_3tE_best = chi_squared_inside_3tE_best

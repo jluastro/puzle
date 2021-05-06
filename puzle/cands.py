@@ -91,26 +91,19 @@ def apply_eta_residual_slope_offset_to_query(query):
     return query
 
 
-def calculate_chi2_model(param_values, param_names, model_class, data, return_dof=False):
+def calculate_chi2_model(param_values, param_names, model_class, data):
     params = {}
     for k, v in zip(param_names, param_values):
         params[k] = v
     model = model_class(**params,
                         raL=data['raL'], decL=data['decL'])
-
     mag_model = model.get_photometry(data['hmjd'], print_warning=False)
-    chi2, dof = calculate_chi2_model_mags(data['mag'], data['magerr'], mag_model,
-                                          hmjd=data['hmjd'], t0=params['t0'],
-                                          tE=params['tE'], clip=True)
 
-    # chi2 = np.sum(((data['mag'] - mag_model) / data['magerr']) ** 2)
+    chi2 = np.sum(((data['mag'] - mag_model) / data['magerr']) ** 2)
     if np.isnan(chi2):
         chi2 = np.inf
 
-    if return_dof:
-        return chi2, dof
-    else:
-        return chi2 / dof
+    return chi2
 
 
 def fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec, t0_guess=None, tE_guess=None):
@@ -151,10 +144,7 @@ def fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec, t0_guess=None, tE_guess=No
     if result.success:
         # gather up best results
         best_fit = result.x
-        chi2_ulens, dof = calculate_chi2_model(best_fit, param_names_to_fit,
-                                               PSPL_Phot_Par_Param1, data, return_dof=True)
-        best_params = {'chi_squared_ulens': chi2_ulens,
-                       'chi_squared_dof': dof}
+        best_params = {'chi_squared_ulens': result.fun}
         for k, v in zip(param_names_to_fit, best_fit):
             if k == 'tE':
                 best_params[k] = abs(v)
@@ -171,7 +161,6 @@ def fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec, t0_guess=None, tE_guess=No
     else:
         best_params = {k: 0 for k in param_names_to_fit}
         best_params['chi_squared_ulens'] = 0
-        best_params['chi_squared_dof'] = 0
         best_params['eta_residual'] = 0
 
     return best_params
