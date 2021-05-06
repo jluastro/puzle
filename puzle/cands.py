@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
-from puzle.stats import calculate_eta, average_xy_on_round_x, calculate_chi2_model_mags
+from puzle.stats import calculate_eta, average_xy_on_round_x
 from puzle.models import CandidateLevel2, CandidateLevel3, Source
 from puzle.utils import return_figures_dir
 from puzle import db

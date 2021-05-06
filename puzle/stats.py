@@ -361,12 +361,15 @@ def return_eta_threshold(size):
 def calculate_chi2_model_mags(mag, magerr, mag_model, add_err=0,
                               hmjd=None, t0=None, tE=None, clip=False):
     if clip:
+        hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
+        _, magerr_round = average_xy_on_round_x(hmjd, magerr)
+        _, mag_model_round = average_xy_on_round_x(hmjd, mag_model)
         # Mask out those points that are within the microlensing event
-        ulens_mask = hmjd > t0 - 2 * tE
-        ulens_mask *= hmjd < t0 + 2 * tE
+        ulens_mask = hmjd_round > t0 - 2 * tE
+        ulens_mask *= hmjd_round < t0 + 2 * tE
         # Use this mask to generated a masked array for sigma clipping
         # By applying this mask, the 3-sigma will not be calculated using these points
-        mag_masked = np.ma.array(mag, mask=ulens_mask)
+        mag_masked = np.ma.array(mag_round, mask=ulens_mask)
         # Perform the sigma clipping
         mag_masked = sigma_clip(mag_masked, sigma=3, maxiters=5)
         # This masked array is now a mask that includes BOTH the mirolensing event and
@@ -376,29 +379,46 @@ def calculate_chi2_model_mags(mag, magerr, mag_model, add_err=0,
         chi2_mask = mag_masked.mask * ~ulens_mask
         # Using this mask, do one pass of clipping out all +- 5 sigma points.
         # This gets points that are within the +-2 tE.
-        mag_masked = np.ma.array(mag, mask=chi2_mask)
+        mag_masked = np.ma.array(mag_round, mask=chi2_mask)
         mag_masked = sigma_clip(mag_masked, sigma=5, maxiters=1)
         # This mask is then inverted for the chi2 calculation
         chi2_cond = ~mag_masked.mask
+        mag_calc = mag_round
+        magerr_calc = magerr_round
+        mag_model_calc = mag_model_round
     else:
         chi2_cond = np.ones(len(mag)).astype(bool)
-    chi2 = np.sum(((mag[chi2_cond] - mag_model[chi2_cond]) / np.hypot(magerr[chi2_cond], add_err)) ** 2)
+        mag_calc = mag
+        magerr_calc = magerr
+        mag_model_calc = mag_model
+    chi2 = np.sum(((mag_calc[chi2_cond] - mag_model_calc[chi2_cond]) / np.hypot(magerr_calc[chi2_cond], add_err)) ** 2)
     dof = np.sum(chi2_cond)
     return chi2, dof
 
 
 def calculate_chi_squared_inside_outside(hmjd, mag, magerr, t0, tE, tE_factor):
-    cond = hmjd <= t0 + tE_factor * tE
-    cond *= hmjd >= t0 - tE_factor * tE
-    num_inside = np.sum(cond)
+    hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
+    _, magerr_round = average_xy_on_round_x(hmjd, magerr)
 
-    mag_avg_inside = np.median(mag[cond])
-    chi_squared_inside = np.sum((mag[cond] - mag_avg_inside) ** 2. / magerr[cond] ** 2.)
+    cond = hmjd_round <= t0 + tE_factor * tE
+    cond *= hmjd_round >= t0 - tE_factor * tE
+    num_days_inside = np.sum(cond)
+    
+    cond_low = hmjd_round < t0 - tE_factor * tE
+    delta_hmjd_low = np.max(hmjd_round[cond_low]) - np.min(hmjd_round[cond_low])
+    cond_high = hmjd_round > t0 + tE_factor * tE
+    delta_hmjd_high = np.max(hmjd_round[cond_high]) - np.min(hmjd_round[cond_high])
+    delta_hmjd_outside = delta_hmjd_low + delta_hmjd_high
 
-    mag_avg_outside = np.median(mag[~cond])
-    chi_squared_outside = np.sum((mag[~cond] - mag_avg_outside) ** 2. / magerr[~cond] ** 2.)
+    mag_masked_inside = sigma_clip(mag_round[cond], sigma=5, maxiters=1)
+    mag_avg_inside = mag_masked_inside.mean()
+    chi_squared_inside = np.sum((mag_round[cond] - mag_avg_inside) ** 2. / magerr_round[cond] ** 2.)
 
-    return chi_squared_inside, chi_squared_outside, num_inside
+    mag_masked_outside = sigma_clip(mag_round[~cond], sigma=3, maxiters=5)
+    mag_avg_outside = mag_masked_outside.mean()
+    chi_squared_outside = np.sum((mag_round[~cond] - mag_avg_outside) ** 2. / magerr_round[~cond] ** 2.)
+
+    return chi_squared_inside, chi_squared_outside, num_days_inside, delta_hmjd_outside
 
 
 ETA_THRESHOLDS = load_eta_thresholds()

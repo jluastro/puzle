@@ -5,7 +5,6 @@ calculate_chi2_model_mags_additive_errors.py
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
-from astropy.stats import sigma_clip
 from zort.photometry import fluxes_to_magnitudes, magnitudes_to_fluxes
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 

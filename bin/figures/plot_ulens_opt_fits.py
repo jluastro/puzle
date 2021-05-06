@@ -519,23 +519,23 @@ def plot_ulens_opt_piE_cut():
 def plot_ulens_opt_inside_outside():
     tE_factor = 3
 
-    cands_outside_column = getattr(CandidateLevel3, f'chi_squared_outside_{tE_factor}tE_best')
-    cands_inside_column = getattr(CandidateLevel3, f'chi_squared_inside_{tE_factor}tE_best')
-    cands_inside_num = getattr(CandidateLevel3, f'num_epochs_inside_{tE_factor}tE_best')
+    cands_outside_column = getattr(CandidateLevel3, f'chi_squared_flat_outside_{tE_factor}tE_best')
+    cands_inside_column = getattr(CandidateLevel3, f'chi_squared_flat_inside_{tE_factor}tE_best')
+    cands_inside_num = getattr(CandidateLevel3, f'num_days_inside_{tE_factor}tE_best')
     cands = CandidateLevel3.query.with_entities(
         cands_inside_column, cands_outside_column,
-        cands_inside_num, CandidateLevel3.num_epochs_best,
+        cands_inside_num, CandidateLevel3.num_days_best,
         CandidateLevel3.id).\
         filter(cands_inside_column!=0, cands_outside_column!=0).\
         order_by(CandidateLevel3.id).all()
     chi_squared_inside_cands = np.array([c[0] for c in cands])
     chi_squared_outside_cands = np.array([c[1] for c in cands])
-    num_epochs_inside_cands = np.array([c[2] for c in cands])
-    num_epochs_cands = np.array([c[3] for c in cands])
+    num_days_inside_cands = np.array([c[2] for c in cands])
+    num_days_cands = np.array([c[3] for c in cands])
     id_cands = np.array([c[4] for c in cands])
 
-    reduced_chi_squared_inside_cands = chi_squared_inside_cands / (num_epochs_inside_cands - 1)
-    reduced_chi_squared_outside_cands = chi_squared_outside_cands / (num_epochs_cands - num_epochs_inside_cands - 1)
+    reduced_chi_squared_inside_cands = chi_squared_inside_cands / (num_days_inside_cands - 1)
+    reduced_chi_squared_outside_cands = chi_squared_outside_cands / (num_days_cands - num_days_inside_cands - 1)
     reduced_chi_squared_ratio_cands = reduced_chi_squared_outside_cands / reduced_chi_squared_inside_cands
 
     log_reduced_chi_squared_inside_cands = np.log10(reduced_chi_squared_inside_cands)
@@ -553,8 +553,8 @@ def plot_ulens_opt_inside_outside():
 
     chi_squared_inside_ulens = []
     chi_squared_outside_ulens = []
-    num_epochs_inside_ulens = []
-    num_epochs_ulens = []
+    num_days_inside_ulens = []
+    num_days_ulens = []
     idx_ulens = []
     for idx in idx_sample:
         hmjd = data_ulens[idx][:, 0]
@@ -562,27 +562,27 @@ def plot_ulens_opt_inside_outside():
         magerr = data_ulens[idx][:, 2]
         t0 = stats_ulens['t0_level3'][idx]
         tE = stats_ulens['tE_level3'][idx]
-        num_epochs = len(hmjd)
+        num_days = len(set(np.round(hmjd)))
 
         info = calculate_chi_squared_inside_outside(hmjd, mag, magerr,
                                                     t0, tE, tE_factor=tE_factor)
         if np.any(np.array(info) == 0):
             continue
-        chi_squared_inside, chi_squared_outside, num_inside = info
+        chi_squared_inside, chi_squared_outside, num_days_inside = info
         chi_squared_inside_ulens.append(chi_squared_inside)
         chi_squared_outside_ulens.append(chi_squared_outside)
-        num_epochs_inside_ulens.append(num_inside)
-        num_epochs_ulens.append(num_epochs)
+        num_days_inside_ulens.append(num_days_inside)
+        num_days_ulens.append(num_days)
         idx_ulens.append(idx)
 
     idx_ulens = np.array(idx_ulens)
     chi_squared_inside_ulens = np.array(chi_squared_inside_ulens)
     chi_squared_outside_ulens = np.array(chi_squared_outside_ulens)
-    num_epochs_inside_ulens = np.array(num_epochs_inside_ulens)
-    num_epochs_ulens = np.array(num_epochs_ulens)
+    num_days_inside_ulens = np.array(num_days_inside_ulens)
+    num_days_ulens = np.array(num_days_ulens)
     
-    reduced_chi_squared_inside_ulens = chi_squared_inside_ulens / (num_epochs_inside_ulens - 1)
-    reduced_chi_squared_outside_ulens = chi_squared_outside_ulens / (num_epochs_ulens - num_epochs_inside_ulens - 1)
+    reduced_chi_squared_inside_ulens = chi_squared_inside_ulens / (num_days_inside_ulens - 1)
+    reduced_chi_squared_outside_ulens = chi_squared_outside_ulens / (num_days_ulens - num_days_inside_ulens - 1)
     reduced_chi_squared_ratio_ulens = reduced_chi_squared_outside_ulens / reduced_chi_squared_inside_ulens
     
     log_reduced_chi_squared_inside_ulens = np.log10(reduced_chi_squared_inside_ulens)
@@ -596,19 +596,19 @@ def plot_ulens_opt_inside_outside():
     fig, ax = plt.subplots(2, 1, figsize=(7, 7))
     for a in ax: a.clear()
     ax[0].set_title('ulens')
-    ax[0].scatter(num_epochs_inside_ulens, chi_squared_inside_ulens, label='inside',
+    ax[0].scatter(num_days_inside_ulens, chi_squared_inside_ulens, label='inside',
                   s=.1, alpha=.1)
-    ax[0].scatter(num_epochs_ulens - num_epochs_inside_ulens, chi_squared_outside_ulens, label='outside',
+    ax[0].scatter(num_days_ulens - num_days_inside_ulens, chi_squared_outside_ulens, label='outside',
                   s=.1, alpha=.1)
     ax[1].set_title('cands')
-    ax[1].scatter(num_epochs_inside_cands, chi_squared_inside_cands, label='inside',
+    ax[1].scatter(num_days_inside_cands, chi_squared_inside_cands, label='inside',
                   s=.1, alpha=.1)
-    ax[1].scatter(num_epochs_cands - num_epochs_inside_cands, chi_squared_outside_cands, label='outside',
+    ax[1].scatter(num_days_cands - num_days_inside_cands, chi_squared_outside_cands, label='outside',
                   s=.1, alpha=.1)
     for a in ax:
         a.set_yscale('log')
         a.set_xscale('log')
-        a.set_xlabel('number of epochs')
+        a.set_xlabel('number of days')
         a.set_ylabel('chi squared')
         a.legend(markerscale=20)
     fig.tight_layout()
