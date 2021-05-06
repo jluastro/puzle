@@ -33,7 +33,7 @@ def _recalculate_chi2_stats(sibsFlag):
 
     idx_arr = np.arange(len(lightcurve_data))
     my_idx_arr = np.array_split(idx_arr, size)[rank]
-    my_data = np.array_split(data, size)[rank][:10]
+    my_data = np.array_split(data, size)[rank]
 
     my_chi_squared_inside_level3_arr = []
     my_chi_squared_outside_level3_arr = []
@@ -76,7 +76,7 @@ def _recalculate_chi2_stats(sibsFlag):
 
         fname = 'updated_chi2_flat.npz'
         if sibsFlag:
-            fname = fname.replace('.npz', 'sib.npz')
+            fname = fname.replace('.npz', '.sibs.npz')
         np.savez(fname,
                  chi_squared_inside_level3=chi_squared_inside_level3_arr,
                  chi_squared_outside_level3=chi_squared_outside_level3_arr,
