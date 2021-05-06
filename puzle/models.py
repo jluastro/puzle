@@ -639,6 +639,9 @@ class CandidateLevel3(db.Model):
     num_days_inside_1tE_best = db.Column(db.Integer)
     num_days_inside_2tE_best = db.Column(db.Integer)
     num_days_inside_3tE_best = db.Column(db.Integer)
+    num_days_outside_1tE_best = db.Column(db.Integer)
+    num_days_outside_2tE_best = db.Column(db.Integer)
+    num_days_outside_3tE_best = db.Column(db.Integer)
     delta_hmjd_outside_1tE_best = db.Column(db.Float)
     delta_hmjd_outside_2tE_best = db.Column(db.Float)
     delta_hmjd_outside_3tE_best = db.Column(db.Float)
@@ -669,6 +672,9 @@ class CandidateLevel3(db.Model):
                  num_days_inside_1tE_best=None,
                  num_days_inside_2tE_best=None,
                  num_days_inside_3tE_best=None,
+                 num_days_outside_1tE_best=None,
+                 num_days_outside_2tE_best=None,
+                 num_days_outside_3tE_best=None,
                  delta_hmjd_outside_1tE_best=None,
                  delta_hmjd_outside_2tE_best=None,
                  delta_hmjd_outside_3tE_best=None,
@@ -707,6 +713,9 @@ class CandidateLevel3(db.Model):
         self.num_days_inside_1tE_best = num_days_inside_1tE_best
         self.num_days_inside_2tE_best = num_days_inside_2tE_best
         self.num_days_inside_3tE_best = num_days_inside_3tE_best
+        self.num_days_outside_1tE_best = num_days_outside_1tE_best
+        self.num_days_outside_2tE_best = num_days_outside_2tE_best
+        self.num_days_outside_3tE_best = num_days_outside_3tE_best
         self.delta_hmjd_outside_1tE_best = delta_hmjd_outside_1tE_best
         self.delta_hmjd_outside_2tE_best = delta_hmjd_outside_2tE_best
         self.delta_hmjd_outside_3tE_best = delta_hmjd_outside_3tE_best

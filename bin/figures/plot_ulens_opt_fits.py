@@ -568,7 +568,7 @@ def plot_ulens_opt_inside_outside():
                                                     t0, tE, tE_factor=tE_factor)
         if np.any(np.array(info) == 0):
             continue
-        chi_squared_inside, chi_squared_outside, num_days_inside = info
+        chi_squared_inside, chi_squared_outside, num_days_inside, num_days_outside, delta_hmjd_outside = info
         chi_squared_inside_ulens.append(chi_squared_inside)
         chi_squared_outside_ulens.append(chi_squared_outside)
         num_days_inside_ulens.append(num_days_inside)

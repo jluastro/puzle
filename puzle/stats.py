@@ -400,9 +400,8 @@ def calculate_chi_squared_inside_outside(hmjd, mag, magerr, t0, tE, tE_factor):
     hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
     _, magerr_round = average_xy_on_round_x(hmjd, magerr)
 
-    cond = hmjd_round <= t0 + tE_factor * tE
-    cond *= hmjd_round >= t0 - tE_factor * tE
-    num_days_inside = np.sum(cond)
+    cond_inside = hmjd_round <= t0 + tE_factor * tE
+    cond_inside *= hmjd_round >= t0 - tE_factor * tE
     
     cond_low = hmjd_round < t0 - tE_factor * tE
     if np.sum(cond_low) > 1:
@@ -417,15 +416,27 @@ def calculate_chi_squared_inside_outside(hmjd, mag, magerr, t0, tE, tE_factor):
         delta_hmjd_high = 0
     delta_hmjd_outside = delta_hmjd_low + delta_hmjd_high
 
-    mag_masked_inside = sigma_clip(mag_round[cond], sigma=5, maxiters=1)
+    mag_masked_inside = sigma_clip(mag_round[cond_inside], sigma=5, maxiters=1)
     mag_avg_inside = mag_masked_inside.mean()
-    chi_squared_inside = np.sum((mag_round[cond] - mag_avg_inside) ** 2. / magerr_round[cond] ** 2.)
+    if np.isnan(mag_avg_inside):
+        num_days_inside = 0
+        chi_squared_inside = 0
+    else:
+        cond_inside_masked = cond_inside * ~mag_masked_inside.mask
+        num_days_inside = int(np.sum(cond_inside_masked))
+        chi_squared_inside = np.sum((mag_round[cond_inside_masked] - mag_avg_inside) ** 2. / magerr_round[cond_inside_masked] ** 2.)
 
-    mag_masked_outside = sigma_clip(mag_round[~cond], sigma=3, maxiters=5)
+    mag_masked_outside = sigma_clip(mag_round[~cond_inside], sigma=3, maxiters=5)
     mag_avg_outside = mag_masked_outside.mean()
-    chi_squared_outside = np.sum((mag_round[~cond] - mag_avg_outside) ** 2. / magerr_round[~cond] ** 2.)
+    if np.isnan(mag_avg_outside):
+        num_days_outside = 0
+        chi_squared_outside = 0
+    else:
+        cond_outside_masked = ~cond_inside * ~mag_masked_outside.mask
+        num_days_outside = int(np.sum(cond_outside_masked))
+        chi_squared_outside = np.sum((mag_round[cond_outside_masked] - mag_avg_outside) ** 2. / magerr_round[cond_outside_masked] ** 2.)
 
-    return chi_squared_inside, chi_squared_outside, num_days_inside, delta_hmjd_outside
+    return chi_squared_inside, chi_squared_outside, num_days_inside, num_days_outside, delta_hmjd_outside
 
 
 ETA_THRESHOLDS = load_eta_thresholds()
