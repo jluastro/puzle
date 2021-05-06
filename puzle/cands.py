@@ -114,7 +114,7 @@ def fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec, t0_guess=None, tE_guess=No
     if t0_guess is not None:
         t0 = t0_guess
     else:
-        t0 = hmjd[np.argmin(mag_round)]
+        t0 = hmjd_round[np.argmin(mag_round)]
     if tE_guess is not None:
         tE = tE_guess
     else:
