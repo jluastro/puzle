@@ -382,10 +382,10 @@ def plot_ulens_opt_chi2_cut():
     reduced_chi2_modeled_ulens = chi2_modeled_ulens / dof_arr
 
     chi2_thresh = np.percentile(reduced_chi2_measured_ulens, 95)
-    cand_frac = np.sum(reduced_chi2_measured_cands <= chi2_thresh) / len(reduced_chi2_measured_cands)
+    cand_frac = 100 * np.sum(reduced_chi2_measured_cands <= chi2_thresh) / len(reduced_chi2_measured_cands)
 
     fig, ax = plt.subplots(2, 1, figsize=(8, 8))
-    fig.suptitle('%.2f%% Percent of Cands below 95th Percentile' % (100 * cand_frac))
+    fig.suptitle('%.2f%% Percent of Cands below %.3f (95th Percentile)' % (cand_frac, chi2_thresh))
     for a in ax: a.clear()
     bins = np.linspace(0, 5, 50)
     ax[0].hist(reduced_chi2_measured_ulens, label='ulens measured',
@@ -431,10 +431,10 @@ def plot_ulens_opt_tE_cut():
     log_tE_level3_ulens = np.log10(tE_level3_ulens)
 
     tE_thresh = np.percentile(log_tE_level3_ulens, 99)
-    cand_frac = np.sum(log_tE_level3_cands <= tE_thresh) / len(log_tE_level3_cands)
+    cand_frac = 100 * np.sum(log_tE_level3_cands <= tE_thresh) / len(log_tE_level3_cands)
 
     fig, ax = plt.subplots(2, 1, figsize=(8, 8))
-    fig.suptitle('%.2f%% Percent of Cands below 99th Percentile' % (100 * cand_frac))
+    fig.suptitle('%.2f%% Percent of Cands below %.3f (99th Percentile)' % (cand_frac, tE_thresh))
     for a in ax: a.clear()
     bins = np.linspace(0, 4, 50)
     ax[0].hist(log_tE_level3_ulens, label='ulens measured',
@@ -483,10 +483,10 @@ def plot_ulens_opt_piE_cut():
     log_piE_measured_ulens = np.log10(piE_measured_ulens)
 
     log_piE_thresh = np.percentile(log_piE_measured_ulens, 95)
-    cand_frac = np.sum(log_piE_measured_cands <= log_piE_thresh) / len(log_piE_measured_cands)
+    cand_frac = 100 * np.sum(log_piE_measured_cands <= log_piE_thresh) / len(log_piE_measured_cands)
 
     fig, ax = plt.subplots(2, 1, figsize=(8, 8))
-    fig.suptitle('%.2f%% Percent of Cands below 95th Percentile' % (100 * cand_frac))
+    fig.suptitle('%.2f%% Percent of Cands below %.3f (95th Percentile)' % (cand_frac, log_piE_thresh))
     for a in ax: a.clear()
     bins = np.linspace(-3, 3, 50)
     ax[0].hist(log_piE_measured_ulens, label='ulens measured',

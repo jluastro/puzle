@@ -146,7 +146,7 @@ def populate_candidate_level4():
             num_days_arr.append(num_days)
 
             if num_days > 1:
-                hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
+                _, mag_round = average_xy_on_round_x(hmjd, mag)
                 eta = calculate_eta(mag_round)
                 best_params = fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec,
                                                     t0_guess=t0_level3, tE_guess=tE_level3)
