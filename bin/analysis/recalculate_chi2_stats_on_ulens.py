@@ -22,6 +22,9 @@ def _recalculate_chi2_stats(sibsFlag):
     if sibsFlag:
         fname = fname.replace('sample', 'sample.sibs')
     data = load_stacked_array(fname)
+    lightcurve_data = []
+    for i, d in enumerate(data):
+        lightcurve_data.append(d)
 
     fname = return_ulens_data_fname('ulens_sample_stats')
     if sibsFlag:
@@ -29,7 +32,8 @@ def _recalculate_chi2_stats(sibsFlag):
     stats = np.load(fname)
 
     idx_arr = np.arange(len(lightcurve_data))
-    my_data = np.array_split(data, size)[rank]
+    my_idx_arr = np.array_split(idx_arr, size)[rank]
+    my_data = np.array_split(data, size)[rank][:10]
 
     my_chi_squared_inside_level3_arr = []
     my_chi_squared_outside_level3_arr = []
@@ -40,8 +44,10 @@ def _recalculate_chi2_stats(sibsFlag):
         hmjd = d[:, 0]
         mag = d[:, 1]
         magerr = d[:, 2]
-        t0 = stats['t0_level3']
-        tE = stats['tE_level3']
+        idx = my_idx_arr[i]
+        t0 = stats['t0_level3'][idx]
+        tE = stats['tE_level3'][idx]
+
         data = calculate_chi_squared_inside_outside(hmjd=hmjd,
                                                     mag=mag,
                                                     magerr=magerr,
