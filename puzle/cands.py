@@ -261,18 +261,34 @@ def return_cands_eta_resdiual_arrs():
     return eta_residual_minmax_arr, eta_residual_opt_arr
 
 
-def apply_level3_cuts_to_query(query):
+def return_level3_cut_filters():
     filter0 = CandidateLevel3.tE_best != 0
     filter1 = CandidateLevel3.chi_squared_ulens_best / CandidateLevel3.num_days_best <= 4.805450553176206
     filter2 = CandidateLevel3.delta_hmjd_outside_2tE_best >= 2 * CandidateLevel3.tE_best
     filter3 = CandidateLevel3.chi_squared_flat_outside_2tE_best / CandidateLevel3.num_days_outside_2tE_best <= 3.327056268161699
     filter4 = func.sqrt(func.pow(CandidateLevel3.piE_E_best, 2.) +
                         func.pow(CandidateLevel3.piE_N_best, 2.)) <= 1.4482240516735567
-    filter5 = CandidateLevel3.tE_best <= 927.7536173683764
-    filter6 = CandidateLevel3.t0_best - CandidateLevel3.tE_best >= 58194.0
-    query = query.filter(filter0, filter1, filter2, filter3,
-                         filter4, filter5, filter6)
+    filter5 = CandidateLevel3.t0_best - CandidateLevel3.tE_best >= 58194.0
+    # filter6 = CandidateLevel3.tE_best <= 927.7536173683764
+    return filter0, filter1, filter2, filter3, filter4, filter5
+
+
+def apply_level3_cuts_to_query(query):
+    filter0, filter1, filter2, filter3, filter4, filter5 = return_level3_cut_filters()
+    query = query.filter(filter0, filter1, filter2,
+                         filter3, filter4, filter5)
     return query
+
+
+def print_level3_cuts():
+    filter0, filter1, filter2, filter3, filter4, filter5 = return_level3_cut_filters()
+    query = CandidateLevel3.query
+    print('Filters up to 0', query.filter(filter0).count(), 'cands')
+    print('Filters up to 1', query.filter(filter0, filter1).count(), 'cands')
+    print('Filters up to 2', query.filter(filter0, filter1, filter2).count(), 'cands')
+    print('Filters up to 3', query.filter(filter0, filter1, filter2, filter3).count(), 'cands')
+    print('Filters up to 4', query.filter(filter0, filter1, filter2, filter3, filter4).count(), 'cands')
+    print('Filters up to 5', query.filter(filter0, filter1, filter2, filter3, filter4, filter5).count(), 'cands')
 
 
 def return_sigma_peaks(hmjd, mag, t0, tE, sigma_factor=3, tE_factor=2):

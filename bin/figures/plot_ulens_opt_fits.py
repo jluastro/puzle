@@ -472,6 +472,8 @@ def plot_ulens_opt_chi2_flat_cut():
 def plot_ulens_opt_tE_cut():
     cands = CandidateLevel3.query.with_entities(CandidateLevel3.tE_best).\
         filter(CandidateLevel3.tE_best>0).all()
+    # cands = CandidateLevel3.query.with_entities(CandidateLevel3.tE_best).\
+    #     filter(CandidateLevel3.tE_best>0,CandidateLevel3.delta_hmjd_outside_2tE_best >= 2 * CandidateLevel3.tE_best).all()
     tE_level3_cands = np.array([c[0] for c in cands])
     log_tE_level3_cands = np.log10(tE_level3_cands)
 
