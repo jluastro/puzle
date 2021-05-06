@@ -263,12 +263,12 @@ def return_cands_eta_resdiual_arrs():
 
 def apply_level3_cuts_to_query(query):
     filter0 = CandidateLevel3.tE_best != 0
-    filter1 = CandidateLevel3.chi_squared_ulens_best / CandidateLevel3.num_days_best <= 4.785645318756318
+    filter1 = CandidateLevel3.chi_squared_ulens_best / CandidateLevel3.num_days_best <= 4.805450553176206
     filter2 = CandidateLevel3.delta_hmjd_outside_2tE_best >= 2 * CandidateLevel3.tE_best
-    filter3 = CandidateLevel3.chi_squared_flat_outside_2tE_best / CandidateLevel3.num_days_outside_2tE_best <= 5.373
+    filter3 = CandidateLevel3.chi_squared_flat_outside_2tE_best / CandidateLevel3.num_days_outside_2tE_best <= 3.327056268161699
     filter4 = func.sqrt(func.pow(CandidateLevel3.piE_E_best, 2.) +
-                        func.pow(CandidateLevel3.piE_N_best, 2.)) <= 1.4434253357175861
-    filter5 = CandidateLevel3.tE_best <= 889.6194186749767
+                        func.pow(CandidateLevel3.piE_N_best, 2.)) <= 1.4482240516735567
+    filter5 = CandidateLevel3.tE_best <= 927.7536173683764
     filter6 = CandidateLevel3.t0_best - CandidateLevel3.tE_best >= 58194.0
     query = query.filter(filter0, filter1, filter2, filter3,
                          filter4, filter5, filter6)

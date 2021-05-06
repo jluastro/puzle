@@ -424,7 +424,8 @@ def plot_ulens_opt_chi2_ulens_cut():
 
 def plot_ulens_opt_chi2_flat_cut():
     cands = CandidateLevel3.query.with_entities(CandidateLevel3.chi_squared_flat_outside_2tE_best,
-                                                CandidateLevel3.num_days_outside_2tE_best).all()
+                                                CandidateLevel3.num_days_outside_2tE_best).\
+        filter(CandidateLevel3.num_days_outside_2tE_best!=0).all()
     chi2_flat_outside_cands = np.array([c[0] for c in cands])
     num_days_outside_cands = np.array([c[1] for c in cands])
     reduced_chi2_flat_outside_cands = chi2_flat_outside_cands / num_days_outside_cands
@@ -434,11 +435,10 @@ def plot_ulens_opt_chi2_flat_cut():
 
     chi2_flat_outside_ulens = stats['chi_squared_outside_level3']
     num_days_outside_ulens = stats['num_days_outside_level3']
-    reduced_chi2_flat_outside_ulens = chi2_flat_outside_ulens / num_days_outside_ulens
+    cond_nonzero = num_days_outside_ulens != 0
+    reduced_chi2_flat_outside_ulens = chi2_flat_outside_ulens[cond_nonzero] / num_days_outside_ulens[cond_nonzero]
 
     chi2_thresh = np.percentile(reduced_chi2_flat_outside_ulens, 95)
-    # cond = stats['delta_hmjd_outside_level3'] > 2 * stats['tE_level3']
-    # chi2_thresh = np.percentile(reduced_chi2_flat_outside_ulens[cond], 95)
     cand_frac = 100 * np.sum(reduced_chi2_flat_outside_cands <= chi2_thresh) / len(reduced_chi2_flat_outside_cands)
 
     fig, ax = plt.subplots(2, 1, figsize=(8, 8))
