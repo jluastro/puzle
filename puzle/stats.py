@@ -371,7 +371,7 @@ def calculate_chi2_model_mags(mag, magerr, mag_model, add_err=0,
         mag_masked = sigma_clip(mag_masked, sigma=3, maxiters=5)
         # This masked array is now a mask that includes BOTH the mirolensing event and
         # the 3-sigma outliers that we want removed. We want to remove the mask that
-        # is on the micorlensing event. So we only keep the mask for those points
+        # is on the microlensing event. So we only keep the mask for those points
         # outside of +-2 tE.
         chi2_mask = mag_masked.mask * ~ulens_mask
         # Using this mask, do one pass of clipping out all +- 5 sigma points.

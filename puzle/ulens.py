@@ -50,7 +50,7 @@ def return_ulens_data(observableFlag=True, bhFlag=False,
     if level3Flag:
         cond *= stats['tE_level3'] <= 595
         n_days = np.array([len(d) for d in data])
-        cond *= stats['chi_squared_delta_level3'] / n_days <= 2.221
+        cond *= stats['chi_squared_ulens_level3'] / n_days <= 2.221
         cond *= np.hypot(stats['piE_E_level3'], stats['piE_N_level3']) <= 2.877
     idx_arr = set(np.where(cond==True)[0])
 
@@ -90,7 +90,7 @@ def return_ulens_stats(observableFlag=True, bhFlag=False, level3Flag=False,
     if level3Flag:
         cond *= stats['tE_level3'] <= 595
         n_days = np.array([len(d) for d in data])
-        cond *= stats['chi_squared_delta_level3'] / n_days <= 2.221
+        cond *= stats['chi_squared_ulens_level3'] / n_days <= 2.221
         cond *= np.hypot(stats['piE_E_level3'], stats['piE_N_level3']) <= 2.877
 
     stats_dct = {}
@@ -130,7 +130,7 @@ def return_ulens_metadata(observableFlag=True, bhFlag=False,
     if level3Flag:
         cond *= stats['tE_level3'] <= 595
         n_days = np.array([len(d) for d in data])
-        cond *= stats['chi_squared_delta_level3'] / n_days <= 2.221
+        cond *= stats['chi_squared_ulens_level3'] / n_days <= 2.221
         cond *= np.hypot(stats['piE_E_level3'], stats['piE_N_level3']) <= 2.877
 
     metadata_dct = {}

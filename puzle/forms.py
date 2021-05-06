@@ -87,7 +87,7 @@ class RadialSearchForm(FlaskForm):
                         validators=[DataRequired()])
     order_by = RadioField(choices=[('eta_residual_best', 'Order results by eta_residual descending'),
                                    ('eta_best', 'Order results by eta ascending'),
-                                   ('chi_squared_delta_best', 'Order results by chi_squared_delta desc')],
+                                   ('chi_squared_ulens_best', 'Order results by chi_squared_ulens desc')],
                           default='eta_residual_best')
     order_by_num_objs = BooleanField('Order by number of objects descending', default=True)
     submit = SubmitField('Search')
@@ -114,9 +114,9 @@ class FilterSearchForm(FlaskForm):
                                      validators=[Optional(), NumberRange(min=0.01)])
     minmax_t_E_best_max = FloatField('minmax: t_E_best max (days)',
                                      validators=[Optional(), NumberRange(max=5000)])
-    minmax_chi_squared_delta_best_min = FloatField('minmax: reduced chi_squared_delta_best min',
+    minmax_chi_squared_delta_best_min = FloatField('minmax: chi_squared_delta_best min',
                                                    validators=[Optional(), NumberRange(min=0)])
-    minmax_chi_squared_delta_best_max = FloatField('minmax: reduced chi_squared_delta_best max',
+    minmax_chi_squared_delta_best_max = FloatField('minmax: chi_squared_delta_best max',
                                                    validators=[Optional(), NumberRange(min=0)])
     minmax_eta_residual_best_min = FloatField('minmax: eta_residual_best min',
                                               validators=[Optional(), NumberRange(min=0)])
@@ -130,9 +130,9 @@ class FilterSearchForm(FlaskForm):
                                   validators=[Optional(), NumberRange(min=0)])
     opt_tE_best_max = FloatField('opt: tE_best max (days)',
                                   validators=[Optional(), NumberRange(min=0)])
-    opt_chi_squared_delta_best_min = FloatField('opt: reduced chi_squared_delta_best min',
+    opt_chi_squared_ulens_best_min = FloatField('opt: chi_squared_ulens_best min',
                                                 validators=[Optional(), NumberRange(min=0)])
-    opt_chi_squared_delta_best_max = FloatField('opt: reduced chi_squared_delta_best max',
+    opt_chi_squared_ulens_best_max = FloatField('opt: chi_squared_ulens_best max',
                                                 validators=[Optional(), NumberRange(min=0)])
     opt_eta_residual_best_min = FloatField('opt: eta_residual_best min',
                                            validators=[Optional(), NumberRange(min=0)])
@@ -140,9 +140,9 @@ class FilterSearchForm(FlaskForm):
                                            validators=[Optional(), NumberRange(min=0)])
     order_by = RadioField(choices=[('eta_best', 'Order results by eta ascending'),
                                    ('minmax_eta_residual_best', 'Order results by minmax eta_residual descending'),
-                                   ('minmax_chi_squared_delta_best', 'Order results by minmax reduced chi_squared_delta desc'),
+                                   ('minmax_chi_squared_delta_best', 'Order results by minmax chi_squared_delta desc'),
                                    ('opt_eta_residual_best', 'Order results by opt eta_residual descending'),
-                                   ('opt_chi_squared_delta_best', 'Order results optmax reduced chi_squared_delta desc')],
+                                   ('opt_chi_squared_ulens_best', 'Order results optmax chi_squared_ulens desc')],
                           default='opt_eta_residual_best')
     order_by_num_objs = BooleanField('Order by number of objects descending', default=True)
     submit = SubmitField('Search')

@@ -24,7 +24,7 @@ def plot_ulens_opt_corner():
     query = CandidateLevel3.query.with_entities(CandidateLevel3.tE_best,
                                                  CandidateLevel3.u0_amp_best,
                                                  CandidateLevel3.mag_src_best,
-                                                 CandidateLevel3.chi_squared_delta_best,
+                                                 CandidateLevel3.chi_squared_ulens_best,
                                                  CandidateLevel3.piE_E_best,
                                                  CandidateLevel3.piE_N_best,
                                                  CandidateLevel3.eta_best,
@@ -35,7 +35,7 @@ def plot_ulens_opt_corner():
     tE_cands = np.array([c[0] for c in cands3], dtype=np.float32)
     u0_amp_cands = np.array([c[1] for c in cands3], dtype=np.float32)
     mag_src_cands = np.array([c[2] for c in cands3], dtype=np.float32)
-    chi_squared_delta_cands = np.array([c[3] for c in cands3], dtype=np.float32)
+    chi_squared_ulens_cands = np.array([c[3] for c in cands3], dtype=np.float32)
     piE_E_cands = np.array([c[4] for c in cands3], dtype=np.float32)
     piE_N_cands = np.array([c[5] for c in cands3], dtype=np.float32)
     eta_cands = np.array([c[6] for c in cands3], dtype=np.float32)
@@ -49,13 +49,13 @@ def plot_ulens_opt_corner():
     piE_cands = np.hypot(piE_E_cands, piE_N_cands)
     log_piE_cands = np.log10(piE_cands)
     
-    chi_squared_delta_reduced_cands = chi_squared_delta_cands / num_epochs_cands
+    chi_squared_ulens_reduced_cands = chi_squared_ulens_cands / num_epochs_cands
 
     data_cands = np.vstack((t0_cands,
                             log_tE_cands,
                             u0_amp_cands,
                             mag_src_cands,
-                            chi_squared_delta_reduced_cands,
+                            chi_squared_ulens_reduced_cands,
                             log_piE_E_cands,
                             log_piE_N_cands,
                             log_piE_cands,
@@ -68,7 +68,7 @@ def plot_ulens_opt_corner():
     tE_ulens = stats['tE_level3']
     u0_amp_ulens = stats['u0_amp_level3']
     mag_src_ulens = stats['mag_src_level3']
-    chi_squared_delta_ulens = stats['chi_squared_delta_level3']
+    chi_squared_ulens_ulens = stats['chi_squared_ulens_level3']
     piE_E_ulens = stats['piE_E_level3']
     piE_N_ulens = stats['piE_N_level3']
     eta_ulens = stats['eta']
@@ -84,13 +84,13 @@ def plot_ulens_opt_corner():
     piE_ulens = np.hypot(piE_E_ulens, piE_N_ulens)
     log_piE_ulens = np.log10(piE_ulens)
     
-    chi_squared_delta_reduced_ulens = chi_squared_delta_ulens / num_epochs_ulens
+    chi_squared_ulens_reduced_ulens = chi_squared_ulens_ulens / num_epochs_ulens
 
     data_ulens = np.vstack((t0_ulens,
                             log_tE_ulens,
                             u0_amp_ulens,
                             mag_src_ulens,
-                            chi_squared_delta_reduced_ulens,
+                            chi_squared_ulens_reduced_ulens,
                             log_piE_E_ulens,
                             log_piE_N_ulens,
                             log_piE_ulens,
@@ -98,7 +98,7 @@ def plot_ulens_opt_corner():
                             eta_residual_ulens)).T
 
     # Plot it.
-    labels = ['t0', 'LOG tE', 'u0_amp', 'mag_src', 'chi_squared_delta_reduced', 'LOG piE_E', 'LOG piE_N', 'LOG piE', 'eta', 'eta_residual']
+    labels = ['t0', 'LOG tE', 'u0_amp', 'mag_src', 'chi_squared_ulens_reduced', 'LOG piE_E', 'LOG piE_N', 'LOG piE', 'eta', 'eta_residual']
     data_range = [(57000, 60000), (.5, 4), (-3, 3), (10, 24), (0, 5), (-3, 2), (-3, 2), (-3, 2), (0, 1), (0, 4)]
 
     fig, ax = plt.subplots(5, 2, figsize=(8, 8))
@@ -335,7 +335,7 @@ def return_CDF(arr):
 
 
 def plot_ulens_opt_chi2_cut():
-    cands = CandidateLevel3.query.with_entities(CandidateLevel3.chi_squared_delta_best,
+    cands = CandidateLevel3.query.with_entities(CandidateLevel3.chi_squared_ulens_best,
                                                 CandidateLevel3.num_days_best).all()
     chi2_measured_cands = np.array([c[0] for c in cands])
     num_days_cands = np.array([c[1] for c in cands])
@@ -346,7 +346,7 @@ def plot_ulens_opt_chi2_cut():
     metadata = return_ulens_metadata(observableFlag=True, bhFlag=bhFlag)
     stats = return_ulens_stats(observableFlag=True, bhFlag=bhFlag)
 
-    chi2_measured_ulens = stats['chi_squared_delta_level3']
+    chi2_measured_ulens = stats['chi_squared_ulens_level3']
     num_days_ulens = np.array([len(np.unique(np.floor(d))) for d in data])
     reduced_chi2_measured_ulens = chi2_measured_ulens / num_days_ulens
 
@@ -992,7 +992,7 @@ def plot_ulens_opt_sigma_peaks():
     tE_cands = np.array([c.tE_best for c in cands3])
     piE_cands = np.array([np.hypot(c.piE_E_best, c.piE_N_best) for c in cands3])
     num_epochs_cands = np.array([c.num_epochs_best for c in cands3])
-    chi_squared_cands = np.array([c.chi_squared_delta_best for c in cands3])
+    chi_squared_cands = np.array([c.chi_squared_ulens_best for c in cands3])
     reduced_chi_squared_cands = chi_squared_cands / num_epochs_cands
 
     cond1 = tE_cands <= 595

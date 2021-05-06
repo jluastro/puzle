@@ -526,7 +526,7 @@ def _calculate_stats_on_lightcurves(sibsFlag=False):
     my_b_sff_level3_arr = []
     my_piE_E_level3_arr = []
     my_piE_N_level3_arr = []
-    my_chi_squared_delta_level3_arr = []
+    my_chi_squared_ulens_level3_arr = []
     my_eta_residual_level3_arr = []
     my_observable_arr1 = []
     my_observable_arr2 = []
@@ -624,7 +624,7 @@ def _calculate_stats_on_lightcurves(sibsFlag=False):
                            'b_sff': 0,
                            'piE_E': 0,
                            'piE_N': 0,
-                           'chi_squared_delta': 0,
+                           'chi_squared_ulens': 0,
                            'eta_residual': 0}
         my_t0_level3_arr.append(best_params['t0'])
         my_u0_amp_level3_arr.append(best_params['u0_amp'])
@@ -633,7 +633,7 @@ def _calculate_stats_on_lightcurves(sibsFlag=False):
         my_b_sff_level3_arr.append(best_params['b_sff'])
         my_piE_E_level3_arr.append(best_params['piE_E'])
         my_piE_N_level3_arr.append(best_params['piE_N'])
-        my_chi_squared_delta_level3_arr.append(best_params['chi_squared_delta'])
+        my_chi_squared_ulens_level3_arr.append(best_params['chi_squared_ulens'])
         my_eta_residual_level3_arr.append(best_params['eta_residual'])
 
         with open(my_stats_complete_fname, 'a+') as f:
@@ -660,7 +660,7 @@ def _calculate_stats_on_lightcurves(sibsFlag=False):
     total_b_sff_level3_arr = comm.gather(my_b_sff_level3_arr, root=0)
     total_piE_E_level3_arr = comm.gather(my_piE_E_level3_arr, root=0)
     total_piE_N_level3_arr = comm.gather(my_piE_N_level3_arr, root=0)
-    total_chi_squared_delta_level3_arr = comm.gather(my_chi_squared_delta_level3_arr, root=0)
+    total_chi_squared_ulens_level3_arr = comm.gather(my_chi_squared_ulens_level3_arr, root=0)
     total_eta_residual_level3_arr = comm.gather(my_eta_residual_level3_arr, root=0)
     total_idx_arr = comm.gather(my_idx_arr, root=0)
 
@@ -686,7 +686,7 @@ def _calculate_stats_on_lightcurves(sibsFlag=False):
         b_sff_level3_arr = list(itertools.chain(*total_b_sff_level3_arr))
         piE_E_level3_arr = list(itertools.chain(*total_piE_E_level3_arr))
         piE_N_level3_arr = list(itertools.chain(*total_piE_N_level3_arr))
-        chi_squared_delta_level3_arr = list(itertools.chain(*total_chi_squared_delta_level3_arr))
+        chi_squared_ulens_level3_arr = list(itertools.chain(*total_chi_squared_ulens_level3_arr))
         eta_residual_level3_arr = list(itertools.chain(*total_eta_residual_level3_arr))
         idx_arr = list(itertools.chain(*total_idx_arr))
         fname_data = return_ulens_data_fname('ulens_sample')
@@ -715,7 +715,7 @@ def _calculate_stats_on_lightcurves(sibsFlag=False):
                  b_sff_level3=b_sff_level3_arr,
                  piE_E_level3=piE_E_level3_arr,
                  piE_N_level3=piE_N_level3_arr,
-                 chi_squared_delta_level3=chi_squared_delta_level3_arr,
+                 chi_squared_ulens_level3=chi_squared_ulens_level3_arr,
                  eta_residual_level3=eta_residual_level3_arr,
                  idx=idx_arr)
 

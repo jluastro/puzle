@@ -158,7 +158,7 @@ def populate_candidate_level4():
                 param_names_to_fit = ['t0', 'u0_amp', 'tE', 'mag_src',
                                       'b_sff', 'piE_E', 'piE_N']
                 best_params = {k: 0 for k in param_names_to_fit}
-                best_params['chi_squared_delta'] = 0
+                best_params['chi_squared_ulens'] = 0
                 best_params['eta_residual'] = 0
                 num_epochs_inside = 0
 
@@ -171,7 +171,7 @@ def populate_candidate_level4():
             piE_E_arr.append(best_params['piE_E'])
             piE_N_arr.append(best_params['piE_N'])
             eta_residual_arr.append(best_params['eta_residual'])
-            chi_squared_ulens_arr.append(best_params['chi_squared_delta'])
+            chi_squared_ulens_arr.append(best_params['chi_squared_ulens'])
             num_epochs_inside_arr.append(num_epochs_inside)
 
             if num_epochs_inside > 0:

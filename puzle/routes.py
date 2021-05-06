@@ -431,8 +431,8 @@ def radial_search():
             order_by_cond = CandidateLevel3.eta_residual_best.desc()
         elif session['order_by'] == 'eta_best':
             order_by_cond = CandidateLevel3.eta_best.asc()
-        elif session['order_by'] == 'chi_squared_delta_best':
-            order_by_cond = CandidateLevel3.chi_squared_delta_best.desc()
+        elif session['order_by'] == 'chi_squared_ulens_best':
+            order_by_cond = CandidateLevel3.chi_squared_ulens_best.desc()
 
         if session['order_by_num_objs']:
             query = query.order_by(CandidateLevel3.num_objs_pass.desc(), order_by_cond)
@@ -499,7 +499,7 @@ def filter_search():
                     'minmax_t_0_best', 'minmax_t_E_best',
                     'minmax_chi_squared_delta_best', 'minmax_eta_residual_best',
                     'opt_t0_best', 'opt_tE_best',
-                    'opt_chi_squared_delta_best', 'opt_eta_residual_best']
+                    'opt_chi_squared_ulens_best', 'opt_eta_residual_best']
 
     form_filter = FilterSearchForm()
     if form_filter.validate_on_submit():
@@ -546,8 +546,8 @@ def filter_search():
             order_by_cond = CandidateLevel3.eta_best.asc()
         elif session['order_by'] == 'minmax_chi_squared_delta_best':
             order_by_cond = CandidateLevel2.chi_squared_delta_best.desc()
-        elif session['order_by'] == 'opt_chi_squared_delta_best':
-            order_by_cond = CandidateLevel3.chi_squared_delta_best.desc()
+        elif session['order_by'] == 'opt_chi_squared_ulens_best':
+            order_by_cond = CandidateLevel3.chi_squared_ulens_best.desc()
 
         if session['order_by_num_objs']:
             query = query.order_by(CandidateLevel3.num_objs_pass.desc(), order_by_cond)
@@ -583,7 +583,7 @@ def filter_search():
 @login_required
 def reset_filter_search():
     query_fields = ['num_objs_pass', 't_0_best', 't_E_best',
-                    'chi_squared_delta_best', 'rf_score_best',
+                    'chi_squared_ulens_best', 'rf_score_best',
                     'eta_best', 'eta_residual_best']
 
     for field in query_fields:
