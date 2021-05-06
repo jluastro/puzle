@@ -585,8 +585,6 @@ def _calculate_stats_on_lightcurves(sibsFlag=False):
         my_atype_level2_arr.append(atype)
 
         # calculate and append observability conditions
-        hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
-        _, magerr_round = average_xy_on_round_x(hmjd, magerr)
         n_days_in_split = int(len(mag_round) / 5)
         mag_splits = [mag_round[i * n_days_in_split:(i + 1) * n_days_in_split] for i in range(5)]
         median = np.median([np.median(mag) for mag in mag_splits])
@@ -643,9 +641,9 @@ def _calculate_stats_on_lightcurves(sibsFlag=False):
         my_chi_squared_ulens_level3_arr.append(best_params['chi_squared_ulens'])
         my_eta_residual_level3_arr.append(best_params['eta_residual'])
 
-        data = calculate_chi_squared_inside_outside(hmjd=hmjd_round,
-                                                    mag=mag_round,
-                                                    magerr=magerr_round,
+        data = calculate_chi_squared_inside_outside(hmjd=hmjd,
+                                                    mag=mag,
+                                                    magerr=magerr,
                                                     t0=best_params['t0'],
                                                     tE=best_params['tE'],
                                                     tE_factor=2)
