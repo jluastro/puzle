@@ -18,7 +18,7 @@ def fit_level3_candidates_to_chi_squared():
                                                   CandidateLevel3.t0_best,
                                                   CandidateLevel3.tE_best).\
                                     filter(CandidateLevel3.t0_best!=0,
-                                           CandidateLevel3.chi_squared_inside_1tE_best==None).all()
+                                           CandidateLevel3.chi_squared_flat_inside_1tE_best==None).all()
     num_cands = len(cands)
     cand_id_arr = [c[0] for c in cands]
     t0_arr = [c[1] for c in cands]

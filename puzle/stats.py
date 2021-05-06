@@ -405,9 +405,16 @@ def calculate_chi_squared_inside_outside(hmjd, mag, magerr, t0, tE, tE_factor):
     num_days_inside = np.sum(cond)
     
     cond_low = hmjd_round < t0 - tE_factor * tE
-    delta_hmjd_low = np.max(hmjd_round[cond_low]) - np.min(hmjd_round[cond_low])
+    if np.sum(cond_low) > 1:
+        delta_hmjd_low = np.max(hmjd_round[cond_low]) - np.min(hmjd_round[cond_low])
+    else:
+        delta_hmjd_low = 0
+
     cond_high = hmjd_round > t0 + tE_factor * tE
-    delta_hmjd_high = np.max(hmjd_round[cond_high]) - np.min(hmjd_round[cond_high])
+    if np.sum(cond_high) > 1:
+        delta_hmjd_high = np.max(hmjd_round[cond_high]) - np.min(hmjd_round[cond_high])
+    else:
+        delta_hmjd_high = 0
     delta_hmjd_outside = delta_hmjd_low + delta_hmjd_high
 
     mag_masked_inside = sigma_clip(mag_round[cond], sigma=5, maxiters=1)
