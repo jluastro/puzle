@@ -14,6 +14,8 @@ from shapely.geometry.polygon import Polygon
 
 
 popsycle_base_folder = '/global/cfs/cdirs/uLens/PopSyCLE_runs/PopSyCLE_runs_v3_refined_events'
+MJD_start = 58194.0
+MJD_finish = 59243.0
 
 
 def return_dir(folder):
