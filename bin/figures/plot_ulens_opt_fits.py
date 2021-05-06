@@ -15,7 +15,7 @@ from puzle.cands import return_cands_eta_resdiual_arrs, \
     return_sigma_peaks
 from puzle.models import CandidateLevel2, CandidateLevel3
 from puzle.utils import return_figures_dir
-from puzle.stats import calculate_chi_squared_inside_outside
+from puzle.stats import calculate_chi_squared_inside_outside, average_xy_on_round_x
 from puzle.fit import return_flux_model
 from puzle import db
 
@@ -334,12 +334,12 @@ def return_CDF(arr):
     return x, y
 
 
-def plot_ulens_opt_chi2_cut():
+def plot_ulens_opt_chi2_ulens_cut():
     cands = CandidateLevel3.query.with_entities(CandidateLevel3.chi_squared_ulens_best,
                                                 CandidateLevel3.num_days_best).all()
-    chi2_measured_cands = np.array([c[0] for c in cands])
+    chi2_opt_cands = np.array([c[0] for c in cands])
     num_days_cands = np.array([c[1] for c in cands])
-    reduced_chi2_measured_cands = chi2_measured_cands / num_days_cands
+    reduced_chi2_opt_cands = chi2_opt_cands / num_days_cands
 
     bhFlag = False
     data = return_ulens_data(observableFlag=True, bhFlag=bhFlag)
@@ -350,39 +350,44 @@ def plot_ulens_opt_chi2_cut():
     num_days_ulens = np.array([len(np.unique(np.floor(d))) for d in data])
     reduced_chi2_measured_ulens = chi2_measured_ulens / num_days_ulens
 
-    param_names = ['t0', 'u0_amp', 'tE', 'mag_src',
-                   'b_sff', 'piE_E', 'piE_N']
-    model_class = PSPL_Phot_Par_Param1
-    chi2_modeled_ulens = []
-    dof_arr = []
-    idx_arr = np.arange(len(data))
-    for idx in idx_arr:
-        if idx % 10000 == 0:
-            print('-- ulens sample %i / %i' % (idx, len(idx_arr)))
-        hmjd, mag, magerr = data[idx][:, :3].T
-        t0 = metadata['t0'][idx]
-        u0 = metadata['u0'][idx]
-        tE = metadata['tE'][idx]
-        mag_src = metadata['mag_src'][idx]
-        piE_E = metadata['piE_E'][idx]
-        piE_N = metadata['piE_N'][idx]
-        b_sff = metadata['b_sff'][idx]
-        ra = metadata['ra'][idx]
-        dec = metadata['dec'][idx]
+    plot_ulens_modeled = False
+    if plot_ulens_modeled:
+        param_names = ['t0', 'u0_amp', 'tE', 'mag_src',
+                       'b_sff', 'piE_E', 'piE_N']
+        model_class = PSPL_Phot_Par_Param1
+        chi2_modeled_ulens = []
+        dof_arr = []
+        idx_arr = np.arange(len(data))
+        for idx in idx_arr:
+            if idx % 10000 == 0:
+                print('-- ulens sample %i / %i' % (idx, len(idx_arr)))
+            hmjd, mag, magerr = data[idx][:, :3].T
+            hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
+            _, magerr_round = average_xy_on_round_x(hmjd, magerr)
 
-        data_fit = {'hmjd': hmjd, 'mag': mag, 'magerr': magerr, 'raL': ra, 'decL': dec}
-        param_values = [t0, u0, tE, mag_src, b_sff, piE_E, piE_N]
-        chi2 = calculate_chi2_model(param_values, param_names, model_class, data_fit)
-        dof = len(hmjd)
-        chi2_modeled_ulens.append(chi2)
-        dof_arr.append(dof)
+            t0 = metadata['t0'][idx]
+            u0 = metadata['u0'][idx]
+            tE = metadata['tE'][idx]
+            mag_src = metadata['mag_src'][idx]
+            piE_E = metadata['piE_E'][idx]
+            piE_N = metadata['piE_N'][idx]
+            b_sff = metadata['b_sff'][idx]
+            ra = metadata['ra'][idx]
+            dec = metadata['dec'][idx]
 
-    chi2_modeled_ulens = np.array(chi2_modeled_ulens)
-    dof_arr = np.array(dof_arr)
-    reduced_chi2_modeled_ulens = chi2_modeled_ulens / dof_arr
+            data_fit = {'hmjd': hmjd_round, 'mag': mag_round, 'magerr': magerr_round, 'raL': ra, 'decL': dec}
+            param_values = [t0, u0, tE, mag_src, b_sff, piE_E, piE_N]
+            chi2 = calculate_chi2_model(param_values, param_names, model_class, data_fit)
+            dof = len(set(np.round(hmjd)))
+            chi2_modeled_ulens.append(chi2)
+            dof_arr.append(dof)
+
+        chi2_modeled_ulens = np.array(chi2_modeled_ulens)
+        dof_arr = np.array(dof_arr)
+        reduced_chi2_modeled_ulens = chi2_modeled_ulens / dof_arr
 
     chi2_thresh = np.percentile(reduced_chi2_measured_ulens, 95)
-    cand_frac = 100 * np.sum(reduced_chi2_measured_cands <= chi2_thresh) / len(reduced_chi2_measured_cands)
+    cand_frac = 100 * np.sum(reduced_chi2_opt_cands <= chi2_thresh) / len(reduced_chi2_opt_cands)
 
     fig, ax = plt.subplots(2, 1, figsize=(8, 8))
     fig.suptitle('%.2f%% Percent of Cands below %.3f (95th Percentile)' % (cand_frac, chi2_thresh))
@@ -390,14 +395,16 @@ def plot_ulens_opt_chi2_cut():
     bins = np.linspace(0, 5, 50)
     ax[0].hist(reduced_chi2_measured_ulens, label='ulens measured',
                bins=bins, histtype='step', density=True)
-    ax[0].hist(reduced_chi2_modeled_ulens, label='ulens modeled',
+    ax[0].hist(reduced_chi2_opt_cands, label='cands measured',
                bins=bins, histtype='step', density=True)
-    ax[0].hist(reduced_chi2_measured_cands, label='cands measured',
-               bins=bins, histtype='step', density=True)
+    if plot_ulens_modeled:
+        ax[0].hist(reduced_chi2_modeled_ulens, label='ulens modeled',
+                   bins=bins, histtype='step', density=True)
     ax[0].axvline(chi2_thresh, color='k', alpha=.3, label='ulens measured 95th percentile')
     ax[1].plot(*return_CDF(reduced_chi2_measured_ulens), label='ulens measured')
-    ax[1].plot(*return_CDF(reduced_chi2_modeled_ulens), label='ulens modeled')
-    ax[1].plot(*return_CDF(reduced_chi2_measured_cands), label='cands measured')
+    ax[1].plot(*return_CDF(reduced_chi2_opt_cands), label='cands measured')
+    if plot_ulens_modeled:
+        ax[1].plot(*return_CDF(reduced_chi2_modeled_ulens), label='ulens modeled')
     ax[1].axhline(0.95, color='k', alpha=.3, label='ulens measured 95th percentile')
     ax[1].axvline(chi2_thresh, color='k', alpha=.3)
 
@@ -409,7 +416,53 @@ def plot_ulens_opt_chi2_cut():
     fig.tight_layout()
     fig.subplots_adjust(top=.95)
 
-    fname = '%s/ulens_opt_chi2_cut.png' % return_figures_dir()
+    fname = '%s/ulens_opt_chi2_ulens_cut.png' % return_figures_dir()
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    print('-- %s saved' % fname)
+    plt.close(fig)
+
+
+def plot_ulens_opt_chi2_flat_cut():
+    cands = CandidateLevel3.query.with_entities(CandidateLevel3.chi_squared_flat_outside_2tE_best,
+                                                CandidateLevel3.num_days_outside_2tE_best).all()
+    chi2_flat_outside_cands = np.array([c[0] for c in cands])
+    num_days_outside_cands = np.array([c[1] for c in cands])
+    reduced_chi2_flat_outside_cands = chi2_flat_outside_cands / num_days_outside_cands
+
+    bhFlag = False
+    data = return_ulens_data(observableFlag=True, bhFlag=bhFlag)
+    stats = return_ulens_stats(observableFlag=True, bhFlag=bhFlag)
+
+    chi2_flat_outside_ulens = stats['chi_squared_ulens_level3']
+    # num_days_ulens = np.array([len(np.unique(np.floor(d))) for d in data])
+    reduced_chi2_measured_ulens = chi2_measured_ulens / num_days_ulens
+
+    chi2_thresh = np.percentile(reduced_chi2_measured_ulens, 95)
+    cand_frac = 100 * np.sum(reduced_chi2_flat_outside_cands <= chi2_thresh) / len(reduced_chi2_flat_outside_cands)
+
+    fig, ax = plt.subplots(2, 1, figsize=(8, 8))
+    fig.suptitle('%.2f%% Percent of Cands below %.3f (95th Percentile)' % (cand_frac, chi2_thresh))
+    for a in ax: a.clear()
+    bins = np.linspace(0, 5, 50)
+    ax[0].hist(reduced_chi2_measured_ulens, label='ulens measured',
+               bins=bins, histtype='step', density=True)
+    ax[0].hist(reduced_chi2_flat_outside_cands, label='cands measured',
+               bins=bins, histtype='step', density=True)
+    ax[0].axvline(chi2_thresh, color='k', alpha=.3, label='ulens measured 95th percentile')
+    ax[1].plot(*return_CDF(reduced_chi2_measured_ulens), label='ulens measured')
+    ax[1].plot(*return_CDF(reduced_chi2_flat_outside_cands), label='cands measured')
+    ax[1].axhline(0.95, color='k', alpha=.3, label='ulens measured 95th percentile')
+    ax[1].axvline(chi2_thresh, color='k', alpha=.3)
+
+    for a in ax:
+        a.grid(True)
+        a.set_xlim(0, 5)
+        a.set_xlabel('Reduced Chi Squared')
+        a.legend()
+    fig.tight_layout()
+    fig.subplots_adjust(top=.95)
+
+    fname = '%s/ulens_opt_chi2_flat_cut.png' % return_figures_dir()
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
     plt.close(fig)
@@ -1108,7 +1161,8 @@ def generate_all_figures():
     plot_ulens_opt_inside_outside()
     plot_ulens_tE_opt_bias()
     plot_ulens_eta_residual_minmax_vs_opt()
-    plot_ulens_opt_chi2_cut()
+    plot_ulens_opt_chi2_ulens_cut()
+    plot_ulens_opt_chi2_flat_cut()
     plot_ulens_opt_tE_cut()
     plot_ulens_opt_piE_cut()
     plot_ulens_opt_sigma_peaks()

@@ -532,11 +532,11 @@ def _calculate_stats_on_lightcurves(sibsFlag=False):
     my_observable_arr1 = []
     my_observable_arr2 = []
     my_observable_arr3 = []
-    my_chi_squared_inside_arr = []
-    my_chi_squared_outside_arr = []
-    my_num_days_inside_arr = []
-    my_num_days_outside_arr = []
-    my_delta_hmjd_outside_arr = []
+    my_chi_squared_inside_level3_arr = []
+    my_chi_squared_outside_level3_arr = []
+    my_num_days_inside_level3_arr = []
+    my_num_days_outside_level3_arr = []
+    my_delta_hmjd_outside_level3_arr = []
     for i, d in enumerate(my_data):
         hmjd = d[:, 0]
         mag = d[:, 1]
@@ -650,11 +650,11 @@ def _calculate_stats_on_lightcurves(sibsFlag=False):
                                                     tE=best_params['tE'],
                                                     tE_factor=2)
         chi_squared_inside, chi_squared_outside, num_days_inside, num_days_outside, delta_hmjd_outside = data
-        my_chi_squared_inside_arr.append(chi_squared_inside)
-        my_chi_squared_outside_arr.append(chi_squared_outside)
-        my_num_days_inside_arr.append(num_days_inside)
-        my_num_days_outside_arr.append(num_days_outside)
-        my_delta_hmjd_outside_arr.append(delta_hmjd_outside)
+        my_chi_squared_inside_level3_arr.append(chi_squared_inside)
+        my_chi_squared_outside_level3_arr.append(chi_squared_outside)
+        my_num_days_inside_level3_arr.append(num_days_inside)
+        my_num_days_outside_level3_arr.append(num_days_outside)
+        my_delta_hmjd_outside_level3_arr.append(delta_hmjd_outside)
 
         with open(my_stats_complete_fname, 'a+') as f:
             f.write(f'{i}\n')
@@ -682,11 +682,11 @@ def _calculate_stats_on_lightcurves(sibsFlag=False):
     total_piE_N_level3_arr = comm.gather(my_piE_N_level3_arr, root=0)
     total_chi_squared_ulens_level3_arr = comm.gather(my_chi_squared_ulens_level3_arr, root=0)
     total_eta_residual_level3_arr = comm.gather(my_eta_residual_level3_arr, root=0)
-    total_chi_squared_inside_arr = comm.gather(my_chi_squared_inside_arr, root=0)
-    total_chi_squared_outside_arr = comm.gather(my_chi_squared_outside_arr, root=0)
-    total_num_days_inside_arr = comm.gather(my_num_days_inside_arr, root=0)
-    total_num_days_outside_arr = comm.gather(my_num_days_outside_arr, root=0)
-    total_delta_hmjd_outside_arr = comm.gather(my_delta_hmjd_outside_arr, root=0)
+    total_chi_squared_inside_level3_arr = comm.gather(my_chi_squared_inside_level3_arr, root=0)
+    total_chi_squared_outside_level3_arr = comm.gather(my_chi_squared_outside_level3_arr, root=0)
+    total_num_days_inside_level3_arr = comm.gather(my_num_days_inside_level3_arr, root=0)
+    total_num_days_outside_level3_arr = comm.gather(my_num_days_outside_level3_arr, root=0)
+    total_delta_hmjd_outside_level3_arr = comm.gather(my_delta_hmjd_outside_level3_arr, root=0)
     total_idx_arr = comm.gather(my_idx_arr, root=0)
 
     if rank == 0:
@@ -713,11 +713,11 @@ def _calculate_stats_on_lightcurves(sibsFlag=False):
         piE_N_level3_arr = list(itertools.chain(*total_piE_N_level3_arr))
         chi_squared_ulens_level3_arr = list(itertools.chain(*total_chi_squared_ulens_level3_arr))
         eta_residual_level3_arr = list(itertools.chain(*total_eta_residual_level3_arr))
-        chi_squared_inside_arr = list(itertools.chain(*total_chi_squared_inside_arr))
-        chi_squared_outside_arr = list(itertools.chain(*total_chi_squared_outside_arr))
-        num_days_inside_arr = list(itertools.chain(*total_num_days_inside_arr))
-        num_days_outside_arr = list(itertools.chain(*total_num_days_outside_arr))
-        delta_hmjd_outside_arr = list(itertools.chain(*total_delta_hmjd_outside_arr))
+        chi_squared_inside_level3_arr = list(itertools.chain(*total_chi_squared_inside_level3_arr))
+        chi_squared_outside_level3_arr = list(itertools.chain(*total_chi_squared_outside_level3_arr))
+        num_days_inside_level3_arr = list(itertools.chain(*total_num_days_inside_level3_arr))
+        num_days_outside_level3_arr = list(itertools.chain(*total_num_days_outside_level3_arr))
+        delta_hmjd_outside_level3_arr = list(itertools.chain(*total_delta_hmjd_outside_level3_arr))
         idx_arr = list(itertools.chain(*total_idx_arr))
         fname_data = return_ulens_data_fname('ulens_sample')
         fname_stats = fname_data.replace('ulens_sample', 'ulens_sample_stats')
@@ -747,11 +747,11 @@ def _calculate_stats_on_lightcurves(sibsFlag=False):
                  piE_N_level3=piE_N_level3_arr,
                  chi_squared_ulens_level3=chi_squared_ulens_level3_arr,
                  eta_residual_level3=eta_residual_level3_arr,
-                 chi_squared_inside=chi_squared_inside_arr,
-                 chi_squared_outside=chi_squared_outside_arr,
-                 num_days_inside=num_days_inside_arr,
-                 num_days_outside=num_days_outside_arr,
-                 delta_hmjd_outside=delta_hmjd_outside_arr,
+                 chi_squared_inside_level3=chi_squared_inside_level3_arr,
+                 chi_squared_outside_level3=chi_squared_outside_level3_arr,
+                 num_days_inside_level3=num_days_inside_level3_arr,
+                 num_days_outside_level3=num_days_outside_level3_arr,
+                 delta_hmjd_outside_level3=delta_hmjd_outside_level3_arr,
                  idx=idx_arr)
 
 
