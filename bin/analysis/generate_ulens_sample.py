@@ -21,7 +21,8 @@ from puzle.models import Source, SourceIngestJob
 from puzle.utils import return_data_dir, save_stacked_array, \
     return_DR5_dir, load_stacked_array, sortsplit
 from puzle.stats import calculate_eta_on_daily_avg, \
-    calculate_eta_on_daily_avg_residuals, average_xy_on_round_x
+    calculate_eta_on_daily_avg_residuals, average_xy_on_round_x, \
+    calculate_chi_squared_inside_outside
 
 popsycle_base_folder = '/global/cfs/cdirs/uLens/PopSyCLE_runs/PopSyCLE_runs_v3_refined_events'
 
@@ -531,6 +532,11 @@ def _calculate_stats_on_lightcurves(sibsFlag=False):
     my_observable_arr1 = []
     my_observable_arr2 = []
     my_observable_arr3 = []
+    my_chi_squared_inside_arr = []
+    my_chi_squared_outside_arr = []
+    my_num_days_inside_arr = []
+    my_num_days_outside_arr = []
+    my_delta_hmjd_outside_arr = []
     for i, d in enumerate(my_data):
         hmjd = d[:, 0]
         mag = d[:, 1]
@@ -580,6 +586,7 @@ def _calculate_stats_on_lightcurves(sibsFlag=False):
 
         # calculate and append observability conditions
         hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
+        _, magerr_round = average_xy_on_round_x(hmjd, magerr)
         n_days_in_split = int(len(mag_round) / 5)
         mag_splits = [mag_round[i * n_days_in_split:(i + 1) * n_days_in_split] for i in range(5)]
         median = np.median([np.median(mag) for mag in mag_splits])
@@ -636,6 +643,19 @@ def _calculate_stats_on_lightcurves(sibsFlag=False):
         my_chi_squared_ulens_level3_arr.append(best_params['chi_squared_ulens'])
         my_eta_residual_level3_arr.append(best_params['eta_residual'])
 
+        data = calculate_chi_squared_inside_outside(hmjd=hmjd_round,
+                                                    mag=mag_round,
+                                                    magerr=magerr_round,
+                                                    t0=best_params['t0'],
+                                                    tE=best_params['tE'],
+                                                    tE_factor=2)
+        chi_squared_inside, chi_squared_outside, num_days_inside, num_days_outside, delta_hmjd_outside = data
+        my_chi_squared_inside_arr.append(chi_squared_inside)
+        my_chi_squared_outside_arr.append(chi_squared_outside)
+        my_num_days_inside_arr.append(num_days_inside)
+        my_num_days_outside_arr.append(num_days_outside)
+        my_delta_hmjd_outside_arr.append(delta_hmjd_outside)
+
         with open(my_stats_complete_fname, 'a+') as f:
             f.write(f'{i}\n')
 
@@ -662,6 +682,11 @@ def _calculate_stats_on_lightcurves(sibsFlag=False):
     total_piE_N_level3_arr = comm.gather(my_piE_N_level3_arr, root=0)
     total_chi_squared_ulens_level3_arr = comm.gather(my_chi_squared_ulens_level3_arr, root=0)
     total_eta_residual_level3_arr = comm.gather(my_eta_residual_level3_arr, root=0)
+    total_chi_squared_inside_arr = comm.gather(my_chi_squared_inside_arr, root=0)
+    total_chi_squared_outside_arr = comm.gather(my_chi_squared_outside_arr, root=0)
+    total_num_days_inside_arr = comm.gather(my_num_days_inside_arr, root=0)
+    total_num_days_outside_arr = comm.gather(my_num_days_outside_arr, root=0)
+    total_delta_hmjd_outside_arr = comm.gather(my_delta_hmjd_outside_arr, root=0)
     total_idx_arr = comm.gather(my_idx_arr, root=0)
 
     if rank == 0:
@@ -688,6 +713,11 @@ def _calculate_stats_on_lightcurves(sibsFlag=False):
         piE_N_level3_arr = list(itertools.chain(*total_piE_N_level3_arr))
         chi_squared_ulens_level3_arr = list(itertools.chain(*total_chi_squared_ulens_level3_arr))
         eta_residual_level3_arr = list(itertools.chain(*total_eta_residual_level3_arr))
+        chi_squared_inside_arr = list(itertools.chain(*total_chi_squared_inside_arr))
+        chi_squared_outside_arr = list(itertools.chain(*total_chi_squared_outside_arr))
+        num_days_inside_arr = list(itertools.chain(*total_num_days_inside_arr))
+        num_days_outside_arr = list(itertools.chain(*total_num_days_outside_arr))
+        delta_hmjd_outside_arr = list(itertools.chain(*total_delta_hmjd_outside_arr))
         idx_arr = list(itertools.chain(*total_idx_arr))
         fname_data = return_ulens_data_fname('ulens_sample')
         fname_stats = fname_data.replace('ulens_sample', 'ulens_sample_stats')
@@ -717,6 +747,11 @@ def _calculate_stats_on_lightcurves(sibsFlag=False):
                  piE_N_level3=piE_N_level3_arr,
                  chi_squared_ulens_level3=chi_squared_ulens_level3_arr,
                  eta_residual_level3=eta_residual_level3_arr,
+                 chi_squared_inside=chi_squared_inside_arr,
+                 chi_squared_outside=chi_squared_outside_arr,
+                 num_days_inside=num_days_inside_arr,
+                 num_days_outside=num_days_outside_arr,
+                 delta_hmjd_outside=delta_hmjd_outside_arr,
                  idx=idx_arr)
 
 
