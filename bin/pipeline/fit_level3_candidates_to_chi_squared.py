@@ -51,8 +51,8 @@ def fit_level3_candidates_to_chi_squared():
             data = calculate_chi_squared_inside_outside(hmjd, mag, magerr, t0, tE, tE_factor)
             chi_squared_inside, chi_squared_outside, num_days_inside, delta_hmjd_outside = data
             key = f'{tE_factor}tE_best'
-            update_dct[f'chi_squared_inside_{key}'] = chi_squared_inside
-            update_dct[f'chi_squared_outside_{key}'] = chi_squared_outside
+            update_dct[f'chi_squared_flat_inside_{key}'] = chi_squared_inside
+            update_dct[f'chi_squared_flat_outside_{key}'] = chi_squared_outside
             update_dct[f'num_days_inside_{key}'] = int(num_days_inside)
             update_dct[f'delta_hmjd_outside_{key}'] = delta_hmjd_outside
 
