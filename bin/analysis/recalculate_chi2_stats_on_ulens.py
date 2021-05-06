@@ -18,6 +18,9 @@ def _recalculate_chi2_stats(sibsFlag):
         rank = 0
         size = 1
 
+    data_dir = return_data_dir()
+    my_stats_complete_fname = f'{data_dir}/ulens_samples/stats.{rank:02d}.txt'
+
     fname = return_ulens_data_fname('ulens_sample')
     if sibsFlag:
         fname = fname.replace('sample', 'sample.sibs')
@@ -60,6 +63,9 @@ def _recalculate_chi2_stats(sibsFlag):
         my_num_days_inside_level3_arr.append(num_days_inside)
         my_num_days_outside_level3_arr.append(num_days_outside)
         my_delta_hmjd_outside_level3_arr.append(delta_hmjd_outside)
+
+        with open(my_stats_complete_fname, 'a+') as f:
+            f.write(f'{i}\n')
 
     total_chi_squared_inside_level3_arr = comm.gather(my_chi_squared_inside_level3_arr, root=0)
     total_chi_squared_outside_level3_arr = comm.gather(my_chi_squared_outside_level3_arr, root=0)
