@@ -56,7 +56,7 @@ def load_source(source_id):
     return source
 
 
-def calculate_chi2(best_params, data):
+def calculate_chi2_model_params(best_params, data):
     params_to_fit = ['t0', 'u0_amp', 'tE', 'mag_src',
                      'b_sff', 'piE_E', 'piE_N']
     params = {}

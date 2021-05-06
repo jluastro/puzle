@@ -91,7 +91,7 @@ def apply_eta_residual_slope_offset_to_query(query):
     return query
 
 
-def calculate_chi2(param_values, param_names, model_class, data):
+def calculate_chi2_model(param_values, param_names, model_class, data):
     params = {}
     for k, v in zip(param_names, param_values):
         params[k] = v
@@ -138,7 +138,7 @@ def fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec, t0_guess=None, tE_guess=No
             'decL': dec}
 
     # run the optimizer
-    result = op.minimize(calculate_chi2, x0=initial_guess,
+    result = op.minimize(calculate_chi2_model, x0=initial_guess,
                          args=(param_names_to_fit, PSPL_Phot_Par_Param1, data),
                          method='Powell')
     if result.success:

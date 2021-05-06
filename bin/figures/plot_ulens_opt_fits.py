@@ -11,7 +11,7 @@ from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle.ulens import return_ulens_data, return_ulens_metadata, return_ulens_stats
 from puzle.cands import return_cands_eta_resdiual_arrs, \
-    fetch_cand_best_obj_by_id, calculate_chi2, apply_level3_cuts_to_query, \
+    fetch_cand_best_obj_by_id, calculate_chi2_model, apply_level3_cuts_to_query, \
     return_sigma_peaks
 from puzle.models import CandidateLevel2, CandidateLevel3
 from puzle.utils import return_figures_dir
@@ -372,7 +372,7 @@ def plot_ulens_opt_chi2_cut():
 
         data_fit = {'hmjd': hmjd, 'mag': mag, 'magerr': magerr, 'raL': ra, 'decL': dec}
         param_values = [t0, u0, tE, mag_src, b_sff, piE_E, piE_N]
-        chi2 = calculate_chi2(param_values, param_names, model_class, data_fit)
+        chi2 = calculate_chi2_model(param_values, param_names, model_class, data_fit)
         dof = len(hmjd)
         chi2_modeled_ulens.append(chi2)
         dof_arr.append(dof)

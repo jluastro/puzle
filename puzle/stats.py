@@ -358,8 +358,8 @@ def return_eta_threshold(size):
             return None
 
 
-def calculate_chi2(mag, magerr, mag_model, add_err=0,
-                   hmjd=None, t0=None, tE=None, clip=False):
+def calculate_chi2_model_mags(mag, magerr, mag_model, add_err=0,
+                              hmjd=None, t0=None, tE=None, clip=False):
     if clip:
         # Mask out those points that are within the microlensing event
         ulens_mask = hmjd > t0 - 2 * tE

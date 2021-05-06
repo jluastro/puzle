@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """
-calculate_chi2_additive_errors.py
+calculate_chi2_model_mags_additive_errors.py
 """
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,7 +10,7 @@ from zort.photometry import fluxes_to_magnitudes, magnitudes_to_fluxes
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle.ulens import return_ulens_data, return_ulens_metadata
-from puzle.cands import calculate_chi2
+from puzle.stats import calculate_chi2_model_mags
 from puzle.utils import return_figures_dir
 
 
@@ -106,7 +106,7 @@ def generate_samples(N_samples=20, brightFlag=False, midFlag=False, faintFlag=Fa
                 'mag_err1': magerr}
         fig = plot_photometry(data, model)
 
-        chi2 = calculate_chi2(mag, magerr, mag_model, add_err=0)
+        chi2 = calculate_chi2_model_mags(mag, magerr, mag_model, add_err=0)
         reduced_chi2 = chi2 / len(mag)
 
         amp = model.get_amplification(hmjd)
@@ -127,31 +127,6 @@ def return_CDF(arr):
     x = np.sort(arr)
     y = np.arange(len(arr)) / (len(arr) - 1)
     return x, y
-
-
-def calculate_chi2(mag, magerr, mag_model, add_err=0,
-                   hmjd=None, t0=None, tE=None, clip=False):
-    if clip:
-        # Mask out those points that are within the microlensing event
-        ulens_mask = hmjd > t0 - 2 * tE
-        ulens_mask *= hmjd < t0 + 2 * tE
-        # Use this mask to generated a masked array for sigma clipping
-        # By applying this mask, the 3-sigma will not be calculated using these points
-        mag_masked = np.ma.array(mag, mask=ulens_mask)
-        # Perform the sigma clipping
-        mag_masked = sigma_clip(mag_masked, sigma=3, maxiters=5)
-        # This masked array is now a mask that includes BOTH the mirolensing event and
-        # the 3-sigma outliers that we want removed. We want to remove the mask that
-        # is on the micorlensing event. So we only keep the mask for those points
-        # outside of +-2 tE.
-        chi2_mask = mag_masked.mask * ~ulens_mask
-        # This mask is then inverted for the chi2 calculation
-        chi2_cond = ~chi2_mask
-    else:
-        chi2_cond = np.ones(len(mag)).astype(bool)
-    chi2 = np.sum(((mag[chi2_cond] - mag_model[chi2_cond]) / np.hypot(magerr[chi2_cond], add_err)) ** 2)
-    dof = np.sum(chi2_cond)
-    return chi2, dof
 
 
 def return_ideal_reduced_chi2(size=50):
@@ -199,18 +174,18 @@ def return_reduced_chi2(add_err=0, dof_limit=None,
                                      raL=ra, decL=dec)
         mag_model = model.get_photometry(hmjd)
         # if chi2_on_clip:
-        #     chi2, dof = calculate_chi2(mag, magerr, mag_model, add_err=add_err,
+        #     chi2, dof = calculate_chi2_model_mags(mag, magerr, mag_model, add_err=add_err,
         #                                hmjd=hmjd, t0=t0, tE=tE, clip=True)
         # else:
-        #     chi2, dof = calculate_chi2(mag, magerr, mag_model, add_err=add_err)
+        #     chi2, dof = calculate_chi2_model_mags(mag, magerr, mag_model, add_err=add_err)
         # reduced_chi2 = chi2 / dof
         # reduced_chi2_arr.append(reduced_chi2)
 
-        chi2, dof = calculate_chi2(mag, magerr, mag_model, add_err=add_err,
+        chi2, dof = calculate_chi2_model_mags(mag, magerr, mag_model, add_err=add_err,
                                    hmjd=hmjd, t0=t0, tE=tE, clip=True)
         reduced_chi2 = chi2 / dof
         reduced_chi2_clipped_arr.append(reduced_chi2)
-        chi2, dof = calculate_chi2(mag, magerr, mag_model, add_err=add_err)
+        chi2, dof = calculate_chi2_model_mags(mag, magerr, mag_model, add_err=add_err)
         reduced_chi2 = chi2 / dof
         reduced_chi2_arr.append(reduced_chi2)
 
@@ -228,7 +203,7 @@ def return_reduced_chi2(add_err=0, dof_limit=None,
     return reduced_chi2_arr
 
 
-def calculate_chi2_additive_errors():
+def calculate_chi2_model_mags_additive_errors():
     chi2_on_clip = True
     dof_limit = None
     low_mag = False
@@ -285,4 +260,4 @@ def calculate_chi2_additive_errors():
 
 
 if __name__ == '__main__':
-    calculate_chi2_additive_errors()
+    calculate_chi2_model_mags_additive_errors()

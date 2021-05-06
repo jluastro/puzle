@@ -16,7 +16,7 @@ from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle import db
 from puzle.ulens import return_ulens_data_fname
-from puzle.cands import fit_data_to_ulens_opt, calculate_chi2
+from puzle.cands import fit_data_to_ulens_opt, calculate_chi2_model
 from puzle.models import Source, SourceIngestJob
 from puzle.utils import return_data_dir, save_stacked_array, \
     return_DR5_dir, load_stacked_array, sortsplit
@@ -553,7 +553,7 @@ def _calculate_stats_on_lightcurves(sibsFlag=False):
 
         data_fit = {'hmjd': hmjd_round, 'mag': mag_round, 'magerr': magerr_round, 'raL': ra, 'decL': dec}
         param_values = [t0, u0, tE, mag_src, b_sff, piE_E, piE_N]
-        chi2 = calculate_chi2(param_values, param_names, model_class, data_fit)
+        chi2 = calculate_chi2_model(param_values, param_names, model_class, data_fit)
         my_chi_squared_modeled_arr.append(chi2)
         my_num_days_arr.append(len(hmjd_round))
 
