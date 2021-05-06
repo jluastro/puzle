@@ -850,9 +850,11 @@ class CandidateLevel4(db.Model):
     piE_N_arr = db.Column(db.ARRAY(db.Float))
     chi_squared_ulens_arr = db.Column(db.ARRAY(db.Float))
     chi_squared_flat_arr = db.Column(db.ARRAY(db.Float))
-    chi_squared_ulens_inside_arr = db.Column(db.ARRAY(db.Float))
+    chi_squared_flat_inside_arr = db.Column(db.ARRAY(db.Float))
     chi_squared_flat_outside_arr = db.Column(db.ARRAY(db.Float))
-    num_epochs_inside_arr = db.Column(db.Integer)
+    num_days_inside_arr = db.Column(db.Integer)
+    num_days_outside_arr = db.Column(db.Integer)
+    delta_hmjd_outside_arr = db.Column(db.ARRAY(db.Float))
     num_3sigma_peaks_inside_arr = db.Column(db.Integer)
     num_3sigma_peaks_outside_arr = db.Column(db.Integer)
     num_5sigma_peaks_inside_arr = db.Column(db.Integer)
@@ -867,8 +869,11 @@ class CandidateLevel4(db.Model):
                  eta_residual_arr=None, t0_arr=None, u0_amp_arr=None,
                  tE_arr=None, mag_src_arr=None, b_sff_arr=None, piE_E_arr=None,
                  piE_N_arr=None, chi_squared_ulens_arr=None, chi_squared_flat_arr=None,
-                 chi_squared_ulens_inside_arr=None, chi_squared_flat_outside_arr=None,
-                 num_epochs_inside_arr=None,
+                 chi_squared_flat_inside_arr=None,
+                 chi_squared_flat_outside_arr=None,
+                 num_days_inside_arr=None,
+                 num_days_outside_arr=None,
+                 delta_hmjd_outside_arr=None,
                  num_3sigma_peaks_inside_arr=None, num_3sigma_peaks_outside_arr=None,
                  num_5sigma_peaks_inside_arr=None, num_5sigma_peaks_outside_arr=None,
                  comments=None, _ztf_ids=None, ogle_target=None):
@@ -894,9 +899,11 @@ class CandidateLevel4(db.Model):
         self.piE_N_arr = piE_N_arr
         self.chi_squared_ulens_arr = chi_squared_ulens_arr
         self.chi_squared_flat_arr = chi_squared_flat_arr
-        self.chi_squared_ulens_inside_arr = chi_squared_ulens_inside_arr
+        self.chi_squared_flat_inside_arr = chi_squared_flat_inside_arr
         self.chi_squared_flat_outside_arr = chi_squared_flat_outside_arr
-        self.num_epochs_inside_arr = num_epochs_inside_arr
+        self.num_days_inside_arr = num_days_inside_arr
+        self.num_days_outside_arr = num_days_outside_arr
+        self.delta_hmjd_outside_arr = delta_hmjd_outside_arr
         self.num_3sigma_peaks_inside_arr = num_3sigma_peaks_inside_arr
         self.num_3sigma_peaks_outside_arr = num_3sigma_peaks_outside_arr
         self.num_5sigma_peaks_inside_arr = num_5sigma_peaks_inside_arr

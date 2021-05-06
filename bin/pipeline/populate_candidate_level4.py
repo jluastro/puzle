@@ -10,7 +10,7 @@ from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle.models import Source, CandidateLevel3, CandidateLevel4
 from puzle.cands import apply_level3_cuts_to_query, fit_data_to_ulens_opt, return_sigma_peaks
-from puzle.stats import average_xy_on_round_x, calculate_eta
+from puzle.stats import average_xy_on_round_x, calculate_eta, calculate_chi_squared_inside_outside
 from puzle.utils import return_DR5_dir
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle import db
@@ -115,9 +115,11 @@ def populate_candidate_level4():
         piE_N_arr = []
         chi_squared_ulens_arr = []
         chi_squared_flat_arr = []
-        chi_squared_ulens_inside_arr = []
+        num_days_inside_arr = []
+        num_days_outside_arr = []
+        chi_squared_flat_inside_arr = []
         chi_squared_flat_outside_arr = []
-        num_epochs_inside_arr = []
+        delta_hmjd_outside_arr = []
         num_3sigma_peaks_inside_arr = []
         num_3sigma_peaks_outside_arr = []
         num_5sigma_peaks_inside_arr = []
@@ -135,9 +137,11 @@ def populate_candidate_level4():
             hmjd = obj.lightcurve.hmjd
             mag = obj.lightcurve.mag
             magerr = obj.lightcurve.magerr
+            hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
+            _, magerr_round = average_xy_on_round_x(hmjd, magerr)
             ra = obj.ra
             dec = obj.dec
-            chi_squared_flat = np.sum(((mag - np.mean(mag)) / magerr) ** 2)
+            chi_squared_flat = np.sum(((mag_round - np.mean(mag_round)) / magerr_round) ** 2)
             chi_squared_flat_arr.append(chi_squared_flat)
 
             num_epochs = int(len(hmjd))
@@ -146,13 +150,9 @@ def populate_candidate_level4():
             num_days_arr.append(num_days)
 
             if num_days > 1:
-                _, mag_round = average_xy_on_round_x(hmjd, mag)
                 eta = calculate_eta(mag_round)
                 best_params = fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec,
                                                     t0_guess=t0_level3, tE_guess=tE_level3)
-                ulens_cond = hmjd > best_params['t0'] - 2 * best_params['tE']
-                ulens_cond *= hmjd < best_params['t0'] + 2 * best_params['tE']
-                num_epochs_inside = int(np.sum(ulens_cond))
             else:
                 eta = 0
                 param_names_to_fit = ['t0', 'u0_amp', 'tE', 'mag_src',
@@ -160,7 +160,6 @@ def populate_candidate_level4():
                 best_params = {k: 0 for k in param_names_to_fit}
                 best_params['chi_squared_ulens'] = 0
                 best_params['eta_residual'] = 0
-                num_epochs_inside = 0
 
             eta_arr.append(eta)
             t0_arr.append(best_params['t0'])
@@ -172,23 +171,20 @@ def populate_candidate_level4():
             piE_N_arr.append(best_params['piE_N'])
             eta_residual_arr.append(best_params['eta_residual'])
             chi_squared_ulens_arr.append(best_params['chi_squared_ulens'])
-            num_epochs_inside_arr.append(num_epochs_inside)
 
-            if num_epochs_inside > 0:
-                data = {'raL': ra, 'decL': dec,
-                        'hmjd': hmjd[ulens_cond],
-                        'mag': mag[ulens_cond],
-                        'magerr': magerr[ulens_cond]}
-                chi_squared_ulens_inside = calculate_chi2(best_params, data)
-            else:
-                chi_squared_ulens_inside = 0
-            chi_squared_ulens_inside_arr.append(chi_squared_ulens_inside)
+            data = calculate_chi_squared_inside_outside(hmjd=hmjd,
+                                                        mag=mag,
+                                                        magerr=magerr,
+                                                        t0=best_params['t0'],
+                                                        tE=best_params['tE'],
+                                                        tE_factor=2)
+            chi_squared_flat_inside, chi_squared_flat_outside, num_days_inside, num_days_outside, delta_hmjd_outside = data
 
-            if num_epochs - num_epochs_inside > 0:
-                chi_squared_flat_outside = np.sum(((mag[~ulens_cond] - np.mean(mag[~ulens_cond])) / magerr[~ulens_cond]) ** 2)
-            else:
-                chi_squared_flat_outside = 0
+            num_days_inside_arr.append(num_days_inside)
+            num_days_outside_arr.append(num_days_outside)
+            chi_squared_flat_inside_arr.append(chi_squared_flat_inside)
             chi_squared_flat_outside_arr.append(chi_squared_flat_outside)
+            delta_hmjd_outside_arr.append(delta_hmjd_outside)
 
             num_3sigma_peaks_inside, num_3sigma_peaks_outside = return_sigma_peaks(
                 hmjd, mag, best_params['t0'], best_params['tE'], sigma_factor=3, tE_factor=2)
@@ -223,9 +219,11 @@ def populate_candidate_level4():
             piE_N_arr=piE_N_arr,
             chi_squared_ulens_arr=chi_squared_ulens_arr,
             chi_squared_flat_arr=chi_squared_flat_arr,
-            chi_squared_ulens_inside_arr=chi_squared_ulens_inside_arr,
+            num_days_inside_arr=num_days_inside_arr,
+            num_days_outside_arr=num_days_outside_arr,
+            chi_squared_flat_inside_arr=chi_squared_flat_inside_arr,
             chi_squared_flat_outside_arr=chi_squared_flat_outside_arr,
-            num_epochs_inside_arr=num_epochs_inside_arr,
+            delta_hmjd_outside_arr=delta_hmjd_outside_arr,
             num_3sigma_peaks_inside_arr=num_3sigma_peaks_inside_arr,
             num_3sigma_peaks_outside_arr=num_3sigma_peaks_outside_arr,
             num_5sigma_peaks_inside_arr=num_5sigma_peaks_inside_arr,
