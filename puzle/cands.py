@@ -101,6 +101,8 @@ def calculate_chi2(param_values, param_names, model_class, data):
     mag_model = model.get_photometry(data['hmjd'], print_warning=False)
 
     chi2 = np.sum(((data['mag'] - mag_model) / data['magerr']) ** 2)
+    if np.isnan(chi2):
+        chi2 = np.inf
     return chi2
 
 
