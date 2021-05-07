@@ -13,16 +13,17 @@ hostname
 date
 echo "---------------------------"
 
+cd /global/homes/m/mmedford/puzle/bin/pipeline/pspl_gp
 module load cmake/3.18.2
 module unload craype-hugepages2M
 export LD_LIBRARY_PATH=/global/cfs/cdirs/uLens/code/src/MultiNest/lib:$LD_LIBRARY_PATH
 
 conda activate puzle
-nodelist=$(python ~/puzle/bin/pipeline/parse_nersc_nodelist.py)
+nodelist=$(python /global/homes/m/mmedford/puzle/bin/pipeline/parse_nersc_nodelist.py)
 echo "Nodes = $nodelist"
 
 for node_name in $nodelist; do
-  fname_log="SLURM_JOBID_$node_name"
+  fname_log="pspl_gp.$SLURM_JOBID_$node_name.log"
   srun -N 1 -n 32 -w $node_name python /global/homes/m/mmedford/puzle/bin/pipeline/fit_level4_candidates_to_pspl_gp.py $SLURM_JOBID $node_name > $fname_log &
 done
 
