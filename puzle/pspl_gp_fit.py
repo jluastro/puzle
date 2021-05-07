@@ -15,63 +15,6 @@ from puzle.utils import return_data_dir, MJD_finish
 from puzle import db
 
 
-def make_invgamma_gen(t_arr):
-    """
-    ADD DESCRIPTION
-    t_arr = time array
-    """
-    a, b = compute_invgamma_params(t_arr)
-
-    return stats.invgamma(a, scale=b)
-
-
-def solve_for_params(params, x_min, x_max):
-    lower_mass = 0.01
-    upper_mass = 0.99
-
-    # Trial parameters
-    alpha, beta = params
-
-    # Equation for the roots defining params which satisfy the constraint
-    cdf_l = stats.invgamma.cdf(x_min, alpha, scale=beta) - lower_mass,
-    cdf_u = stats.invgamma.cdf(x_max, alpha, scale=beta) - upper_mass,
-
-    return np.array([cdf_l, cdf_u]).reshape((2,))
-
-
-def compute_invgamma_params(t_arr):
-    """
-    Based on function of same name from
-    Fran Bartolic's ``caustic`` package:
-    https://github.com/fbartolic/caustic
-    Returns parameters of an inverse gamma distribution s.t.
-    1% of total prob. mass is assigned to values of t < t_{min} and
-    1% of total prob. masss  to values greater than t_{tmax}.
-    t_{min} is defined to be the median spacing between consecutive
-    data points in the time series and t_{max} is the total duration
-    of the time series.
-
-    Parameters
-    ----------
-    t_arr : array
-        Array of times
-    Returns
-    -------
-    invgamma_a, invgamma_b : float (?)
-        The parameters a,b of the inverse gamma function.
-    """
-
-    # Compute parameters for the prior on GP hyperparameters
-    med_sep = np.median(np.diff(t_arr))
-    tot_dur = t_arr[-1] - t_arr[0]
-    results = optimize.fsolve(solve_for_params,
-                              (0.001, 0.001),
-                              (med_sep, tot_dur))
-    invgamma_a, invgamma_b = results
-
-    return invgamma_a, invgamma_b
-
-
 def return_cand_dir(cand_id):
     data_dir = return_data_dir()
     out_dir = f'{data_dir}/pspl_par_gp_level4_fits/{cand_id}'
@@ -118,7 +61,11 @@ def save_cand_fitter_data(cand):
 
         flat_cond = hmjd_round < cand.t0_best - 2 * cand.tE_best
         flat_cond += hmjd_round > cand.t0_best + 2 * cand.tE_best
-        fitter_params[f'mag_base_{idx_data}'] = np.median(mag_round[flat_cond])
+        if np.sum(flat_cond) < 20:
+            mag_base = np.median(mag_round)
+        else:
+            mag_base = np.median(mag_round[flat_cond])
+        fitter_params[f'mag_base_{idx_data}'] = mag_base
         fitter_params[f'b_sff_{idx_data}'] = cand.b_sff_best
 
         if i == cand.idx_best:
@@ -135,15 +82,22 @@ def save_cand_fitter_data(cand):
     pickle.dump(cand_fitter_data, open(fname, 'wb'))
 
 
+def save_cand_fitter_data_by_id(cand_id):
+    cand = CandidateLevel3.query.filter(CandidateLevel3.id==str(cand_id)).first()
+    save_cand_fitter_data(cand)
+
+
 def save_all_cand_fitter_data():
     cands = db.session.query(CandidateLevel3, CandidateLevel4).\
         filter(CandidateLevel3.id == CandidateLevel4.id,
                CandidateLevel3.t0_best + CandidateLevel3.tE_best < MJD_finish).\
+        with_entities(CandidateLevel4.id).\
         all()
-    for i, (cand3, _) in enumerate(cands):
+    cand_ids = [c[0] for c in cands]
+    for i, cand_id in enumerate(cand_ids):
         if i % 100 == 0:
-            print('Saving cand fitter_data %i / %i' % (i, len(cands)))
-        save_cand_fitter_data(cand3)
+            print('Saving cand fitter_data %i / %i' % (i, len(cand_ids)))
+        save_cand_fitter_data_by_id(cand_id)
 
 
 def load_cand_fitter_data(cand_id):
