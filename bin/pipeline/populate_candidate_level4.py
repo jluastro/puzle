@@ -7,33 +7,10 @@ import numpy as np
 
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
-from puzle.models import Source, CandidateLevel3, CandidateLevel4
+from puzle.models import CandidateLevel3, CandidateLevel4
 from puzle.cands import apply_level3_cuts_to_query, fit_data_to_ulens_opt, return_sigma_peaks, load_source
 from puzle.stats import average_xy_on_round_x, calculate_eta, calculate_chi_squared_inside_outside
 from puzle import db
-
-
-def _parse_object_int(attr):
-    if attr == 'None':
-        return None
-    else:
-        return int(attr)
-
-
-def csv_line_to_source(line):
-    attrs = line.replace('\n', '').split(',')
-    source = Source(id=attrs[0],
-                    object_id_g=_parse_object_int(attrs[1]),
-                    object_id_r=_parse_object_int(attrs[2]),
-                    object_id_i=_parse_object_int(attrs[3]),
-                    lightcurve_position_g=_parse_object_int(attrs[4]),
-                    lightcurve_position_r=_parse_object_int(attrs[5]),
-                    lightcurve_position_i=_parse_object_int(attrs[6]),
-                    lightcurve_filename=attrs[7],
-                    ra=float(attrs[8]),
-                    dec=float(attrs[9]),
-                    ingest_job_id=int(attrs[10]))
-    return source
 
 
 def calculate_chi2_model_params(best_params, data):

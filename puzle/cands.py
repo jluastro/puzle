@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
-from bin.pipeline.populate_candidate_level4 import csv_line_to_source
 from puzle.stats import calculate_eta, average_xy_on_round_x
 from puzle.models import CandidateLevel2, CandidateLevel3, Source
 from puzle.utils import return_figures_dir, return_DR5_dir
@@ -323,6 +322,29 @@ def return_sigma_peaks(hmjd, mag, t0, tE, sigma_factor=3, tE_factor=2):
     else:
         sigma_peaks_outside = int(sigma_peaks_outside)
     return sigma_peaks_inside, sigma_peaks_outside
+
+
+def _parse_object_int(attr):
+    if attr == 'None':
+        return None
+    else:
+        return int(attr)
+
+
+def csv_line_to_source(line):
+    attrs = line.replace('\n', '').split(',')
+    source = Source(id=attrs[0],
+                    object_id_g=_parse_object_int(attrs[1]),
+                    object_id_r=_parse_object_int(attrs[2]),
+                    object_id_i=_parse_object_int(attrs[3]),
+                    lightcurve_position_g=_parse_object_int(attrs[4]),
+                    lightcurve_position_r=_parse_object_int(attrs[5]),
+                    lightcurve_position_i=_parse_object_int(attrs[6]),
+                    lightcurve_filename=attrs[7],
+                    ra=float(attrs[8]),
+                    dec=float(attrs[9]),
+                    ingest_job_id=int(attrs[10]))
+    return source
 
 
 def load_source(source_id):
