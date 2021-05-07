@@ -96,6 +96,7 @@ def fit_level4_cand_to_pspl_gp(cand_id):
     fitter.solve()
 
     if rank == 0:
+        logger.info(f'{cand_id} : Fit complete, now plotting')
         fitter.plot_dynesty_style(fit_vals='maxl')
 
         best = fitter.get_best_fit(def_best='maxl')
@@ -111,6 +112,7 @@ def fit_level4_cand_to_pspl_gp(cand_id):
             model_params[param] = [best[f'{param}{i}'] for i in range(1, fitter.n_phot_sets + 1)]
         pspl_out = PSPL_Phot_Par_GP_Param2_2(**model_params)
         fitter.plot_model_and_data(pspl_out)
+        logger.info(f'{cand_id} : Plotting complete')
 
     comm.Barrier()
     finish_cand(cand_id)
@@ -125,6 +127,7 @@ def fit_level4_cands_to_pspl_gp(single_job=False):
 
         if rank == 0:
             cand_id = fetch_cand()
+            logger.info(f'{cand_id} : Starting fit')
         else:
             cand_id = None
         cand_id = comm.bcast(cand_id, root=0)
