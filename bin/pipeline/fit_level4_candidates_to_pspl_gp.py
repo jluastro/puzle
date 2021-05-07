@@ -56,6 +56,10 @@ def finish_cand(cand_id):
 
 
 def fit_level4_cand_to_pspl_gp(cand_id):
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+
     cand_fitter_data = load_cand_fitter_data(cand_id)
     data = cand_fitter_data['data']
     fitter_params = cand_fitter_data['fitter_params']
@@ -87,13 +91,11 @@ def fit_level4_cand_to_pspl_gp(cand_id):
         fitter.priors[f'gp_rho{idx}'] = model_fitter.make_invgamma_gen(data[f't_phot{idx}'])
         fitter.priors[f'gp_log_omega04_S0{idx}'] = model_fitter.make_norm_gen(np.median(data[f'mag_err{idx}']) ** 2, 5)
         fitter.priors[f'gp_log_omega0{idx}'] = model_fitter.make_norm_gen(0, 5)
+
+    comm.Barrier()
     fitter.solve()
 
-    from mpi4py import MPI
-    comm = MPI.COMM_WORLD
-    comm.Barrier()
-
-    if comm.rank == 0:
+    if rank == 0:
         fitter.plot_dynesty_style(fit_vals='maxl')
 
         best = fitter.get_best_fit(def_best='maxl')
@@ -115,11 +117,19 @@ def fit_level4_cand_to_pspl_gp(cand_id):
 
 
 def fit_level4_cands_to_pspl_gp(single_job=False):
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
 
     while True:
-        cand_id = fetch_cand()
-        fit_level4_cand_to_pspl_gp(cand_id)
 
+        if rank == 0:
+            cand_id = fetch_cand()
+        else:
+            cand_id = None
+        cand_id = comm.base(cand_id, root=0)
+        fit_level4_cand_to_pspl_gp(cand_id)
+        comm.Barrier()
         if single_job:
             return
 
