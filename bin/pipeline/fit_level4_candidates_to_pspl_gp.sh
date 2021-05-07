@@ -18,8 +18,9 @@ module unload craype-hugepages2M
 export LD_LIBRARY_PATH=/global/cfs/cdirs/uLens/code/src/MultiNest/lib:$LD_LIBRARY_PATH
 
 conda activate puzle
-
 nodelist=$(python ~/puzle/bin/pipeline/parse_nersc_nodelist.py)
+echo "Nodes = $nodelist"
+
 for node_name in $nodelist; do
   srun -N 1 -n 32 python /global/homes/m/mmedford/puzle/bin/pipeline/fit_level4_candidates_to_pspl_gp.py &
 done
