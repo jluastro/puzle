@@ -9,6 +9,7 @@ from datetime import datetime
 from microlens.jlu import model_fitter
 from microlens.jlu.model import PSPL_Phot_Par_GP_Param2_2
 from sqlalchemy.sql.expression import func
+import logging
 
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle.pspl_gp_fit import load_cand_fitter_data
@@ -153,4 +154,5 @@ def fit_level4_cands_to_pspl_gp(single_job=False):
 
 
 if __name__ == '__main__':
+    logging.getLogger('ulensdb').setLevel(logging.WARNING)
     fit_level4_cands_to_pspl_gp()
