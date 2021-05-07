@@ -3,6 +3,7 @@
 fit_level4_candidates_to_pspl_gp.py
 """
 
+import numpy as np
 from datetime import datetime
 from microlens.jlu import model_fitter
 from microlens.jlu.model import PSPL_Phot_Par_GP_Param2_2
@@ -32,15 +33,13 @@ def fetch_cand():
         first()
 
     cand_id = cand4.id
-    t0 = cand3.t0_best
-    tE = cand4.tE_best
     cand4.pspl_gp_fit_started = True
     cand4.pspl_gp_fit_datetime_started = datetime.now()
     db.session.commit()
     db.session.close()
 
     remove_db_id()  # release permission for this db connection
-    return cand_id, t0, tE
+    return cand_id
 
 
 def finish_cand(cand_id):
@@ -56,47 +55,52 @@ def finish_cand(cand_id):
     remove_db_id()  # release permission for this db connection
 
 
-def fit_level4_cand_to_pspl_gp(cand_id, t0, tE):
+def fit_level4_cand_to_pspl_gp(cand_id):
     cand_fitter_data = load_cand_fitter_data(cand_id)
     data = cand_fitter_data['data']
-    phot_priors = cand_fitter_data['phot_priors']
+    fitter_params = cand_fitter_data['fitter_params']
     out_dir = cand_fitter_data['out_dir']
-    idx_data_best = phot_priors['idx_data_best']
     outputfiles_basename = f'{out_dir}/fit_'
 
     fitter = model_fitter.PSPL_Solver(data,
                                       PSPL_Phot_Par_GP_Param2_2,
+                                      add_error_on_photometry=False,
                                       multiply_error_on_photometry=True,
-                                      n_live_points=400,
-                                      evidence_tolerance=0.01,
+                                      use_phot_optional_params=True,
+                                      importance_nested_sampling=False,
+                                      n_live_points=1000,
+                                      evidence_tolerance=0.1,
                                       outputfiles_basename=outputfiles_basename)
 
-    fitter.priors['t0'] = model_fitter.make_norm_gen(t0, 100)
-    fitter.priors['u0_amp'] = model_fitter.make_gen(-1.2, 1.2)
-    fitter.priors['tE'] = model_fitter.make_norm_gen(tE, 50)
-    fitter.priors['piE_E'] = model_fitter.make_gen(-1, 1)
-    fitter.priors['piE_N'] = model_fitter.make_gen(-1, 1)
-    fitter.priors['gp_log_sigma'] = model_fitter.make_norm_gen(0, 5)
-    fitter.priors['gp_rho'] = model_fitter.make_invgamma_gen(data[f't_phot{idx_data_best}'])
-    fitter.priors['gp_log_S0'] = model_fitter.make_norm_gen(0, 5)
-    fitter.priors['gp_log_omega0'] = model_fitter.make_norm_gen(0, 5)
+    # Adjust the priors to encompass both possible solutions
+    fitter.priors['t0'] = model_fitter.make_norm_gen(fitter_params['t0'], 25)
+    fitter.priors['u0_amp'] = model_fitter.make_norm_gen(0, 0.3)
+    fitter.priors['tE'] = model_fitter.make_norm_gen(fitter_params['tE'], 25)
+    fitter.priors['piE_E'] = model_fitter.make_norm_gen(-0.02, 0.12)
+    fitter.priors['piE_N'] = model_fitter.make_norm_gen(-0.03, 0.13)
 
-    for k, v in phot_priors.items():
-        fitter.priors[k] = v
-
+    num_lightcurves = fitter_params['num_lightcurves']
+    for idx in range(1, num_lightcurves+1):
+        fitter.priors[f'b_sff{idx}'] = model_fitter.make_norm_gen(fitter_params[f'b_sff_{idx}'], 0.2)
+        fitter.priors[f'mag_base{idx}'] = model_fitter.make_norm_gen(fitter_params[f'mag_base_{idx}'], 0.2)
+        fitter.priors[f'gp_log_sigma{idx}'] = model_fitter.make_norm_gen(0, 5)
+        fitter.priors[f'gp_rho{idx}'] = model_fitter.make_invgamma_gen(data[f't_phot{idx}'])
+        fitter.priors[f'gp_log_omega04_S0{idx}'] = model_fitter.make_norm_gen(np.median(data[f'mag_err{idx}']) ** 2, 5)
+        fitter.priors[f'gp_log_omega0{idx}'] = model_fitter.make_norm_gen(0, 5)
     fitter.solve()
 
     best = fitter.get_best_fit(def_best='maxl')
+    idx_data_best = fitter_params['idx_data_best']
     pspl_out = PSPL_Phot_Par_GP_Param2_2(t0=best['t0'],
                                          u0_amp=best['u0_amp'],
                                          tE=best['tE'],
                                          piE_E=best['piE_E'],
                                          piE_N=best['piE_N'],
                                          b_sff=best[f'b_sff{idx_data_best}'],
-                                         mag_src=best[f'mag_src{idx_data_best}'],
+                                         mag_base=best[f'mag_base{idx_data_best}'],
                                          gp_log_sigma=best[f'gp_log_sigma{idx_data_best}'],
-                                         gp_log_rho=best[f'gp_log_rho{idx_data_best}'],
-                                         gp_log_S0=best[f'gp_log_S0{idx_data_best}'],
+                                         gp_rho=best[f'gp_rho{idx_data_best}'],
+                                         gp_log_omega04_S0=best[f'gp_log_omega04_S0{idx_data_best}'],
                                          gp_log_omega0=best[f'gp_log_omega0{idx_data_best}'],
                                          raL=data['raL'],
                                          decL=data['decL'])
@@ -110,8 +114,8 @@ def fit_level4_cand_to_pspl_gp(cand_id, t0, tE):
 def fit_level4_cands_to_pspl_gp(single_job=False):
 
     while True:
-        cand_id, t0, tE = fetch_cand()
-        fit_level4_cand_to_pspl_gp(cand_id, t0, tE)
+        cand_id = fetch_cand()
+        fit_level4_cand_to_pspl_gp(cand_id)
 
         if single_job:
             return
