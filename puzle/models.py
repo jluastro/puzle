@@ -863,6 +863,8 @@ class CandidateLevel4(db.Model):
     pspl_gp_fit_finished = db.Column(db.Boolean, nullable=False, server_default='f')
     pspl_gp_fit_datetime_started = db.Column(db.DateTime, nullable=True)
     pspl_gp_fit_datetime_finished = db.Column(db.DateTime, nullable=True)
+    slurm_job_id = db.Column(db.Integer, nullable=True)
+    node = db.Column(db.String(64))
     comments = db.Column(db.String(1024))
     _ztf_ids = db.Column(db.String(256))
     ogle_target = db.Column(db.String(128))
@@ -882,6 +884,7 @@ class CandidateLevel4(db.Model):
                  num_5sigma_peaks_inside_arr=None, num_5sigma_peaks_outside_arr=None,
                  pspl_gp_fit_started=None, pspl_gp_fit_finished=None,
                  pspl_gp_fit_datetime_started=None, pspl_gp_fit_datetime_finished=None,
+                 slurm_job_id=None, node=None,
                  comments=None, _ztf_ids=None, ogle_target=None):
         self.id = id
         self.ra = ra
@@ -918,6 +921,8 @@ class CandidateLevel4(db.Model):
         self.pspl_gp_fit_finished = pspl_gp_fit_finished
         self.pspl_gp_fit_datetime_started = pspl_gp_fit_datetime_started
         self.pspl_gp_fit_datetime_finished = pspl_gp_fit_datetime_finished
+        self.slurm_job_id = slurm_job_id
+        self.node = node
         self.comments = comments
         self._ztf_ids = _ztf_ids
         self.ogle_target = ogle_target

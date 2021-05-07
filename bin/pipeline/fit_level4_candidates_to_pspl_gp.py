@@ -3,6 +3,7 @@
 fit_level4_candidates_to_pspl_gp.py
 """
 
+import sys
 import numpy as np
 from datetime import datetime
 from microlens.jlu import model_fitter
@@ -19,7 +20,7 @@ from puzle import db
 logger = get_logger(__name__)
 
 
-def fetch_cand():
+def fetch_cand(slurm_job_id=None, node_name=None):
     insert_db_id()  # get permission to make a db connection
 
     db.session.execute('LOCK TABLE candidate_level3, candidate_level4 '
@@ -35,6 +36,8 @@ def fetch_cand():
     cand_id = cand4.id
     cand4.pspl_gp_fit_started = True
     cand4.pspl_gp_fit_datetime_started = datetime.now()
+    cand4.slurm_job_id = slurm_job_id
+    cand4.node = node_name
     db.session.commit()
     db.session.close()
 
@@ -73,7 +76,7 @@ def fit_level4_cand_to_pspl_gp(cand_id):
                                       use_phot_optional_params=True,
                                       importance_nested_sampling=False,
                                       n_live_points=1000,
-                                      evidence_tolerance=0.1,
+                                      evidence_tolerance=0.5,
                                       outputfiles_basename=outputfiles_basename)
 
     # Adjust the priors to encompass both possible solutions
@@ -123,10 +126,18 @@ def fit_level4_cands_to_pspl_gp(single_job=False):
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
 
+    if len(sys.argv) > 1:
+        slurm_job_id = sys.argv[1]
+        node_name = sys.argv[2]
+    else:
+        slurm_job_id = None
+        node_name = None
+
     while True:
 
         if rank == 0:
-            cand_id = fetch_cand()
+            cand_id = fetch_cand(slurm_job_id=slurm_job_id,
+                                 node_name=node_name)
             logger.info(f'{cand_id} : Starting fit')
         else:
             cand_id = None

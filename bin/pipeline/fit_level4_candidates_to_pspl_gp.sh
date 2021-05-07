@@ -22,7 +22,8 @@ nodelist=$(python ~/puzle/bin/pipeline/parse_nersc_nodelist.py)
 echo "Nodes = $nodelist"
 
 for node_name in $nodelist; do
-  srun -N 1 -n 32 python /global/homes/m/mmedford/puzle/bin/pipeline/fit_level4_candidates_to_pspl_gp.py &
+  fname_log="SLURM_JOBID_$node_name"
+  srun -N 1 -n 32 -w $node_name python /global/homes/m/mmedford/puzle/bin/pipeline/fit_level4_candidates_to_pspl_gp.py $SLURM_JOBID $node_name > $fname_log &
 done
 
 echo "---------------------------"
