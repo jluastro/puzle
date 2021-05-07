@@ -123,7 +123,8 @@ def fit_level4_cand_to_pspl_gp(cand_id, node_name=None):
         logger.info(f'{cand_id} : Plotting complete')
 
     comm.Barrier()
-    finish_cand(cand_id, node_name)
+    if rank == 0:
+        finish_cand(cand_id, node_name)
 
 
 def fit_level4_cands_to_pspl_gp(single_job=False):
