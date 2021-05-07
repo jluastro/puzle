@@ -6,7 +6,6 @@ pspl_gp_fit.py
 import numpy as np
 import pickle
 import os
-from scipy import stats, optimize
 
 from puzle.models import CandidateLevel3, CandidateLevel4
 from puzle.cands import load_source
