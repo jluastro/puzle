@@ -57,7 +57,7 @@ def remove_db_id(node_name=None):
     lock_path = ulensdb_file_path.replace('.txt', '.lock')
     lock = FileLock(lock_path)
 
-    my_db_id = fetch_db_id(node_name)
+    my_db_id = fetch_db_id(node_name=node_name)
     if my_db_id is None:
         logger.debug(f'{my_db_id}: Skipping remove_db for local process')
         return
@@ -79,7 +79,7 @@ def insert_db_id(num_ids=50, node_name=None):
     lock_path = ulensdb_file_path.replace('.txt', '.lock')
     lock = FileLock(lock_path)
 
-    my_db_id = fetch_db_id(node_name)
+    my_db_id = fetch_db_id(node_name=node_name)
     if my_db_id is None:
         logger.debug(f'{my_db_id}: Skipping insert_db for local process')
         return
