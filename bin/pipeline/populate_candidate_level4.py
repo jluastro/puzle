@@ -97,7 +97,7 @@ def populate_candidate_level4():
     for i, cand_level3 in enumerate(my_cands_level3):
         if i % 100 == 0:
             print(f'rank {rank}) {i} candidates complete')
-        cand_level2 = CandidateLevel2.query.filter(CandidateLevel2.id==cand_level3.id).first()
+        # cand_level2 = CandidateLevel2.query.filter(CandidateLevel2.id==cand_level3.id).first()
         t0_level3 = cand_level3.t0_best
         tE_level3 = cand_level3.tE_best
         num_epochs_arr = []
