@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --account=m2218
-#SBATCH --qos=regular
-#SBATCH --constraint=debug
+#SBATCH --qos=debug
+#SBATCH --constraint=haswell
 #SBATCH --nodes=6
 #SBATCH --time=00:30:00
 #SBATCH --job-name=pspl_gp
