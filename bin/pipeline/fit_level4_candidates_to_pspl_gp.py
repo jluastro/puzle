@@ -69,13 +69,16 @@ def fit_level4_cand_to_pspl_gp(cand_id, node_name=None):
     out_dir = cand_fitter_data['out_dir']
     outputfiles_basename = f'{out_dir}/fit_'
 
+    num_lightcurves = cand_fitter_data['fitter_params']['num_lightcurves']
+    n_live_points = min(1000 * num_lightcurves, 5000)
+
     fitter = model_fitter.PSPL_Solver(data,
                                       PSPL_Phot_Par_GP_Param2_2,
                                       add_error_on_photometry=False,
                                       multiply_error_on_photometry=False,
                                       use_phot_optional_params=True,
                                       importance_nested_sampling=False,
-                                      n_live_points=1000,
+                                      n_live_points=n_live_points,
                                       evidence_tolerance=0.5,
                                       sampling_efficiency=0.8,
                                       outputfiles_basename=outputfiles_basename)
