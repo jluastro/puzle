@@ -2,6 +2,7 @@
 """
 cands.py
 """
+import pickle
 
 import numpy as np
 import scipy.optimize as op
@@ -11,9 +12,10 @@ import matplotlib.pyplot as plt
 
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
+from bin.pipeline.populate_candidate_level4 import csv_line_to_source
 from puzle.stats import calculate_eta, average_xy_on_round_x
 from puzle.models import CandidateLevel2, CandidateLevel3, Source
-from puzle.utils import return_figures_dir
+from puzle.utils import return_figures_dir, return_DR5_dir
 from puzle import db
 
 
@@ -321,3 +323,20 @@ def return_sigma_peaks(hmjd, mag, t0, tE, sigma_factor=3, tE_factor=2):
     else:
         sigma_peaks_outside = int(sigma_peaks_outside)
     return sigma_peaks_inside, sigma_peaks_outside
+
+
+def load_source(source_id):
+    DR5_dir = return_DR5_dir()
+    source_job_id = int(source_id.split('_')[0])
+    source_job_prefix = str(source_job_id)[:3]
+    sources_fname = f'{DR5_dir}/sources_{source_job_prefix}/sources.{source_job_id:06d}.txt'
+
+    sources_map_fname = sources_fname.replace('.txt', '.sources_map')
+    sources_map = pickle.load(open(sources_map_fname, 'rb'))
+
+    f_sources = open(sources_fname, 'r')
+    f_sources.seek(sources_map[source_id])
+    line_source = f_sources.readline()
+    source = csv_line_to_source(line_source)
+    f_sources.close()
+    return source

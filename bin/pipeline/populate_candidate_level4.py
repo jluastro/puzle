@@ -4,14 +4,12 @@ populate_candidate_level4.py
 """
 import os
 import numpy as np
-import pickle
 
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
-from puzle.models import Source, CandidateLevel2, CandidateLevel3, CandidateLevel4
-from puzle.cands import apply_level3_cuts_to_query, fit_data_to_ulens_opt, return_sigma_peaks
+from puzle.models import Source, CandidateLevel3, CandidateLevel4
+from puzle.cands import apply_level3_cuts_to_query, fit_data_to_ulens_opt, return_sigma_peaks, load_source
 from puzle.stats import average_xy_on_round_x, calculate_eta, calculate_chi_squared_inside_outside
-from puzle.utils import return_DR5_dir
 from puzle import db
 
 
@@ -35,23 +33,6 @@ def csv_line_to_source(line):
                     ra=float(attrs[8]),
                     dec=float(attrs[9]),
                     ingest_job_id=int(attrs[10]))
-    return source
-
-
-def load_source(source_id):
-    DR5_dir = return_DR5_dir()
-    source_job_id = int(source_id.split('_')[0])
-    source_job_prefix = str(source_job_id)[:3]
-    sources_fname = f'{DR5_dir}/sources_{source_job_prefix}/sources.{source_job_id:06d}.txt'
-
-    sources_map_fname = sources_fname.replace('.txt', '.sources_map')
-    sources_map = pickle.load(open(sources_map_fname, 'rb'))
-
-    f_sources = open(sources_fname, 'r')
-    f_sources.seek(sources_map[source_id])
-    line_source = f_sources.readline()
-    source = csv_line_to_source(line_source)
-    f_sources.close()
     return source
 
 
