@@ -19,7 +19,7 @@ def identify_is_nersc():
     return False
 
 
-def fetch_db_id():
+def fetch_db_id(node_name=None):
     if 'SLURMD_NODENAME' in os.environ:
         from mpi4py import MPI
         comm = MPI.COMM_WORLD
@@ -30,6 +30,8 @@ def fetch_db_id():
     if slurm_job_id is None:
         return None
     db_id = '%s.%s' % (slurm_job_id, rank)
+    if node_name is not None:
+        db_id += '.%s' % node_name
     return db_id
 
 
@@ -51,11 +53,11 @@ def load_db_ids():
     return db_ids
 
 
-def remove_db_id():
+def remove_db_id(node_name=None):
     lock_path = ulensdb_file_path.replace('.txt', '.lock')
     lock = FileLock(lock_path)
 
-    my_db_id = fetch_db_id()
+    my_db_id = fetch_db_id(node_name)
     if my_db_id is None:
         logger.debug(f'{my_db_id}: Skipping remove_db for local process')
         return
@@ -73,11 +75,11 @@ def remove_db_id():
     logger.debug(f'{my_db_id}: Delete success')
 
 
-def insert_db_id(num_ids=50):
+def insert_db_id(num_ids=50, node_name=None):
     lock_path = ulensdb_file_path.replace('.txt', '.lock')
     lock = FileLock(lock_path)
 
-    my_db_id = fetch_db_id()
+    my_db_id = fetch_db_id(node_name)
     if my_db_id is None:
         logger.debug(f'{my_db_id}: Skipping insert_db for local process')
         return

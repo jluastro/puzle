@@ -21,7 +21,7 @@ logger = get_logger(__name__)
 
 
 def fetch_cand(slurm_job_id=None, node_name=None):
-    insert_db_id()  # get permission to make a db connection
+    insert_db_id(node_name=node_name)  # get permission to make a db connection
 
     db.session.execute('LOCK TABLE candidate_level3, candidate_level4 '
                        'IN ROW EXCLUSIVE MODE;')
@@ -41,12 +41,12 @@ def fetch_cand(slurm_job_id=None, node_name=None):
     db.session.commit()
     db.session.close()
 
-    remove_db_id()  # release permission for this db connection
+    remove_db_id(node_name=node_name)  # release permission for this db connection
     return cand_id
 
 
-def finish_cand(cand_id):
-    insert_db_id()  # get permission to make a db connection
+def finish_cand(cand_id, node_name):
+    insert_db_id(node_name=node_name)  # get permission to make a db connection
 
     cand = db.session.query(CandidateLevel4).filter(
         CandidateLevel4.id == cand_id).one()
@@ -55,10 +55,10 @@ def finish_cand(cand_id):
     db.session.commit()
     db.session.close()
 
-    remove_db_id()  # release permission for this db connection
+    remove_db_id(node_name=node_name)  # release permission for this db connection
 
 
-def fit_level4_cand_to_pspl_gp(cand_id):
+def fit_level4_cand_to_pspl_gp(cand_id, node_name=None):
     from mpi4py import MPI
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
@@ -72,11 +72,12 @@ def fit_level4_cand_to_pspl_gp(cand_id):
     fitter = model_fitter.PSPL_Solver(data,
                                       PSPL_Phot_Par_GP_Param2_2,
                                       add_error_on_photometry=False,
-                                      multiply_error_on_photometry=True,
+                                      multiply_error_on_photometry=False,
                                       use_phot_optional_params=True,
                                       importance_nested_sampling=False,
                                       n_live_points=1000,
                                       evidence_tolerance=0.5,
+                                      sampling_efficiency=0.8,
                                       outputfiles_basename=outputfiles_basename)
 
     # Adjust the priors to encompass both possible solutions
@@ -118,7 +119,7 @@ def fit_level4_cand_to_pspl_gp(cand_id):
         logger.info(f'{cand_id} : Plotting complete')
 
     comm.Barrier()
-    finish_cand(cand_id)
+    finish_cand(cand_id, node_name)
 
 
 def fit_level4_cands_to_pspl_gp(single_job=False):
@@ -142,7 +143,7 @@ def fit_level4_cands_to_pspl_gp(single_job=False):
         else:
             cand_id = None
         cand_id = comm.bcast(cand_id, root=0)
-        fit_level4_cand_to_pspl_gp(cand_id)
+        fit_level4_cand_to_pspl_gp(cand_id, node_name)
         comm.Barrier()
         if single_job:
             return
