@@ -56,7 +56,7 @@ def save_cand_fitter_data(cand):
         data[f't_phot{idx_data}'] = hmjd_round
         data[f'mag{idx_data}'] = mag_round
         data[f'mag_err{idx_data}'] = magerr_round
-        phot_file = '%s-%s' % (obj.filename, obj.object_id)
+        phot_file = '%s_%s' % (source_id, color)
         data['phot_files'].append(phot_file)
 
         flat_cond = hmjd_round < cand.t0_best - 2 * cand.tE_best
@@ -92,11 +92,24 @@ def save_all_cand_fitter_data():
         filter(CandidateLevel3.id == CandidateLevel4.id,
                CandidateLevel3.t0_best + CandidateLevel3.tE_best < MJD_finish).\
         with_entities(CandidateLevel4.id).\
+        order_by(CandidateLevel4.id).\
         all()
     cand_ids = [c[0] for c in cands]
-    for i, cand_id in enumerate(cand_ids):
+
+    if 'SLURMD_NODENAME' in os.environ:
+        from mpi4py import MPI
+        comm = MPI.COMM_WORLD
+        rank = comm.rank
+        size = comm.size
+    else:
+        rank = 0
+        size = 1
+
+    my_cand_ids = np.array_split(cand_ids, size)[rank]
+
+    for i, cand_id in enumerate(my_cand_ids):
         if i % 100 == 0:
-            print('Saving cand fitter_data %i / %i' % (i, len(cand_ids)))
+            print('%i) Saving cand fitter_data %i / %i' % (rank, i, len(cand_ids)))
         save_cand_fitter_data_by_id(cand_id)
 
 
@@ -105,3 +118,7 @@ def load_cand_fitter_data(cand_id):
     fname = f'{out_dir}/fitter_data.dct'
     cand_fitter_data = pickle.load(open(fname, 'rb'))
     return cand_fitter_data
+
+
+if __name__ == '__main__':
+    save_all_cand_fitter_data()
