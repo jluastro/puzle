@@ -109,7 +109,7 @@ def save_all_cand_fitter_data():
 
     for i, cand_id in enumerate(my_cand_ids):
         if i % 100 == 0:
-            print('%i) Saving cand fitter_data %i / %i' % (rank, i, len(cand_ids)))
+            print('%i) Saving cand fitter_data %i / %i' % (rank, i, len(my_cand_ids)))
         save_cand_fitter_data_by_id(cand_id)
 
 
