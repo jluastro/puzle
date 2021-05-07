@@ -7,7 +7,6 @@ import numpy as np
 import pickle
 import os
 from scipy import stats
-from zort.photometry import fluxes_to_magnitudes
 
 from puzle.cands import load_source
 from puzle.stats import average_xy_on_round_x
@@ -47,7 +46,6 @@ def save_cand_fitter_data(cand):
             continue
 
         mag = obj.lightcurve.mag
-        flux = obj.lightcurve.flux
         magerr = obj.lightcurve.magerr
         hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
         _, magerr_round = average_xy_on_round_x(hmjd, magerr)
@@ -58,9 +56,7 @@ def save_cand_fitter_data(cand):
         phot_file = '%s-%s' % (obj.filename, obj.object_id)
         data['phot_files'].append(phot_file)
 
-        flux_src = np.median(flux) * cand.b_sff_best
-        mag_src, _ = fluxes_to_magnitudes(flux_src)
-        phot_priors[f'mag_src{idx_data}'] = stats.norm(mag_src, 1.5)
+        phot_priors[f'mag_base{idx_data}'] = stats.norm(np.median(mag), 1.5)
         phot_priors[f'b_sff{idx_data}'] = stats.norm(cand.b_sff_best, 2)
 
         if i == idx_best:
