@@ -917,13 +917,6 @@ class CandidateLevel4(db.Model):
         str += f'Ra/Dec: ({self.ra:.5f}, {self.dec:.5f}) \n'
         return str
 
-    @property
-    def piE_best(self):
-        if self.piE_E_best is None:
-            return None
-        else:
-            return np.hypot(self.piE_E_best, self.piE_N_best)
-
     @hybrid_property
     def glonlat(self):
         from astropy.coordinates import SkyCoord
