@@ -140,10 +140,10 @@ def save_all_cand_fitter_data():
         filter(CandidateLevel3.id == CandidateLevel4.id,
                CandidateLevel3.t0_best + CandidateLevel3.tE_best < MJD_finish).\
         all()
-    for i, cand in enumerate(cands):
+    for i, (cand3, _) in enumerate(cands):
         if i % 100 == 0:
             print('Saving cand fitter_data %i / %i' % (i, len(cands)))
-        save_cand_fitter_data(cand)
+        save_cand_fitter_data(cand3)
 
 
 def load_cand_fitter_data(cand_id):
