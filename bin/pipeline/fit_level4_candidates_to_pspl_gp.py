@@ -89,25 +89,28 @@ def fit_level4_cand_to_pspl_gp(cand_id):
         fitter.priors[f'gp_log_omega0{idx}'] = model_fitter.make_norm_gen(0, 5)
     fitter.solve()
 
-    best = fitter.get_best_fit(def_best='maxl')
-    idx_data_best = fitter_params['idx_data_best']
-    pspl_out = PSPL_Phot_Par_GP_Param2_2(t0=best['t0'],
-                                         u0_amp=best['u0_amp'],
-                                         tE=best['tE'],
-                                         piE_E=best['piE_E'],
-                                         piE_N=best['piE_N'],
-                                         b_sff=best[f'b_sff{idx_data_best}'],
-                                         mag_base=best[f'mag_base{idx_data_best}'],
-                                         gp_log_sigma=best[f'gp_log_sigma{idx_data_best}'],
-                                         gp_rho=best[f'gp_rho{idx_data_best}'],
-                                         gp_log_omega04_S0=best[f'gp_log_omega04_S0{idx_data_best}'],
-                                         gp_log_omega0=best[f'gp_log_omega0{idx_data_best}'],
-                                         raL=data['raL'],
-                                         decL=data['decL'])
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+    comm.Barrier()
 
-    fitter.plot_dynesty_style(fit_vals='maxl')
-    fitter.plot_model_and_data(pspl_out)
+    if comm.rank == 0:
+        fitter.plot_dynesty_style(fit_vals='maxl')
 
+        best = fitter.get_best_fit(def_best='maxl')
+        model_params = {'t0': best['t0'],
+                        'u0_amp': best['u0_amp'],
+                        'tE': best['tE'],
+                        'piE_E': best['piE_E'],
+                        'piE_N': best['piE_N'],
+                        'raL': data['raL'],
+                        'decL': data['decL']}
+        multi_params = ['b_sff', 'mag_base', 'gp_log_sigma', 'gp_rho', 'gp_log_omega04_S0', 'gp_log_omega0']
+        for param in multi_params:
+            model_params[param] = [best[f'{param}{i}'] for i in range(1, fitter.n_phot_sets + 1)]
+        pspl_out = PSPL_Phot_Par_GP_Param2_2(**model_params)
+        fitter.plot_model_and_data(pspl_out)
+
+    comm.Barrier()
     finish_cand(cand_id)
 
 
