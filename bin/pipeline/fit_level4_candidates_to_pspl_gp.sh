@@ -24,3 +24,14 @@ echo "---------------------------"
 date
 echo "All done!"
 echo "---------------------------"
+
+
+nodelist=$(python ~/puzle/bin/pipeline/parse_nersc_nodelist.py)
+node_name=$SLURMD_NODENAME
+node_num=$SLURM_NNODES
+if [[ "$node_num" -eq 1 ]]
+then
+  echo a
+else
+  echo b
+fi

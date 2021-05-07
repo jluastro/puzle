@@ -127,7 +127,7 @@ def fit_level4_cands_to_pspl_gp(single_job=False):
             cand_id = fetch_cand()
         else:
             cand_id = None
-        cand_id = comm.base(cand_id, root=0)
+        cand_id = comm.bcast(cand_id, root=0)
         fit_level4_cand_to_pspl_gp(cand_id)
         comm.Barrier()
         if single_job:
