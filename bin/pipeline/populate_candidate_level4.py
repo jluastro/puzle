@@ -8,11 +8,10 @@ import pickle
 
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
-from puzle.models import Source, CandidateLevel3, CandidateLevel4
+from puzle.models import Source, CandidateLevel2, CandidateLevel3, CandidateLevel4
 from puzle.cands import apply_level3_cuts_to_query, fit_data_to_ulens_opt, return_sigma_peaks
 from puzle.stats import average_xy_on_round_x, calculate_eta, calculate_chi_squared_inside_outside
 from puzle.utils import return_DR5_dir
-from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle import db
 
 
@@ -73,13 +72,11 @@ def calculate_chi2_model_params(best_params, data):
 
 
 def populate_candidate_level4():
-    insert_db_id()
     query = apply_level3_cuts_to_query(CandidateLevel3.query)
     cands_level3 = query.order_by(CandidateLevel3.id).all()
     cands_level4 = CandidateLevel4.query.with_entities(CandidateLevel4.id).all()
     cand_ids_level4 = set([c[0] for c in cands_level4])
     cands_level3 = [c for c in cands_level3 if c.id not in cand_ids_level4]
-    remove_db_id()
 
     if 'SLURMD_NODENAME' in os.environ:
         from mpi4py import MPI
@@ -100,6 +97,7 @@ def populate_candidate_level4():
     for i, cand_level3 in enumerate(my_cands_level3):
         if i % 100 == 0:
             print(f'rank {rank}) {i} candidates complete')
+        cand_level2 = CandidateLevel2.query.filter(CandidateLevel2.id==cand_level3.id)
         t0_level3 = cand_level3.t0_best
         tE_level3 = cand_level3.tE_best
         num_epochs_arr = []
@@ -151,8 +149,10 @@ def populate_candidate_level4():
 
             if num_days > 1:
                 eta = calculate_eta(mag_round)
+                # best_params = fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec,
+                #                                     t0_guess=t0_level3, tE_guess=tE_level3)
                 best_params = fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec,
-                                                    t0_guess=t0_level3, tE_guess=tE_level3)
+                                                    t0_guess=cand_level2.t_0_best, tE_guess=cand_level2.t_E_best)
             else:
                 eta = 0
                 param_names_to_fit = ['t0', 'u0_amp', 'tE', 'mag_src',
@@ -231,10 +231,8 @@ def populate_candidate_level4():
         )
         db.session.add(cand_level4)
 
-    insert_db_id()
     db.session.commit()
     db.session.close()
-    remove_db_id()
 
     if size > 1:
         comm.Barrier()
