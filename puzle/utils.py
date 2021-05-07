@@ -255,3 +255,22 @@ def sortsplit(array, size):
     # Have some fun thinking it through! A pen and paper might help :)
     return [[array[i] for i in range(j, len(array), size)]
             for j in range(size)]
+
+
+def parse_nersc_nodelist():
+    nodelist_var = os.getenv('SLURM_NODELIST')
+    if '[' not in nodelist_var:
+        nodelist = [nodelist_var]
+    else:
+        nodelist = []
+        base, nums = nodelist_var.replace(']', '').split('[')
+        spans = nums.split(',')
+        for span in spans:
+            if '-' in span:
+                range_low, range_high = span.split('-')
+                for i in range(int(range_low), int(range_high)+1):
+                    nodelist.append(f'{base}{i}')
+            else:
+                nodelist.append(f'{base}{span}')
+
+    return nodelist
