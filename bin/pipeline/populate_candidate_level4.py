@@ -149,10 +149,10 @@ def populate_candidate_level4():
 
             if num_days > 1:
                 eta = calculate_eta(mag_round)
-                # best_params = fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec,
-                #                                     t0_guess=t0_level3, tE_guess=tE_level3)
                 best_params = fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec,
-                                                    t0_guess=cand_level2.t_0_best, tE_guess=cand_level2.t_E_best)
+                                                    t0_guess=t0_level3, tE_guess=tE_level3)
+                # best_params = fit_data_to_ulens_opt(hmjd, mag, magerr, ra, dec,
+                #                                     t0_guess=cand_level2.t_0_best, tE_guess=cand_level2.t_E_best)
             else:
                 eta = 0
                 param_names_to_fit = ['t0', 'u0_amp', 'tE', 'mag_src',
