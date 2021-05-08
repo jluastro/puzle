@@ -116,7 +116,8 @@ def fit_level4_cand_to_pspl_gp(cand_id, node_name=None):
 
     if rank == 0:
         logger.info(f'{cand_id} : Fit complete, now plotting')
-        fitter.plot_dynesty_style(fit_vals='maxl')
+        fitter.plot_dynesty_style(fit_vals='maxl',
+                                  traceplot=True, cornerplot=False)
 
         best = fitter.get_best_fit(def_best='maxl')
         # model_params = {'t0': best['t0'],
