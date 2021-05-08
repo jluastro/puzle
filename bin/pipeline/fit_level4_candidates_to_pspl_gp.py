@@ -99,12 +99,12 @@ def fit_level4_cand_to_pspl_gp(cand_id, node_name=None):
 
     for idx in range(1, num_lightcurves+1):
         b_sff_std = 0.2
-        b_sff_low = max(fitter_params[f'b_sff{idx}'] * (1 - u0_amp_std), 0)
-        b_sff_high = min(fitter_params[f'b_sff{idx}'] * (1 + u0_amp_std), 1.2)
+        b_sff_low = max(fitter_params[f'b_sff_{idx}'] * (1 - u0_amp_std), 0)
+        b_sff_high = min(fitter_params[f'b_sff_{idx}'] * (1 + u0_amp_std), 1.2)
         b_sff_low_sigma = b_sff_low / b_sff_std
         b_sff_high_sigma = b_sff_high / b_sff_std
-        fitter.priors[f'b_sff{idx}'] = model_fitter.make_norm_gen(fitter_params[f'b_sff_{idx}'], b_sff_std,
-                                                                  b_sff_low_sigma, b_sff_high_sigma)
+        fitter.priors[f'b_sff{idx}'] = model_fitter.make_truncnorm_gen(fitter_params[f'b_sff_{idx}'], b_sff_std,
+                                                                       b_sff_low_sigma, b_sff_high_sigma)
         fitter.priors[f'mag_base{idx}'] = model_fitter.make_norm_gen(fitter_params[f'mag_base_{idx}'], 0.2)
         fitter.priors[f'gp_log_sigma{idx}'] = model_fitter.make_norm_gen(0, 5)
         fitter.priors[f'gp_rho{idx}'] = model_fitter.make_invgamma_gen(data[f't_phot{idx}'])
