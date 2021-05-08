@@ -21,21 +21,10 @@ def return_cand_dir(cand_id):
     return out_dir
 
 
-def save_cand_fitter_data(cand):
+def gather_cand_data(cand, num_max_lightcurves=4):
     source_dct = {}
-    data = {'target': cand.id,
-            'raL': cand.ra,
-            'decL': cand.dec,
-            'phot_data': 'ztf',
-            'phot_files': [],
-            'ast_data': None,
-            'ast_files': None}
-    fitter_params = {'t0': cand.t0_best,
-                     'tE': cand.tE_best,
-                     'u0_amp': cand.u0_amp_best,
-                     'piE_E': cand.piE_E_best,
-                     'piE_N': cand.piE_N_best}
-    num_lightcurves = 0
+    n_days_arr = []
+    tmp_data_arr = []
     for i, (source_id, color) in enumerate(zip(cand.source_id_arr, cand.color_arr)):
         if source_id in source_dct:
             source = source_dct[source_id]
@@ -48,38 +37,63 @@ def save_cand_fitter_data(cand):
         n_days = len(set(np.round(hmjd)))
         if n_days < 20:
             continue
+        n_days_arr.append(n_days)
+        tmp_data_arr.append((obj, source_id, color))
+    idx_arr = np.argsort(n_days_arr)[::-1][:num_max_lightcurves]
+    cand_data_arr = [tmp_data_arr[idx] for idx in idx_arr]
+    return cand_data_arr
 
-        mag = obj.lightcurve.mag
-        magerr = obj.lightcurve.magerr
-        hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
-        _, magerr_round = average_xy_on_round_x(hmjd, magerr)
 
-        idx_data = num_lightcurves + 1
-        data[f't_phot{idx_data}'] = hmjd_round
-        data[f'mag{idx_data}'] = mag_round
-        data[f'mag_err{idx_data}'] = magerr_round
+def fill_data_and_fitter_params(obj, phot_file, idx_data,
+                                data_dct, fitter_params_dct):
+    hmjd = obj.lightcurve.hmjd
+    mag = obj.lightcurve.mag
+    magerr = obj.lightcurve.magerr
+    hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
+    _, magerr_round = average_xy_on_round_x(hmjd, magerr)
+
+    data_dct[f't_phot{idx_data}'] = hmjd_round
+    data_dct[f'mag{idx_data}'] = mag_round
+    data_dct[f'mag_err{idx_data}'] = magerr_round
+    data_dct['phot_files'].append(phot_file)
+
+    flat_cond = hmjd_round < fitter_params_dct['t0'] - 2 * fitter_params_dct['tE']
+    flat_cond += hmjd_round > fitter_params_dct['t0'] + 2 * fitter_params_dct['tE']
+    if np.sum(flat_cond) < 20:
+        mag_base = np.median(mag_round)
+    else:
+        mag_base = np.median(mag_round[flat_cond])
+    fitter_params_dct[f'mag_base_{idx_data}'] = mag_base
+    fitter_params_dct[f'b_sff_{idx_data}'] = fitter_params_dct['b_sff']
+
+
+def save_cand_fitter_data(cand, num_max_lightcurves=4):
+    data_dct = {'target': cand.id,
+                'raL': cand.ra,
+                'decL': cand.dec,
+                'phot_data': 'ztf',
+                'phot_files': [],
+                'ast_data': None,
+                'ast_files': None}
+    fitter_params_dct = {'t0': cand.t0_best,
+                         'tE': cand.tE_best,
+                         'u0_amp': cand.u0_amp_best,
+                         'piE_E': cand.piE_E_best,
+                         'piE_N': cand.piE_N_best,
+                         'b_sff': cand.b_sff_best}
+
+    cand_data_arr = gather_cand_data(cand, num_max_lightcurves=num_max_lightcurves)
+    fitter_params_dct['num_lightcurves'] = len(cand_data_arr)
+
+    for idx_data, cand_data in enumerate(cand_data_arr, 1):
+        obj, source_id, color = cand_data
         phot_file = '%s_%s' % (source_id, color)
-        data['phot_files'].append(phot_file)
-
-        flat_cond = hmjd_round < cand.t0_best - 2 * cand.tE_best
-        flat_cond += hmjd_round > cand.t0_best + 2 * cand.tE_best
-        if np.sum(flat_cond) < 20:
-            mag_base = np.median(mag_round)
-        else:
-            mag_base = np.median(mag_round[flat_cond])
-        fitter_params[f'mag_base_{idx_data}'] = mag_base
-        fitter_params[f'b_sff_{idx_data}'] = cand.b_sff_best
-
-        if i == cand.idx_best:
-            fitter_params['idx_data_best'] = idx_data
-
-        num_lightcurves += 1
-    fitter_params['num_lightcurves'] = num_lightcurves
+        fill_data_and_fitter_params(obj, phot_file, idx_data, data_dct, fitter_params_dct)
 
     cand_id = cand.id
     out_dir = return_cand_dir(cand_id)
-    cand_fitter_data = {'data': data,
-                        'fitter_params': fitter_params,
+    cand_fitter_data = {'data': data_dct,
+                        'fitter_params': fitter_params_dct,
                         'out_dir': out_dir}
     fname = f'{out_dir}/{cand_id}_fitter_data.dct'
     pickle.dump(cand_fitter_data, open(fname, 'wb'))

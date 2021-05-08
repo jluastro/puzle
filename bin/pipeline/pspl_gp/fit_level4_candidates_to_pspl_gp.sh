@@ -21,6 +21,7 @@ conda activate puzle
 nodelist=$(python /global/homes/m/mmedford/puzle/bin/pipeline/parse_nersc_nodelist.py)
 echo "Nodes = $nodelist"
 
+cd /global/homes/m/mmedford/puzle/bin/pipeline/pspl_gp
 for node_name in $nodelist; do
   fname_log="/global/homes/m/mmedford/puzle/bin/pipeline/pspl_gp/pspl_gp.$SLURM_JOBID.$node_name.log"
   srun -N 1 -n 32 -w $node_name python /global/homes/m/mmedford/puzle/bin/pipeline/fit_level4_candidates_to_pspl_gp.py $SLURM_JOBID $node_name > $fname_log &
