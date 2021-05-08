@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --account=ulens
-#SBATCH --qos=premium
+#SBATCH --account=m2218
+#SBATCH --qos=regular
 #SBATCH --constraint=haswell
-#SBATCH --nodes=6
-#SBATCH --time=06:00:00
+#SBATCH --nodes=25
+#SBATCH --time=48:00:00
 #SBATCH --job-name=pspl_gp
 #SBATCH --output=pspl_gp.%j.out
 echo "---------------------------"
@@ -23,8 +23,14 @@ echo "Nodes = $nodelist"
 
 cd /global/homes/m/mmedford/puzle/bin/pipeline/pspl_gp
 for node_name in $nodelist; do
-  fname_log="/global/homes/m/mmedford/puzle/bin/pipeline/pspl_gp/pspl_gp.$SLURM_JOBID.$node_name.log"
-  srun -N 1 -n 32 -w $node_name python /global/homes/m/mmedford/puzle/bin/pipeline/fit_level4_candidates_to_pspl_gp.py $SLURM_JOBID $node_name > $fname_log &
+  echo "Launching ${node_name}"
+  for i in `seq 0 3`; do
+    echo "Launching ${node_name} - ${i}"
+    node_name_ext="$node_name.$i"
+    fname_log="/global/homes/m/mmedford/puzle/bin/pipeline/pspl_gp/pspl_gp.$SLURM_JOBID.$node_name_ext.log"
+    srun -N 1 -n 8 -w $node_name python /global/homes/m/mmedford/puzle/bin/pipeline/fit_level4_candidates_to_pspl_gp.py $SLURM_JOBID $node_name_ext > $fname_log &
+    sleep 5
+  done
 done;
 wait
 
