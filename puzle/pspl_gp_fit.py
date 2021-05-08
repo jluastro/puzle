@@ -31,7 +31,10 @@ def save_cand_fitter_data(cand):
             'ast_data': None,
             'ast_files': None}
     fitter_params = {'t0': cand.t0_best,
-                     'tE': cand.tE_best}
+                     'tE': cand.tE_best,
+                     'u0_amp': cand.u0_amp_best,
+                     'piE_E': cand.piE_E_best,
+                     'piE_N': cand.piE_N_best}
     num_lightcurves = 0
     for i, (source_id, color) in enumerate(zip(cand.source_id_arr, cand.color_arr)):
         if source_id in source_dct:

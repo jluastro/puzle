@@ -68,10 +68,10 @@ def fit_level4_cand_to_pspl_gp(cand_id, node_name=None):
     data = cand_fitter_data['data']
     fitter_params = cand_fitter_data['fitter_params']
     out_dir = cand_fitter_data['out_dir']
-    outputfiles_basename = f'{out_dir}/fit_'
+    outputfiles_basename = f'{out_dir}/{cand_id}_'
 
     num_lightcurves = cand_fitter_data['fitter_params']['num_lightcurves']
-    n_live_points = min(1000 * num_lightcurves, 5000)
+    n_live_points = int(min(300 * num_lightcurves, 1000))
 
     fitter = model_fitter.PSPL_Solver(data,
                                       PSPL_Phot_Par_GP_Param2_2,
@@ -84,16 +84,27 @@ def fit_level4_cand_to_pspl_gp(cand_id, node_name=None):
                                       sampling_efficiency=0.8,
                                       outputfiles_basename=outputfiles_basename)
 
-    # Adjust the priors to encompass both possible solutions
-    fitter.priors['t0'] = model_fitter.make_norm_gen(fitter_params['t0'], 25)
-    fitter.priors['u0_amp'] = model_fitter.make_norm_gen(0, 0.3)
-    fitter.priors['tE'] = model_fitter.make_norm_gen(fitter_params['tE'], 25)
-    fitter.priors['piE_E'] = model_fitter.make_norm_gen(-0.02, 0.12)
-    fitter.priors['piE_N'] = model_fitter.make_norm_gen(-0.03, 0.13)
+    # set priors
+    fitter.priors['t0'] = model_fitter.make_norm_gen(fitter_params['t0'], fitter_params['tE']*.5)
+    u0_amp_std = 0.25
+    u0_amp_low = max(fitter_params['u0_amp'] * (1-u0_amp_std), -1.2)
+    u0_amp_high = min(fitter_params['u0_amp'] * (1+u0_amp_std), 1.2)
+    u0_amp_low_sigma = u0_amp_low / u0_amp_std
+    u0_amp_high_sigma = u0_amp_high / u0_amp_std
+    fitter.priors['u0_amp'] = model_fitter.make_truncnorm_gen(fitter_params['u0_amp'], u0_amp_std,
+                                                              u0_amp_low_sigma, u0_amp_high_sigma)
+    fitter.priors['tE'] = model_fitter.make_norm_gen(fitter_params['tE'], fitter_params['tE']*.5)
+    fitter.priors['piE_E'] = model_fitter.make_norm_gen(fitter_params['piE_E'], .5)
+    fitter.priors['piE_N'] = model_fitter.make_norm_gen(fitter_params['piE_N'], .5)
 
-    num_lightcurves = fitter_params['num_lightcurves']
     for idx in range(1, num_lightcurves+1):
-        fitter.priors[f'b_sff{idx}'] = model_fitter.make_norm_gen(fitter_params[f'b_sff_{idx}'], 0.2)
+        b_sff_std = 0.2
+        b_sff_low = max(fitter_params[f'b_sff{idx}'] * (1 - u0_amp_std), 0)
+        b_sff_high = min(fitter_params[f'b_sff{idx}'] * (1 + u0_amp_std), 1.2)
+        b_sff_low_sigma = b_sff_low / b_sff_std
+        b_sff_high_sigma = b_sff_high / b_sff_std
+        fitter.priors[f'b_sff{idx}'] = model_fitter.make_norm_gen(fitter_params[f'b_sff_{idx}'], b_sff_std,
+                                                                  b_sff_low_sigma, b_sff_high_sigma)
         fitter.priors[f'mag_base{idx}'] = model_fitter.make_norm_gen(fitter_params[f'mag_base_{idx}'], 0.2)
         fitter.priors[f'gp_log_sigma{idx}'] = model_fitter.make_norm_gen(0, 5)
         fitter.priors[f'gp_rho{idx}'] = model_fitter.make_invgamma_gen(data[f't_phot{idx}'])
@@ -108,18 +119,19 @@ def fit_level4_cand_to_pspl_gp(cand_id, node_name=None):
         fitter.plot_dynesty_style(fit_vals='maxl')
 
         best = fitter.get_best_fit(def_best='maxl')
-        model_params = {'t0': best['t0'],
-                        'u0_amp': best['u0_amp'],
-                        'tE': best['tE'],
-                        'piE_E': best['piE_E'],
-                        'piE_N': best['piE_N'],
-                        'raL': data['raL'],
-                        'decL': data['decL']}
-        multi_params = ['b_sff', 'mag_base', 'gp_log_sigma', 'gp_rho', 'gp_log_omega04_S0', 'gp_log_omega0']
-        for param in multi_params:
-            model_params[param] = [best[f'{param}{i}'] for i in range(1, fitter.n_phot_sets + 1)]
-        pspl_out = PSPL_Phot_Par_GP_Param2_2(**model_params)
-        fitter.plot_model_and_data(pspl_out)
+        # model_params = {'t0': best['t0'],
+        #                 'u0_amp': best['u0_amp'],
+        #                 'tE': best['tE'],
+        #                 'piE_E': best['piE_E'],
+        #                 'piE_N': best['piE_N'],
+        #                 'raL': data['raL'],
+        #                 'decL': data['decL']}
+        # multi_params = ['b_sff', 'mag_base', 'gp_log_sigma', 'gp_rho', 'gp_log_omega04_S0', 'gp_log_omega0']
+        # for param in multi_params:
+        #     model_params[param] = [best[f'{param}{i}'] for i in range(1, fitter.n_phot_sets + 1)]
+        # pspl_out = PSPL_Phot_Par_GP_Param2_2(**model_params)
+        best_model = fitter.get_model(best)
+        fitter.plot_model_and_data(best_model)
         logger.info(f'{cand_id} : Plotting complete')
 
     comm.Barrier()
