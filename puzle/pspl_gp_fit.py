@@ -76,11 +76,12 @@ def save_cand_fitter_data(cand):
         num_lightcurves += 1
     fitter_params['num_lightcurves'] = num_lightcurves
 
-    out_dir = return_cand_dir(cand.id)
+    cand_id = cand.id
+    out_dir = return_cand_dir(cand_id)
     cand_fitter_data = {'data': data,
                         'fitter_params': fitter_params,
                         'out_dir': out_dir}
-    fname = f'{out_dir}/fitter_data.dct'
+    fname = f'{out_dir}/{cand_id}_fitter_data.dct'
     pickle.dump(cand_fitter_data, open(fname, 'wb'))
 
 
@@ -117,7 +118,7 @@ def save_all_cand_fitter_data():
 
 def load_cand_fitter_data(cand_id):
     out_dir = return_cand_dir(cand_id)
-    fname = f'{out_dir}/fitter_data.dct'
+    fname = f'{out_dir}/{cand_id}_fitter_data.dct'
     cand_fitter_data = pickle.load(open(fname, 'rb'))
     return cand_fitter_data
 
