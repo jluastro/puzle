@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle.pspl_gp_fit import load_cand_fitter_data
-from puzle.utils import MJD_finish, get_logger
+from puzle.utils import MJD_start, MJD_finish, get_logger
 from puzle.models import CandidateLevel3, CandidateLevel4
 from puzle import db
 
@@ -86,27 +86,25 @@ def fit_level4_cand_to_pspl_gp(cand_id, node_name=None):
                                       outputfiles_basename=outputfiles_basename)
 
     # set priors
-    fitter.priors['t0'] = model_fitter.make_norm_gen(fitter_params['t0'], fitter_params['tE']*.5)
-    u0_amp_std = 0.25
-    u0_amp_low = max(fitter_params['u0_amp'] * (1 - u0_amp_std), -1.2)
-    u0_amp_high = min(fitter_params['u0_amp'] * (1 + u0_amp_std), 1.2)
-    u0_amp_low_sigma = u0_amp_low / u0_amp_std
-    u0_amp_high_sigma = u0_amp_high / u0_amp_std
-    fitter.priors['u0_amp'] = model_fitter.make_truncnorm_gen(fitter_params['u0_amp'], u0_amp_std,
-                                                              u0_amp_low_sigma, u0_amp_high_sigma)
-    fitter.priors['tE'] = model_fitter.make_norm_gen(fitter_params['tE'], fitter_params['tE']*.5)
-    fitter.priors['piE_E'] = model_fitter.make_norm_gen(fitter_params['piE_E'], .5)
-    fitter.priors['piE_N'] = model_fitter.make_norm_gen(fitter_params['piE_N'], .5)
+    fitter.priors['t0'] = model_fitter.make_truncnorm_gen_with_bounds(fitter_params['t0'], fitter_params['tE']*.5,
+                                                                      MJD_start - 365, MJD_finish + 365)
+    fitter.priors['tE'] = model_fitter.make_truncnorm_gen_with_bounds(fitter_params['t0'], fitter_params['tE']*.5,
+                                                                      1, 2000)
+    fitter.priors['u0_amp'] = model_fitter.make_truncnorm_gen_with_bounds(fitter_params['u0_amp'], 0.25,
+                                                                          -1.2, 1.2)
+    fitter.priors['piE_E'] = model_fitter.make_truncnorm_gen_with_bounds(fitter_params['piE_E'], 0.5,
+                                                                         -2, 2)
+    fitter.priors['piE_N'] = model_fitter.make_truncnorm_gen_with_bounds(fitter_params['piE_N'], 0.5,
+                                                                         -2, 2)
 
+    # multi parameters
     for idx in range(1, num_lightcurves+1):
-        b_sff_std = 0.2
-        b_sff_low = max(fitter_params[f'b_sff_{idx}'] * (1 - b_sff_std), 0)
-        b_sff_high = min(fitter_params[f'b_sff_{idx}'] * (1 + b_sff_std), 1.2)
-        b_sff_low_sigma = b_sff_low / b_sff_std
-        b_sff_high_sigma = b_sff_high / b_sff_std
-        fitter.priors[f'b_sff{idx}'] = model_fitter.make_truncnorm_gen(fitter_params[f'b_sff_{idx}'], b_sff_std,
-                                                                       b_sff_low_sigma, b_sff_high_sigma)
+        # b_sff / mag_base
+        fitter.priors[f'b_sff_{idx}'] = model_fitter.make_truncnorm_gen_with_bounds(fitter_params[f'b_sff_{idx}'], 0.2,
+                                                                                    0, 1.2)
         fitter.priors[f'mag_base{idx}'] = model_fitter.make_norm_gen(fitter_params[f'mag_base_{idx}'], 0.2)
+
+        # gp
         fitter.priors[f'gp_log_sigma{idx}'] = model_fitter.make_norm_gen(0, 5)
         fitter.priors[f'gp_rho{idx}'] = model_fitter.make_invgamma_gen(data[f't_phot{idx}'])
         fitter.priors[f'gp_log_omega04_S0{idx}'] = model_fitter.make_norm_gen(np.median(data[f'mag_err{idx}']) ** 2, 5)
@@ -121,17 +119,6 @@ def fit_level4_cand_to_pspl_gp(cand_id, node_name=None):
                                   traceplot=True, cornerplot=False)
 
         best = fitter.get_best_fit(def_best='maxl')
-        # model_params = {'t0': best['t0'],
-        #                 'u0_amp': best['u0_amp'],
-        #                 'tE': best['tE'],
-        #                 'piE_E': best['piE_E'],
-        #                 'piE_N': best['piE_N'],
-        #                 'raL': data['raL'],
-        #                 'decL': data['decL']}
-        # multi_params = ['b_sff', 'mag_base', 'gp_log_sigma', 'gp_rho', 'gp_log_omega04_S0', 'gp_log_omega0']
-        # for param in multi_params:
-        #     model_params[param] = [best[f'{param}{i}'] for i in range(1, fitter.n_phot_sets + 1)]
-        # best_model = PSPL_Phot_Par_GP_Param2_2(**model_params)
         best_model = fitter.get_model(best)
         fitter.plot_model_and_data(best_model)
         plt.close('all')
