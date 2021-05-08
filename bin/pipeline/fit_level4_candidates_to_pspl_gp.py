@@ -88,7 +88,7 @@ def fit_level4_cand_to_pspl_gp(cand_id, node_name=None):
     # set priors
     fitter.priors['t0'] = model_fitter.make_truncnorm_gen_with_bounds(fitter_params['t0'], fitter_params['tE']*.5,
                                                                       MJD_start - 365, MJD_finish + 365)
-    fitter.priors['tE'] = model_fitter.make_truncnorm_gen_with_bounds(fitter_params['t0'], fitter_params['tE']*.5,
+    fitter.priors['tE'] = model_fitter.make_truncnorm_gen_with_bounds(fitter_params['tE'], fitter_params['tE']*.5,
                                                                       1, 2000)
     fitter.priors['u0_amp'] = model_fitter.make_truncnorm_gen_with_bounds(fitter_params['u0_amp'], 0.25,
                                                                           -1.2, 1.2)
