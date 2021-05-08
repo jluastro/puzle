@@ -10,6 +10,7 @@ from microlens.jlu import model_fitter
 from microlens.jlu.model import PSPL_Phot_Par_GP_Param2_2
 from sqlalchemy.sql.expression import func
 import logging
+import matplotlib.pyplot as plt
 
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle.pspl_gp_fit import load_cand_fitter_data
@@ -130,14 +131,16 @@ def fit_level4_cand_to_pspl_gp(cand_id, node_name=None):
         # multi_params = ['b_sff', 'mag_base', 'gp_log_sigma', 'gp_rho', 'gp_log_omega04_S0', 'gp_log_omega0']
         # for param in multi_params:
         #     model_params[param] = [best[f'{param}{i}'] for i in range(1, fitter.n_phot_sets + 1)]
-        # pspl_out = PSPL_Phot_Par_GP_Param2_2(**model_params)
+        # best_model = PSPL_Phot_Par_GP_Param2_2(**model_params)
         best_model = fitter.get_model(best)
         fitter.plot_model_and_data(best_model)
+        plt.close('all')
         logger.info(f'{cand_id} : Plotting complete')
 
     comm.Barrier()
     if rank == 0:
         finish_cand(cand_id, node_name)
+        logger.info(f'{cand_id} : Finished on node {node_name}')
 
 
 def fit_level4_cands_to_pspl_gp(single_job=False):
@@ -157,7 +160,7 @@ def fit_level4_cands_to_pspl_gp(single_job=False):
         if rank == 0:
             cand_id = fetch_cand(slurm_job_id=slurm_job_id,
                                  node_name=node_name)
-            logger.info(f'{cand_id} : Starting fit')
+            logger.info(f'{cand_id} : Starting fit on {node_name}')
         else:
             cand_id = None
         cand_id = comm.bcast(cand_id, root=0)
