@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --account=m2218
-#SBATCH --qos=debug
+#SBATCH --qos=premium
 #SBATCH --constraint=haswell
 #SBATCH --nodes=6
-#SBATCH --time=00:30:00
+#SBATCH --time=06:00:00
 #SBATCH --job-name=pspl_gp
 #SBATCH --output=pspl_gp.%j.out
 echo "---------------------------"
