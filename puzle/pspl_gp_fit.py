@@ -3,9 +3,11 @@
 pspl_gp_fit.py
 """
 
+import os
 import numpy as np
 import pickle
-import os
+from microlens.jlu.model import PSPL_Phot_Par_GP_Param2_2
+from astropy.table import Table
 
 from puzle.models import CandidateLevel3, CandidateLevel4
 from puzle.cands import load_source
@@ -135,6 +137,238 @@ def load_cand_fitter_data(cand_id):
     fname = f'{out_dir}/{cand_id}_fitter_data.dct'
     cand_fitter_data = pickle.load(open(fname, 'rb'))
     return cand_fitter_data
+
+
+def setup_params(data, model_class):
+    multi_filt_params = ['b_sff', 'mag_src', 'mag_base', 'add_err', 'mult_err',
+                         'gp_log_sigma', 'gp_log_rho', 'gp_log_S0', 'gp_log_omega0', 'gp_rho',
+                         'gp_log_omega04_S0', 'gp_log_omega0', 'add_err', 'mult_err']
+
+    n_phot_sets = 0
+    phot_params = []
+
+    for key in data.keys():
+        if 't_phot' in key:
+            n_phot_sets += 1
+
+            # Photometry parameters
+            for phot_name in model_class.phot_param_names:
+                phot_params.append(phot_name + str(n_phot_sets))
+
+            # Optional photometric parameters -- not all filters
+            for opt_phot_name in model_class.phot_optional_param_names:
+                phot_params.append(opt_phot_name + str(n_phot_sets))
+
+    fitter_param_names = model_class.fitter_param_names + phot_params
+
+    additional_param_names = []
+    for i, param_name in enumerate(model_class.additional_param_names):
+        if param_name in multi_filt_params:
+            # Handle multi-filter parameters.
+            for nn in range(n_phot_sets):
+                additional_param_names += [param_name + str(nn + 1)]
+        else:
+            additional_param_names += [param_name]
+
+    all_param_names = fitter_param_names + additional_param_names
+    return all_param_names
+
+
+def load_mnest_results(outputfiles_basename, all_param_names, remake_fits=False):
+    """Load up the MultiNest results into an astropy table.
+    """
+
+    if remake_fits or not os.path.exists(outputfiles_basename + '.fits'):
+        # Load from text file (and make fits file)
+        tab = Table.read(outputfiles_basename + '.txt', format='ascii')
+
+        # Convert to log(likelihood) since Multinest records -2*logLikelihood
+        tab['col2'] /= -2.0
+
+        # Rename the parameter columns. This is hard-coded to match the
+        # above run() function.
+        tab.rename_column('col1', 'weights')
+        tab.rename_column('col2', 'logLike')
+
+        for ff in range(len(all_param_names)):
+            cc = 3 + ff
+            tab.rename_column('col{0:d}'.format(cc), all_param_names[ff])
+
+        tab.write(outputfiles_basename + '.fits', overwrite=True)
+    else:
+        # Load much faster from fits file.
+        tab = Table.read(outputfiles_basename + '.fits')
+
+    return tab
+
+
+def load_mnest_summary(outputfiles_basename, all_param_names, remake_fits=False):
+    """
+    Load up the MultiNest results into an astropy table.
+    """
+    sum_root = outputfiles_basename + 'summary'
+
+    if remake_fits or not os.path.exists(sum_root + '.fits'):
+        # Load from text file (and make fits file)
+        tab = Table.read(sum_root + '.txt', format='ascii')
+
+        tab.rename_column('col' + str(len(tab.colnames) - 1), 'logZ')
+        tab.rename_column('col' + str(len(tab.colnames)), 'maxlogL')
+
+        for ff in range(len(all_param_names)):
+            mean = 0 * len(all_param_names) + 1 + ff
+            stdev = 1 * len(all_param_names) + 1 + ff
+            maxlike = 2 * len(all_param_names) + 1 + ff
+            maxapost = 3 * len(all_param_names) + 1 + ff
+            tab.rename_column('col{0:d}'.format(mean),
+                              'Mean_' + all_param_names[ff])
+            tab.rename_column('col{0:d}'.format(stdev),
+                              'StDev_' + all_param_names[ff])
+            tab.rename_column('col{0:d}'.format(maxlike),
+                              'MaxLike_' + all_param_names[ff])
+            tab.rename_column('col{0:d}'.format(maxapost),
+                              'MAP_' + all_param_names[ff])
+
+        tab.write(sum_root + '.fits', overwrite=True)
+    else:
+        # Load from fits file, which is much faster.
+        tab = Table.read(sum_root + '.fits')
+
+    return tab
+
+
+def weighted_quantile(values, quantiles, sample_weight=None,
+                      values_sorted=False, old_style=False):
+    """ Very close to numplt.percentile, but supports weights.
+    NOTE: quantiles should be in [0, 1]!
+    :param values: numplt.array with data
+    :param quantiles: array-like with many quantiles needed
+    :param sample_weight: array-like of the same length as `array`
+    :param values_sorted: bool, if True, then will avoid sorting of initial array
+    :param old_style: if True, will correct output to be consistent with numplt.percentile.
+    :return: numplt.array with computed quantiles.
+    """
+    values = np.array(values)
+    quantiles = np.array(quantiles)
+    if sample_weight is None:
+        sample_weight = np.ones(len(values))
+    sample_weight = np.array(sample_weight)
+    assert np.all(quantiles >= 0) and np.all(
+        quantiles <= 1), 'quantiles should be in [0, 1]'
+
+    if not values_sorted:
+        sorter = np.argsort(values)
+        values = values[sorter]
+        sample_weight = sample_weight[sorter]
+
+    weighted_quantiles = np.cumsum(sample_weight) - 0.5 * sample_weight
+    if old_style:
+        # To be convenient with np.percentile
+        weighted_quantiles -= weighted_quantiles[0]
+        weighted_quantiles /= weighted_quantiles[-1]
+    else:
+        weighted_quantiles /= np.sum(sample_weight)
+
+    return np.interp(quantiles, weighted_quantiles, values)
+
+
+def calc_best_fit(tab, smy, params, s_idx=0, def_best='maxl'):
+    """
+    Returns best-fit parameters, where best-fit can be
+    median, maxl, or MAP. Default is maxl.
+
+    If best-fit is median, then also return +/- 1 sigma
+    uncertainties.
+
+    If best-fit is MAP, then also need to indicate which row of
+    summary table to use. Default is s_idx = 0 (global solution).
+    s_idx = 1, 2, ... , n for the n different modes.
+
+    tab = self.load_mnest_results()
+    smy = self.load_mnest_summary()
+    """
+
+    # Use Maximum Likelihood solution
+    if def_best.lower() == 'maxl':
+        best = np.argmax(tab['logLike'])
+        tab_best = tab[best][params]
+
+        return tab_best
+
+    # Use MAP solution
+    if def_best.lower() == 'map':
+        tab_best = {}
+        for n in params:
+            if (n != 'weights' and n != 'logLike'):
+                tab_best[n] = smy['MAP_' + n][s_idx]
+
+        return tab_best
+
+    # Use mean solution
+    if def_best.lower() == 'mean':
+        tab_best = {}
+        tab_errors = {}
+
+        for n in params:
+            if (n != 'weights' and n != 'logLike'):
+                tab_best[n] = np.mean(tab[n])
+                tab_errors[n] = np.std(tab[n])
+
+        return tab_best, tab_errors
+
+    # Use median solution
+    if def_best.lower() == 'median':
+        tab_best = {}
+        med_errors = {}
+        sumweights = np.sum(tab['weights'])
+        weights = tab['weights'] / sumweights
+
+        sig1 = 0.682689
+        sig2 = 0.9545
+        sig3 = 0.9973
+        sig1_lo = (1. - sig1) / 2.
+        sig2_lo = (1. - sig2) / 2.
+        sig3_lo = (1. - sig3) / 2.
+        sig1_hi = 1. - sig1_lo
+        sig2_hi = 1. - sig2_lo
+        sig3_hi = 1. - sig3_lo
+
+        for n in params:
+            # Calculate median, 1 sigma lo, and 1 sigma hi credible interval.
+            tmp = weighted_quantile(tab[n], [0.5, sig1_lo, sig1_hi],
+                                    sample_weight=weights)
+            tab_best[n] = tmp[0]
+
+            # Switch from values to errors.
+            err_lo = tmp[0] - tmp[1]
+            err_hi = tmp[2] - tmp[0]
+
+            med_errors[n] = np.array([err_lo, err_hi])
+
+        return tab_best, med_errors
+
+
+def get_best_fit(cand_id, def_best='maxl'):
+    """
+    Returns best-fit parameters, where best-fit can be
+    median, maxl, or MAP. Default is maxl.
+
+    If best-fit is median, then also return +/- 1 sigma
+    uncertainties.
+    """
+    cand_fitter_data = load_cand_fitter_data(cand_id)
+    data = cand_fitter_data['data']
+    out_dir = cand_fitter_data['out_dir']
+    outputfiles_basename = f'{out_dir}/{cand_id}_'
+
+    all_param_names = setup_params(data, PSPL_Phot_Par_GP_Param2_2)
+    tab = load_mnest_results(outputfiles_basename, all_param_names)
+    smy = load_mnest_summary(outputfiles_basename, all_param_names)
+
+    best_fit = calc_best_fit(tab=tab, smy=smy, params=all_param_names,
+                             s_idx=0, def_best=def_best)
+
+    return dict(best_fit)
 
 
 if __name__ == '__main__':
