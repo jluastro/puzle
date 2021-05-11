@@ -365,10 +365,18 @@ def get_best_fit(cand_id, def_best='maxl'):
     tab = load_mnest_results(outputfiles_basename, all_param_names)
     smy = load_mnest_summary(outputfiles_basename, all_param_names)
 
-    best_fit = calc_best_fit(tab=tab, smy=smy, params=all_param_names,
-                             s_idx=0, def_best=def_best)
+    best_fit_results = calc_best_fit(tab=tab, smy=smy, params=all_param_names,
+                                     s_idx=0, def_best=def_best)
 
-    return dict(best_fit)
+    if def_best == 'median':
+        best_fit = dict(best_fit_results[0])
+        for param, errs in best_fit_results[1].items():
+            best_fit[f'{param}_low_err'] = errs[0]
+            best_fit[f'{param}_high_err'] = errs[1]
+    else:
+        best_fit = dict(best_fit_results)
+
+    return best_fit
 
 
 if __name__ == '__main__':
