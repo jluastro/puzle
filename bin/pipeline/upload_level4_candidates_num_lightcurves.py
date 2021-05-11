@@ -11,7 +11,7 @@ from puzle.models import CandidateLevel4
 from puzle import db
 
 
-def upload_level4_candidateS_num_lightcurves():
+def upload_level4_candidates_num_lightcurves():
     cands = CandidateLevel4.query.order_by(CandidateLevel4.id).all()
     num_cands = len(cands)
 
@@ -36,4 +36,4 @@ def upload_level4_candidateS_num_lightcurves():
 
 
 if __name__ == '__main__':
-    upload_level4_candidateS_num_lightcurves()
+    upload_level4_candidates_num_lightcurves()

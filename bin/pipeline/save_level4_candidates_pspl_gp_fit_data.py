@@ -14,8 +14,7 @@ from puzle import db
 
 def save_level4_candidates_pspl_gp_fit_data():
     cands = db.session.query(CandidateLevel3, CandidateLevel4).\
-        filter(CandidateLevel3.id == CandidateLevel4.id,
-               CandidateLevel3.t0_best + CandidateLevel3.tE_best >= MJD_finish).\
+        filter(CandidateLevel3.id == CandidateLevel4.id).\
         with_entities(CandidateLevel4.id).\
         order_by(CandidateLevel4.id).\
         all()

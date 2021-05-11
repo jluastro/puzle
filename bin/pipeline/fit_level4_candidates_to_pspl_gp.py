@@ -31,7 +31,7 @@ def fetch_cand(slurm_job_id=None, node_name=None):
         filter(CandidateLevel3.id == CandidateLevel4.id,
                CandidateLevel3.t0_best + CandidateLevel3.tE_best < MJD_finish,
                CandidateLevel4.pspl_gp_fit_started == False).\
-        order_by(func.random()).\
+        order_by(CandidateLevel4.num_pspl_gp_fit_lightcurves, func.random()).\
         with_for_update().\
         first()
 
