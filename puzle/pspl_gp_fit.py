@@ -109,7 +109,7 @@ def save_cand_fitter_data_by_id(cand_id):
 def save_all_cand_fitter_data():
     cands = db.session.query(CandidateLevel3, CandidateLevel4).\
         filter(CandidateLevel3.id == CandidateLevel4.id,
-               CandidateLevel3.t0_best + CandidateLevel3.tE_best < MJD_finish).\
+               CandidateLevel3.t0_best + CandidateLevel3.tE_best >= MJD_finish).\
         with_entities(CandidateLevel4.id).\
         order_by(CandidateLevel4.id).\
         all()
