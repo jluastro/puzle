@@ -2,7 +2,7 @@
 #SBATCH --account=m2218
 #SBATCH --qos=regular
 #SBATCH --constraint=haswell
-#SBATCH --nodes=25
+#SBATCH --nodes=6
 #SBATCH --time=48:00:00
 #SBATCH --job-name=pspl_gp
 #SBATCH --output=pspl_gp.%j.out
