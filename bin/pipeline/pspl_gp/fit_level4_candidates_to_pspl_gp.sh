@@ -29,7 +29,7 @@ for node_name in $nodelist; do
     node_name_ext="$node_name.$i"
     fname_log="/global/homes/m/mmedford/puzle/bin/pipeline/pspl_gp/pspl_gp.$SLURM_JOBID.$node_name_ext.log"
     srun -N 1 -n 8 -w $node_name python /global/homes/m/mmedford/puzle/bin/pipeline/fit_level4_candidates_to_pspl_gp.py $SLURM_JOBID $node_name_ext > $fname_log &
-    sleep 5
+    sleep 10
   done
 done;
 wait

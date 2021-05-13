@@ -6,6 +6,7 @@ pspl_gp_fit.py
 import os
 import numpy as np
 import pickle
+from collections import defaultdict
 from microlens.jlu.model import PSPL_Phot_Par_GP_Param2_2
 from astropy.table import Table
 
@@ -347,7 +348,7 @@ def calc_best_fit(tab, smy, params, s_idx=0, def_best='maxl'):
         return tab_best, med_errors
 
 
-def get_best_fit(cand_id, def_best='maxl'):
+def get_best_fit(cand_id, def_best='maxl', recomputeFlag=False):
     """
     Returns best-fit parameters, where best-fit can be
     median, maxl, or MAP. Default is maxl.
@@ -360,22 +361,65 @@ def get_best_fit(cand_id, def_best='maxl'):
     out_dir = cand_fitter_data['out_dir']
     outputfiles_basename = f'{out_dir}/{cand_id}_'
 
-    all_param_names = setup_params(data, PSPL_Phot_Par_GP_Param2_2)
-    tab = load_mnest_results(outputfiles_basename, all_param_names)
-    smy = load_mnest_summary(outputfiles_basename, all_param_names)
-
-    best_fit_results = calc_best_fit(tab=tab, smy=smy, params=all_param_names,
-                                     s_idx=0, def_best=def_best)
-
-    if def_best == 'median':
-        best_fit = dict(best_fit_results[0])
-        for param, errs in best_fit_results[1].items():
-            best_fit[f'{param}_low_err'] = errs[0]
-            best_fit[f'{param}_high_err'] = errs[1]
+    best_fit_fname = f'{out_dir}/{cand_id}.{def_best}_fit.dct'
+    if os.path.exists(best_fit_fname) and not recomputeFlag:
+        best_fit = pickle.load(open(best_fit_fname, 'rb'))
     else:
-        best_fit = dict(best_fit_results)
+        all_param_names = setup_params(data, PSPL_Phot_Par_GP_Param2_2)
+        tab = load_mnest_results(outputfiles_basename, all_param_names)
+        smy = load_mnest_summary(outputfiles_basename, all_param_names)
+
+        best_fit_results = calc_best_fit(tab=tab, smy=smy, params=all_param_names,
+                                         s_idx=0, def_best=def_best)
+
+        if def_best == 'median':
+            best_fit = dict(best_fit_results[0])
+            for param, errs in best_fit_results[1].items():
+                best_fit[f'{param}_low_err'] = errs[0]
+                best_fit[f'{param}_high_err'] = errs[1]
+        else:
+            best_fit = dict(best_fit_results)
+        pickle.dump(best_fit, open(best_fit_fname, 'wb'))
 
     return best_fit
+
+
+def fetch_pspl_gp_results(def_best='median', errFlag=True, recomputeFlag=False):
+    if errFlag and def_best!='median':
+        print('def_best must be median if errFlag=True')
+        return
+
+    cands = CandidateLevel4.query.filter(CandidateLevel4.pspl_gp_fit_finished==True).\
+        with_entities(CandidateLevel4.id).order_by(CandidateLevel4.id).all()
+    cand_ids = np.array([c[0] for c in cands])
+
+    keys = ['t0',
+            'u0_amp',
+            'tE',
+            'b_sff1',
+            'piE_E',
+            'piE_N',
+            'mag_base1',
+            'gp_log_sigma1',
+            'gp_log_omega04_S01',
+            'gp_log_omega01',
+            'gp_log_rho1',
+            'gp_log_S01']
+    results = defaultdict(list)
+    for i, cand_id in enumerate(cand_ids):
+        if i % 100 == 0:
+            print('Fetching best fit (%i / %i)' % (i, len(cand_ids)))
+        best_fit = get_best_fit(cand_id, def_best=def_best,
+                                recomputeFlag=recomputeFlag)
+        for key in keys:
+            results[key].append(best_fit[key])
+        if errFlag:
+            err = np.average([best_fit[key] - best_fit[f'{key}_low_err'],
+                              best_fit[f'{key}_high_err'] - best_fit[key]])
+            results[f'{key}_err'].append(err)
+    results['piE'] = np.hypot(results['piE_E'], results['piE_N'])
+
+    return results
 
 
 if __name__ == '__main__':
