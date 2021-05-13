@@ -414,8 +414,8 @@ def fetch_pspl_gp_results(def_best='median', errFlag=True, recomputeFlag=False):
         for key in keys:
             results[key].append(best_fit[key])
             if errFlag:
-                err = np.average([best_fit[key] - best_fit[f'{key}_low_err'],
-                                  best_fit[f'{key}_high_err'] - best_fit[key]])
+                err = np.average([best_fit[f'{key}_low_err'],
+                                  best_fit[f'{key}_high_err']])
                 results[f'{key}_err'].append(err)
     for key in results.keys():
         results[key] = np.array(results[key])
