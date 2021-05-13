@@ -417,7 +417,15 @@ def fetch_pspl_gp_results(def_best='median', errFlag=True, recomputeFlag=False):
                 err = np.average([best_fit[key] - best_fit[f'{key}_low_err'],
                                   best_fit[f'{key}_high_err'] - best_fit[key]])
                 results[f'{key}_err'].append(err)
+    for key in results.keys():
+        results[key] = np.array(results[key])
     results['piE'] = np.hypot(results['piE_E'], results['piE_N'])
+    if errFlag:
+        piE_E_squared_err = 2 * (results['piE_E_err'] / results['piE_E']) * results['piE_E']**2.
+        piE_N_squared_err = 2 * (results['piE_N_err'] / results['piE_N']) * results['piE_N']**2.
+        piE_squared_frac_err = piE_E_squared_err + piE_N_squared_err
+        piE_err = 0.5 * piE_squared_frac_err * results['piE']
+        results['piE_err'] = piE_err
 
     return results
 
