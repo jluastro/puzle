@@ -15,7 +15,7 @@ from puzle.cands import return_cands_eta_resdiual_arrs, \
     return_sigma_peaks
 from puzle.models import CandidateLevel2, CandidateLevel3
 from puzle.utils import return_figures_dir
-from puzle.stats import calculate_chi_squared_inside_outside, average_xy_on_round_x
+from puzle.stats import calculate_chi_squared_inside_outside, average_xy_on_round_x, return_CDF
 from puzle.fit import return_flux_model
 from puzle import db
 
@@ -326,12 +326,6 @@ def _plot_chi_samples_ulens(log_reduced_chi_squared_outside_ulens,
     ax[0].set_ylim(-2, 3)
     fig.tight_layout()
     fig.subplots_adjust(top=.95)
-
-
-def return_CDF(arr):
-    x = np.sort(arr)
-    y = np.arange(len(arr)) / (len(arr) - 1)
-    return x, y
 
 
 def plot_ulens_opt_chi2_ulens_cut():

@@ -229,6 +229,12 @@ def calculate_J(mag, magerr):
     return J
 
 
+def return_CDF(arr):
+    x = np.sort(arr)
+    y = np.arange(len(arr)) / (len(arr) - 1)
+    return x, y
+
+
 def calculate_lightcurve_stats(lightcurves):
     eta_arr = []
     J_arr = []

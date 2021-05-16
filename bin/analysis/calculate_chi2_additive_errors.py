@@ -9,7 +9,7 @@ from zort.photometry import fluxes_to_magnitudes, magnitudes_to_fluxes
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle.ulens import return_ulens_data, return_ulens_metadata
-from puzle.stats import calculate_chi2_model_mags
+from puzle.stats import calculate_chi2_model_mags, return_CDF
 from puzle.utils import return_figures_dir
 
 
@@ -120,12 +120,6 @@ def generate_samples(N_samples=20, brightFlag=False, midFlag=False, faintFlag=Fa
         fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
         print('-- %s saved' % fname)
         plt.close(fig)
-
-
-def return_CDF(arr):
-    x = np.sort(arr)
-    y = np.arange(len(arr)) / (len(arr) - 1)
-    return x, y
 
 
 def return_ideal_reduced_chi2(size=50):

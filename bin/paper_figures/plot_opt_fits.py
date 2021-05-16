@@ -10,12 +10,7 @@ from puzle.cands import apply_level3_cuts_to_query
 from puzle.ulens import return_ulens_data, return_ulens_metadata, return_ulens_stats
 from puzle.models import CandidateLevel3
 from puzle.utils import return_figures_dir
-
-
-def return_CDF(arr):
-    x = np.sort(arr)
-    y = np.arange(len(arr)) / (len(arr) - 1)
-    return x, y
+from puzle.stats import return_CDF
 
 
 def plot_opt_fits():
