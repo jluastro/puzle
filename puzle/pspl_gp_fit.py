@@ -377,22 +377,23 @@ def get_best_fit(cand_id, def_best='maxl', recomputeFlag=False):
     best_fit_fname = f'{out_dir}/{cand_id}.{def_best}_fit.dct'
     if os.path.exists(best_fit_fname) and not recomputeFlag:
         best_fit = pickle.load(open(best_fit_fname, 'rb'))
+        return best_fit
+
+    all_param_names = return_all_param_names(data, PSPL_Phot_Par_GP_Param2_2)
+    tab = load_mnest_results(outputfiles_basename, all_param_names)
+    smy = load_mnest_summary(outputfiles_basename, all_param_names)
+
+    best_fit_results = calc_best_fit(tab=tab, smy=smy, all_param_names=all_param_names,
+                                     s_idx=0, def_best=def_best)
+
+    if def_best == 'median':
+        best_fit = dict(best_fit_results[0])
+        for param, errs in best_fit_results[1].items():
+            best_fit[f'{param}_low_err'] = errs[0]
+            best_fit[f'{param}_high_err'] = errs[1]
     else:
-        all_param_names = return_all_param_names(data, PSPL_Phot_Par_GP_Param2_2)
-        tab = load_mnest_results(outputfiles_basename, all_param_names)
-        smy = load_mnest_summary(outputfiles_basename, all_param_names)
-
-        best_fit_results = calc_best_fit(tab=tab, smy=smy, all_param_names=all_param_names,
-                                         s_idx=0, def_best=def_best)
-
-        if def_best == 'median':
-            best_fit = dict(best_fit_results[0])
-            for param, errs in best_fit_results[1].items():
-                best_fit[f'{param}_low_err'] = errs[0]
-                best_fit[f'{param}_high_err'] = errs[1]
-        else:
-            best_fit = dict(best_fit_results)
-        pickle.dump(best_fit, open(best_fit_fname, 'wb'))
+        best_fit = dict(best_fit_results)
+    pickle.dump(best_fit, open(best_fit_fname, 'wb'))
 
     return best_fit
 
@@ -631,9 +632,9 @@ def calc_summary_statistics(cand_id, recomputeFlag=False):
     outputfiles_basename = f'{out_dir}/{cand_id}_'
 
     # look for cached stats
-    stats_fname = f'{outputfiles_basename}stats.fits'
+    stats_fname = f'{outputfiles_basename}stats.dct'
     if os.path.exists(stats_fname) and not recomputeFlag:
-        stats = Table.read(stats_fname, format='fits')
+        stats = pickle.load(open(stats_fname, 'rb'))
         return stats
 
     # Get the number of modes.
@@ -751,7 +752,8 @@ def calc_summary_statistics(cand_id, recomputeFlag=False):
     zdx = zdx[non_nan[::-1]]
 
     stats = stats[zdx]
-    stats.write(stats_fname, format='fits', overwrite=True)
+    stats_dct = {c: stats[c].data for c in stats.colnames}
+    pickle.dump(stats_dct, open(stats_fname, 'wb'))
 
     return stats
 
@@ -764,6 +766,7 @@ def fetch_pspl_gp_results(def_best='median', recomputeFlag=False):
 
     if def_best not in sol_prefix:
         print(f'def_best ({def_best}) must be in [%s]' % ', '.join(sol_prefix.keys()))
+        return
 
     def_best_prefix = sol_prefix[def_best]
 
@@ -773,22 +776,26 @@ def fetch_pspl_gp_results(def_best='median', recomputeFlag=False):
 
     results = defaultdict(list)
     for i, cand_id in enumerate(cand_ids):
-        if i % 10 == 0:
+        results['cand_id'].append(cand_id)
+        if i % 100 == 0:
             print('Fetching best fit (%i / %i)' % (i, len(cand_ids)))
-        stats = calc_summary_statistics(cand_id, recomputeFlag=recomputeFlag)[0]
-        keys = [k for k in stats.colnames if def_best_prefix in k]
+        stats = calc_summary_statistics(cand_id, recomputeFlag=recomputeFlag)
+        keys = [k for k in stats.keys() if def_best_prefix in k]
         for key in keys:
             results_key = key.replace(def_best_prefix, '')
-            value = stats[key]
+            value = stats[key][0]
             results[results_key].append(value)
 
             key_lo = key.replace(def_best_prefix, 'lo68_')
-            if key_lo not in stats.colnames:
+            if key_lo not in stats.keys():
                 continue
+            value_lo = stats[key_lo][0]
             key_hi = key.replace(def_best_prefix, 'hi68_')
+            value_hi = stats[key_hi][0]
             results_key_err = f'{results_key}_err'
-            results[results_key_err] = np.average([value - stats[key_lo],
-                                                   stats[key_hi] - value])
+            err = np.average([value - value_lo,
+                              value_hi - value])
+            results[results_key_err].append(err)
 
     for key in results.keys():
         results[key] = np.array(results[key])
@@ -796,6 +803,52 @@ def fetch_pspl_gp_results(def_best='median', recomputeFlag=False):
     a = results['piE_E_err'] * results['piE_E'] / results['piE']
     b = results['piE_N_err'] * results['piE_N'] / results['piE']
     results['piE_err'] = np.sqrt(a**2. + b**2.)
+
+    return dict(results)
+
+
+def fetch_pspl_gp_results_by_best_fit(def_best='median', errFlag=True, recomputeFlag=False):
+    if errFlag and def_best!='median':
+        print('def_best must be median if errFlag=True')
+        return
+
+    cands = CandidateLevel4.query.filter(CandidateLevel4.pspl_gp_fit_finished==True).\
+        with_entities(CandidateLevel4.id).order_by(CandidateLevel4.id).all()
+    cand_ids = np.array([c[0] for c in cands])
+
+    keys = ['t0',
+            'u0_amp',
+            'tE',
+            'b_sff1',
+            'piE_E',
+            'piE_N',
+            'mag_base1',
+            'gp_log_sigma1',
+            'gp_log_omega04_S01',
+            'gp_log_omega01',
+            'gp_log_rho1',
+            'gp_log_S01']
+    results = defaultdict(list)
+    for i, cand_id in enumerate(cand_ids):
+        if i % 100 == 0:
+            print('Fetching best fit (%i / %i)' % (i, len(cand_ids)))
+        best_fit = get_best_fit(cand_id, def_best=def_best,
+                                recomputeFlag=recomputeFlag)
+        for key in keys:
+            results[key].append(best_fit[key])
+            if errFlag:
+                err = np.average([best_fit[f'{key}_low_err'],
+                                  best_fit[f'{key}_high_err']])
+                results[f'{key}_err'].append(err)
+    for key in results.keys():
+        results[key] = np.array(results[key])
+    results['piE'] = np.hypot(results['piE_E'], results['piE_N'])
+    if errFlag:
+        piE_E_squared_err = 2 * (results['piE_E_err'] / results['piE_E']) * results['piE_E']**2.
+        piE_N_squared_err = 2 * (results['piE_N_err'] / results['piE_N']) * results['piE_N']**2.
+        piE_squared_frac_err = piE_E_squared_err + piE_N_squared_err
+        piE_err = 0.5 * piE_squared_frac_err * results['piE']
+        results['piE_err'] = piE_err
 
     return results
 
