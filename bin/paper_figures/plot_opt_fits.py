@@ -93,6 +93,7 @@ def plot_opt_fits():
     ax[0].hist(reduced_chi2_model_ulens, bins=bins, histtype='step', color='g', density=density, label='simulated ulens')
     ax[0].axvline(chi2_model_thresh, color='k', alpha=.5)
     ax[0].legend(framealpha=1)
+    ax[0].set_xlabel(r'Reduced $\chi^2$')
 
     bins = np.linspace(0, 10, 50)
     ax[1].set_title(r'Reduced $\chi^2$: Flat')
@@ -100,6 +101,7 @@ def plot_opt_fits():
     ax[1].hist(reduced_chi2_flat_cands_cut, bins=bins, histtype='step', color='b', density=density)
     ax[1].hist(reduced_chi2_flat_ulens, bins=bins, histtype='step', color='g', density=density)
     ax[1].axvline(chi2_flat_thresh, color='k', alpha=.5)
+    ax[1].set_xlabel(r'Reduced $\chi^2$')
 
     bins = np.logspace(-3, np.log10(30), 50)
     ax[2].set_title(r'Einstein Parallax: $\pi_E$')
@@ -108,6 +110,7 @@ def plot_opt_fits():
     ax[2].hist(piE_ulens, bins=bins, histtype='step', color='g', density=density)
     ax[2].axvline(piE_thresh, color='k', alpha=.5)
     ax[2].set_xscale('log')
+    ax[2].set_xlabel(r'$\pi_E$')
 
     bins = np.logspace(1, 3, 50)
     ax[3].set_title(r'Einstein Crossing Time: $t_E$')
@@ -116,6 +119,7 @@ def plot_opt_fits():
     ax[3].hist(tE_ulens, bins=bins, histtype='step', color='g', density=density)
     ax[3].axvline(tE_thresh, color='m', alpha=.5, linestyle='--')
     ax[3].set_xscale('log')
+    ax[3].set_xlabel(r'$t_E$')
 
     fig.tight_layout()
 
