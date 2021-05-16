@@ -758,7 +758,7 @@ def calc_summary_statistics(cand_id, recomputeFlag=False):
     return stats
 
 
-def fetch_pspl_gp_results(def_best='median', recomputeFlag=False):
+def fetch_pspl_gp_results(def_best='map', recomputeFlag=False):
     sol_prefix = {'maxl': 'MaxLike_',
                   'mean': 'Mean_',
                   'map': 'MAP_',
@@ -777,6 +777,9 @@ def fetch_pspl_gp_results(def_best='median', recomputeFlag=False):
     results = defaultdict(list)
     for i, cand_id in enumerate(cand_ids):
         results['cand_id'].append(cand_id)
+        cand_fitter_data = load_cand_fitter_data(cand_id)
+        num_lightcurves = cand_fitter_data['fitter_params']['num_lightcurves']
+        results['num_lightcurves'].append(num_lightcurves)
         if i % 100 == 0:
             print('Fetching best fit (%i / %i)' % (i, len(cand_ids)))
         stats = calc_summary_statistics(cand_id, recomputeFlag=recomputeFlag)
