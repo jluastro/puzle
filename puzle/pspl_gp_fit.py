@@ -758,7 +758,7 @@ def calc_summary_statistics(cand_id, recomputeFlag=False):
     return stats
 
 
-def fetch_pspl_gp_results(def_best='map', recomputeFlag=False):
+def calc_summary_stats_to_best_fit(stats, def_best='map'):
     sol_prefix = {'maxl': 'MaxLike_',
                   'mean': 'Mean_',
                   'map': 'MAP_',
@@ -769,6 +769,42 @@ def fetch_pspl_gp_results(def_best='map', recomputeFlag=False):
         return
 
     def_best_prefix = sol_prefix[def_best]
+
+    best_fit = {}
+    keys = [k for k in stats.keys() if def_best_prefix in k]
+    for key in keys:
+        results_key = key.replace(def_best_prefix, '')
+        value = stats[key][0]
+        best_fit[results_key] = value
+
+        key_lo = key.replace(def_best_prefix, 'lo68_')
+        if key_lo not in stats.keys():
+            continue
+        value_lo = stats[key_lo][0]
+        key_hi = key.replace(def_best_prefix, 'hi68_')
+        value_hi = stats[key_hi][0]
+        results_key_err = f'{results_key}_err'
+        err = np.average([value - value_lo,
+                          value_hi - value])
+        best_fit[results_key_err] = err
+
+    best_fit['piE'] = np.hypot(best_fit['piE_E'], best_fit['piE_N'])
+    a = best_fit['piE_E_err'] * best_fit['piE_E'] / best_fit['piE']
+    b = best_fit['piE_N_err'] * best_fit['piE_N'] / best_fit['piE']
+    best_fit['piE_err'] = np.sqrt(a**2. + b**2.)
+
+    return best_fit
+
+
+def fetch_pspl_gp_results(def_best='map', recomputeFlag=False):
+    sol_prefix = {'maxl': 'MaxLike_',
+                  'mean': 'Mean_',
+                  'map': 'MAP_',
+                  'median': 'Med_'}
+
+    if def_best not in sol_prefix:
+        print(f'def_best ({def_best}) must be in [%s]' % ', '.join(sol_prefix.keys()))
+        return
 
     cands = CandidateLevel4.query.filter(CandidateLevel4.pspl_gp_fit_finished==True).\
         with_entities(CandidateLevel4.id).order_by(CandidateLevel4.id).all()
@@ -783,29 +819,12 @@ def fetch_pspl_gp_results(def_best='map', recomputeFlag=False):
         if i % 100 == 0:
             print('Fetching best fit (%i / %i)' % (i, len(cand_ids)))
         stats = calc_summary_statistics(cand_id, recomputeFlag=recomputeFlag)
-        keys = [k for k in stats.keys() if def_best_prefix in k]
-        for key in keys:
-            results_key = key.replace(def_best_prefix, '')
-            value = stats[key][0]
-            results[results_key].append(value)
-
-            key_lo = key.replace(def_best_prefix, 'lo68_')
-            if key_lo not in stats.keys():
-                continue
-            value_lo = stats[key_lo][0]
-            key_hi = key.replace(def_best_prefix, 'hi68_')
-            value_hi = stats[key_hi][0]
-            results_key_err = f'{results_key}_err'
-            err = np.average([value - value_lo,
-                              value_hi - value])
-            results[results_key_err].append(err)
+        best_fit = calc_summary_stats_to_best_fit(stats, def_best=def_best)
+        for key, val in best_fit.items():
+            results[key].append(val)
 
     for key in results.keys():
         results[key] = np.array(results[key])
-    results['piE'] = np.hypot(results['piE_E'], results['piE_N'])
-    a = results['piE_E_err'] * results['piE_E'] / results['piE']
-    b = results['piE_N_err'] * results['piE_N'] / results['piE']
-    results['piE_err'] = np.sqrt(a**2. + b**2.)
 
     return dict(results)
 

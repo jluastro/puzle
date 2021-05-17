@@ -880,6 +880,8 @@ class CandidateLevel4(db.Model):
     piE_E_err_pspl_gp = db.Column(db.Float)
     piE_N_pspl_gp = db.Column(db.Float)
     piE_N_err_pspl_gp = db.Column(db.Float)
+    piE_pspl_gp = db.Column(db.Float)
+    piE_err_pspl_gp = db.Column(db.Float)
     b_sff_pspl_gp = db.Column(db.Float)
     b_sff_err_pspl_gp = db.Column(db.Float)
     mag_base_pspl_gp = db.Column(db.Float)
@@ -928,7 +930,8 @@ class CandidateLevel4(db.Model):
                  fit_type_pspl_gp=None, t0_pspl_gp=None, t0_err_pspl_gp=None,
                  u0_amp_pspl_gp=None, u0_amp_err_pspl_gp=None, tE_pspl_gp=None,
                  tE_err_pspl_gp=None, piE_E_pspl_gp=None, piE_E_err_pspl_gp=None,
-                 piE_N_pspl_gp=None, piE_N_err_pspl_gp=None, b_sff_pspl_gp=None,
+                 piE_N_pspl_gp=None, piE_N_err_pspl_gp=None, piE_pspl_gp=None,
+                 piE_err_pspl_gp=None, b_sff_pspl_gp=None,
                  b_sff_err_pspl_gp=None, mag_base_pspl_gp=None, mag_base_err_pspl_gp=None,
                  gp_log_sigma_pspl_gp=None, gp_log_sigma_err_pspl_gp=None, gp_rho_pspl_gp=None,
                  gp_rho_err_pspl_gp=None, gp_log_omega04_S0_pspl_gp=None, gp_log_omega04_S0_err_pspl_gp=None,
@@ -990,6 +993,8 @@ class CandidateLevel4(db.Model):
         self.piE_E_err_pspl_gp = piE_E_err_pspl_gp
         self.piE_N_pspl_gp = piE_N_pspl_gp
         self.piE_N_err_pspl_gp = piE_N_err_pspl_gp
+        self.piE_pspl_gp = piE_pspl_gp
+        self.piE_err_pspl_gp = piE_err_pspl_gp
         self.b_sff_pspl_gp = b_sff_pspl_gp
         self.b_sff_err_pspl_gp = b_sff_err_pspl_gp
         self.mag_base_pspl_gp = mag_base_pspl_gp
