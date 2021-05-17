@@ -143,3 +143,10 @@ class FilterSearchForm(FlaskForm):
 
 class EmptyForm(FlaskForm):
     submit = SubmitField('Submit')
+
+
+class CategorizeForm(FlaskForm):
+    category_return = RadioField(choices=[('random', 'Randomly select new candidate after categorization'),
+                                          ('same', 'Return to same candidate after categorization')],
+                                 default='random')
+    submit = SubmitField('Submit')

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
 
 {% block styles %}
     {{super()}}
@@ -19,12 +20,52 @@
         <col style="width:45%">
        	<col style="width:55%">
         <table width="100%">
+            <tr colspan="10">
+                <div class="row">
+                    <div class="col-md-4">
+                        {{ wtf.quick_form(form) }}
+                    </div>
+                </div>
+            </tr>
+            <tr class="blank_row"></tr>
             <tr>
                 <h1>Level 4 Candidate {{ cand.id }}</h1>
                 <h4>Glon Glat &nbsp; &nbsp;{{ "%.5f" % cand.glon }} , {{ "%.5f" % cand.glat }}</h4>
                 <h4>RA Dec &nbsp; &nbsp; &nbsp; {{ "%.5f" % cand.ra }} , {{ "%.5f" % cand.dec }}</h4>
+                {% if cand.category is string %}
+                    <h4>Category &nbsp; &nbsp; &nbsp; {{ cand.category }}</h4>
+                {%  else %}
+                    <h4>Category &nbsp; &nbsp; &nbsp; None</h4>
+                {% endif %}
                 <p><a href="{{ url_for('candidate_level3', candid=cand.id) }}">Level 3 Candidate Page</a></p>
             </tr>
+            <tr>
+                <td colspan="2">
+                    <form action="{{ url_for('categorize_candidate', candid=cand.id, category="microlensing_clear", category_return=category_return) }}" method="post">
+                        {{ form.hidden_tag() }}
+                        {{ form.submit(value='Clear Microlensing') }}
+                    </form>
+                </td>
+                <td colspan="2">
+                    <form action="{{ url_for('categorize_candidate', candid=cand.id, category="microlensing_possible", category_return=category_return) }}" method="post">
+                        {{ form.hidden_tag() }}
+                        {{ form.submit(value='Possible Microlensing') }}
+                    </form>
+                </td>
+                <td colspan="2">
+                    <form action="{{ url_for('categorize_candidate', candid=cand.id, category="variable", category_return=category_return) }}" method="post">
+                        {{ form.hidden_tag() }}
+                        {{ form.submit(value='Variable') }}
+                    </form>
+                </td>
+                <td colspan="2">
+                    <form action="{{ url_for('categorize_candidate', candid=cand.id, category="artifact", category_return=category_return) }}" method="post">
+                        {{ form.hidden_tag() }}
+                        {{ form.submit(value='Artifcat') }}
+                    </form>
+                </td>
+            </tr>
+            <tr class="blank_row"></tr>
             <tr>
                 <th>n<sub>objs,pass</sub></th>
                 <th>n<sub>objs,tot</sub></th>
@@ -133,7 +174,7 @@
                          <form action="{{ url_for('unfollow_candidate', candid=cand.id, whichpage="cand") }}" method="post">
                              {{ form.hidden_tag() }}
                              {{ form.submit(value='Unfollow') }}
-                     </form>
+                        </form>
                      {% else %}
                          <form action="{{ url_for('follow_candidate', candid=cand.id, whichpage="cand") }}" method="post">
                              {{ form.hidden_tag() }}

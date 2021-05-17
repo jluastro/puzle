@@ -2,6 +2,7 @@ from flask import render_template, flash, redirect, url_for, request, session
 from flask_login import current_user, login_user, logout_user, login_required
 from werkzeug.urls import url_parse
 from datetime import datetime
+from sqlalchemy.sql.expression import func
 
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
@@ -9,7 +10,7 @@ from puzle import app, db
 from puzle.forms import LoginForm, RegistrationForm, \
     EditProfileForm, ResetPasswordRequestForm, ResetPasswordForm, \
     EditCommentForm, RadialSearchForm, EmptyForm, \
-    FilterSearchForm
+    FilterSearchForm, CategorizeForm
 from puzle.models import User, Source, \
     CandidateLevel2, CandidateLevel3, CandidateLevel4
 from puzle.email import send_password_reset_email
@@ -151,27 +152,25 @@ def source(sourceid):
                            form=form, title=title)
 
 
-@app.route('/candidate_level4/<candid>')
+@app.route('/candidate_level4/<candid>', methods=['GET', 'POST'])
 @login_required
 def candidate_level4(candid):
     title = 'Candidate %s' % candid
-    form = EmptyForm()
+    form = CategorizeForm()
+    if form.validate_on_submit():
+        session['category_return'] = form.category_return.data
+    else:
+        if 'category_return' in session:
+            form.category_return.data = session['category_return']
+        else:
+            form.category_return.data = 'random'
+    category_return = form.category_return.data
     cand2 = CandidateLevel2.query.filter_by(id=candid).first()
     cand4 = CandidateLevel4.query.filter_by(id=candid).first()
     pspl_gp_fit_dct = cand4.pspl_gp_fit_dct
-    sources = []
-    for source_id in cand4.unique_source_id_arr:
-        source = Source.query.filter(Source.id == source_id).first_or_404()
-        if source.id in pspl_gp_fit_dct:
-            model_params = pspl_gp_fit_dct[source_id]
-            model = PSPL_Phot_Par_Param1
-        else:
-            model_params = None
-            model = None
-        source.load_lightcurve_plot(model_params=model_params, model=model)
-        sources.append(source)
+    sources = load_candidate_lightcurves(cand4, return_sources=True)
     return render_template('candidate_level4.html', cand=cand4, cand2=cand2,
-                           pspl_gp_fit_dct=pspl_gp_fit_dct,
+                           pspl_gp_fit_dct=pspl_gp_fit_dct, category_return=category_return,
                            sources=sources, form=form, title=title, zip=zip)
 
 
@@ -388,6 +387,23 @@ def sources():
                            title='PUZLE sources')
 
 
+def load_candidate_lightcurves(cand, return_sources=False):
+    sources = []
+    pspl_gp_fit_dct = cand.pspl_gp_fit_dct
+    for source_id in cand.unique_source_id_arr:
+        source = Source.query.filter(Source.id == source_id).first_or_404()
+        if source.id in pspl_gp_fit_dct:
+            model_params = pspl_gp_fit_dct[source_id]
+            model = PSPL_Phot_Par_Param1
+        else:
+            model_params = None
+            model = None
+        source.load_lightcurve_plot(model_params=model_params, model=model)
+        sources.append(source)
+    if return_sources:
+        return sources
+
+
 @app.route('/candidates', methods=['GET', 'POST'])
 @login_required
 def candidates():
@@ -406,16 +422,7 @@ def candidates():
     flash('%i Candidates Fit in Database' % count, 'info')
 
     for cand in cands.items:
-        pspl_gp_fit_dct = cand.pspl_gp_fit_dct
-        for source_id in cand.unique_source_id_arr:
-            source = Source.query.filter(Source.id == source_id).first_or_404()
-            if source.id in pspl_gp_fit_dct:
-                model_params = pspl_gp_fit_dct[source_id]
-                model = PSPL_Phot_Par_Param1
-            else:
-                model_params = None
-                model = None
-            source.load_lightcurve_plot(model_params=model_params, model=model)
+        load_candidate_lightcurves(cand, return_sources=False)
 
     return render_template('candidates.html', cands=cands,
                            next_url=next_url, prev_url=prev_url,
@@ -489,16 +496,7 @@ def radial_search():
         paginate = True
 
         for cand in cands.items:
-            pspl_gp_fit_dct = cand.pspl_gp_fit_dct
-            for source_id in cand.unique_source_id_arr:
-                source = Source.query.filter(Source.id == source_id).first_or_404()
-                if source.id in pspl_gp_fit_dct:
-                    model_params = pspl_gp_fit_dct[source_id]
-                    model = PSPL_Phot_Par_Param1
-                else:
-                    model_params = None
-                    model = None
-                source.load_lightcurve_plot(model_params=model_params, model=model)
+            load_candidate_lightcurves(cand, return_sources=False)
     else:
         cands = None
         next_url = None
@@ -601,16 +599,7 @@ def filter_search():
         paginate = True
 
         for cand in cands.items:
-            pspl_gp_fit_dct = cand.pspl_gp_fit_dct
-            for source_id in cand.unique_source_id_arr:
-                source = Source.query.filter(Source.id == source_id).first_or_404()
-                if source.id in pspl_gp_fit_dct:
-                    model_params = pspl_gp_fit_dct[source_id]
-                    model = PSPL_Phot_Par_Param1
-                else:
-                    model_params = None
-                    model = None
-                source.load_lightcurve_plot(model_params=model_params, model=model)
+            load_candidate_lightcurves(cand, return_sources=False)
     else:
         cands = None
         next_url = None
@@ -635,3 +624,29 @@ def reset_filter_search():
             except KeyError:
                 pass
     return redirect(url_for('filter_search'))
+
+
+@app.route('/categorize_candidates', methods=['GET'])
+@login_required
+def categorize_candidates():
+    cand4 = CandidateLevel4.query.filter(CandidateLevel4.category==None).\
+        order_by(func.random()).first()
+    if cand4 is None:
+        return redirect(url_for('home'))
+    return redirect(url_for('candidate_level4', candid=cand4.id))
+
+
+@app.route('/categorize_candidate/<candid>/<category>/<category_return>', methods=['POST'])
+@login_required
+def categorize_candidate(candid, category, category_return):
+    cand4_old = CandidateLevel4.query.filter(CandidateLevel4.id==candid).first()
+    cand4_old.category = category
+    db.session.commit()
+    if category_return == 'same':
+        cand4_new = cand4_old
+    elif category_return == 'random':
+        cand4_new = CandidateLevel4.query.filter(CandidateLevel4.category==None).\
+            order_by(func.random()).first()
+        if cand4_new is None:
+            return redirect(url_for('home'))
+    return redirect(url_for('candidate_level4', candid=cand4_new.id))

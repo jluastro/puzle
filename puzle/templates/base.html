@@ -22,6 +22,7 @@
                     <li><a href="{{ url_for('reset_radial_search') }}">Radial Search</a></li>
                     <li><a href="{{ url_for('reset_filter_search') }}">Filter Search</a></li>
                     <li><a href="{{ url_for('candidates') }}">Browse Candidates</a></li>
+                    <li><a href="{{ url_for('categorize_candidates') }}">Categorize Candidates</a></li>
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
                     {% if current_user.is_anonymous %}
