@@ -443,7 +443,6 @@ def radial_search():
             session['glon'] = glon
             session['glat'] = glat
         session['order_by'] = form_radial.order_by.data
-        session['order_by_num_objs'] = form_radial.order_by_num_objs.data
 
     else:
         for key in ['ra', 'dec', 'glon', 'glat', 'radius']:
@@ -456,18 +455,15 @@ def radial_search():
         ra = session['ra']
         dec = session['dec']
         radius = session['radius']
-        query = CandidateLevel3.query.filter(CandidateLevel3.cone_search(ra, dec, radius))
-        if session['order_by'] == 'eta_residual_best':
-            order_by_cond = CandidateLevel3.eta_residual_best.desc()
-        elif session['order_by'] == 'eta_best':
-            order_by_cond = CandidateLevel3.eta_best.asc()
-        elif session['order_by'] == 'chi_squared_ulens_best':
-            order_by_cond = CandidateLevel3.chi_squared_ulens_best.desc()
+        query = CandidateLevel4.query.filter(CandidateLevel4.cone_search(ra, dec, radius))
+        if session['order_by'] == 'chi2':
+            order_by_cond = CandidateLevel4.chi2_pspl_gp.asc()
+        elif session['order_by'] == 'rchi2':
+            order_by_cond = CandidateLevel4.rchi2_pspl_gp.asc()
+        elif session['order_by'] == 'logL':
+            order_by_cond = CandidateLevel4.logL_pspl_gp.desc()
 
-        if session['order_by_num_objs']:
-            query = query.order_by(CandidateLevel3.num_objs_pass.desc(), order_by_cond)
-        else:
-            query = query.order_by(order_by_cond)
+        query = query.order_by(order_by_cond)
 
         page = request.args.get('page', 1, type=int)
         cands = query.paginate(page, app.config['ITEMS_PER_PAGE'], False)

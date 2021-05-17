@@ -8,7 +8,7 @@
         <table width="100%">
         <tr>Ordered by increasing &#916;&#967;<sub>red</sub><super>2</super></tr>
         {% for cand in cands.items %}
-            <tr><td colspan="11"><hr></td></tr>
+            <tr><td colspan="13"><hr></td></tr>
             <tr id="{{ "%s" % cand.id }}">
                 <th>Cand ID</th>
                 <th>Glon</th>
@@ -20,7 +20,9 @@
                 <th>&pi;<sub>E</sub></th>
                 <th>mag<sub>base,1</sub></th>
                 <th>b<sub>sff,1</sub></th>
+                <th>&#916;&#967;<super>2</super></th>
                 <th>&#916;&#967;<sub>red</sub><super>2</super></th>
+                <th>Log L</th>
             </tr>
             <tr>
                 <td><a href="{{ url_for('candidate_level4', candid=cand.id) }}">{{ "%s" % cand.id}}</a></td>
@@ -53,8 +55,18 @@
                 {%  else %}
                     <td>{{ "None" }}</td>
                 {% endif %}
+                {% if cand.chi2_pspl_gp is float %}
+                    <td>{{ "%.2f" % cand.chi2_pspl_gp }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
                 {% if cand.rchi2_pspl_gp is float %}
                     <td>{{ "%.2f" % cand.rchi2_pspl_gp }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+                {% if cand.logL_pspl_gp is float %}
+                    <td>{{ "%.2f" % cand.logL_pspl_gp }}</td>
                 {%  else %}
                     <td>{{ "None" }}</td>
                 {% endif %}
@@ -75,7 +87,7 @@
                 </td>
             </tr>
             <tr>
-                <td colspan="11">
+                <td colspan="13">
                 {% for source_id in cand.unique_source_id_arr %}
                 <img width="200" src="{{ url_for('static', filename='source/') }}{{ source_id.split('_')[0][:3] }}/{{ source_id.split('_')[0] }}/{{ source_id }}_lightcurve.png">
                 {% endfor %}

@@ -33,7 +33,9 @@
                 <th>&pi;<sub>E</sub></th>
                 <th>mag<sub>base,1</sub></th>
                 <th>b<sub>sff,1</sub></th>
+                <th>&#916;&#967;<super>2</super></th>
                 <th>&#916;&#967;<sub>red</sub><super>2</super></th>
+                <th>Log L</th>
             </tr>
             <tr>
                 <td>{{ "%i" % cand.num_objs_pass }}</td>
@@ -63,8 +65,18 @@
                 {%  else %}
                     <td>{{ "None" }}</td>
                 {% endif %}
+                {% if cand.chi2_pspl_gp is float %}
+                    <td>{{ "%.2f" % cand.chi2_pspl_gp }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
                 {% if cand.rchi2_pspl_gp is float %}
                     <td>{{ "%.2f" % cand.rchi2_pspl_gp }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+                {% if cand.logL_pspl_gp is float %}
+                    <td>{{ "%.2f" % cand.logL_pspl_gp }}</td>
                 {%  else %}
                     <td>{{ "None" }}</td>
                 {% endif %}
@@ -101,12 +113,12 @@
             </tr>
             <tr class="blank_row"></tr>
             <tr>
-                <td colspan="3"><b>ZTF IDs</b></td>
+                <td colspan="4"><b>ZTF IDs</b></td>
                 <td colspan="4"><b>OGLE Target</b></td>
-                <td colspan="4"><b>Follow Status</b></td>
+                <td colspan="5"><b>Follow Status</b></td>
             </tr>
             <tr>
-                <td colspan="3">
+                <td colspan="4">
                     <form action="/fetch_candidate_ztf_ids/{{ cand.id }}" method="post">
                         <button name="ztf_ids" type="submit">Fetch ZTF IDs</button>
                     </form>
@@ -116,7 +128,7 @@
                         <button name="OGLE_target" type="submit">Fetch OGLE Target</button>
                     </form>
                 </td>
-                <td colspan="4">
+                <td colspan="5">
                     {% if current_user.is_following_candidate(cand.id) %}
                          <form action="{{ url_for('unfollow_candidate', candid=cand.id, whichpage="cand") }}" method="post">
                              {{ form.hidden_tag() }}
@@ -131,7 +143,7 @@
                 </td>
             </tr>
             <tr>
-                <td colspan="3">
+                <td colspan="4">
                     {% if cand.ztf_ids|length > 0 %}
                         {% for ztf_id in cand.ztf_ids %}
                             <p><a href="https://alerce.online/object/{{ ztf_id }}/" target="_blank">{{ ztf_id }}</a></p>
@@ -147,7 +159,7 @@
                         None
                     {% endif %}
                 </td>
-                <td colspan="4">
+                <td colspan="5">
                     {% for user in cand2.users %}
                         <p><a href="{{ url_for('user', username=user.username) }}">{{ user.username }}</a></p>
                     {% endfor %}

@@ -85,11 +85,10 @@ class RadialSearchForm(FlaskForm):
                       validators=[Optional(), NumberRange(min=-90, max=90)])
     radius = FloatField('radius (arcseconds)',
                         validators=[DataRequired()])
-    order_by = RadioField(choices=[('eta_residual_best', 'Order results by eta_residual descending'),
-                                   ('eta_best', 'Order results by eta ascending'),
-                                   ('chi_squared_ulens_best', 'Order results by chi_squared_ulens desc')],
-                          default='eta_residual_best')
-    order_by_num_objs = BooleanField('Order by number of objects descending', default=True)
+    order_by = RadioField(choices=[('chi2', 'Order results by chi-squared ascending'),
+                                   ('rchi2', 'Order results by reduced chi-squared ascending'),
+                                   ('logL', 'Order results by log likelihood descending')],
+                          default='rchi2')
     submit = SubmitField('Search')
 
 
