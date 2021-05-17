@@ -18,7 +18,6 @@
         <tr><a href="{{ url_for('reset_filter_search') }}">Reset Filter Search</a></tr>
         {% if cands %}
             {% for cand in cands.items %}
-{#                <tr><td colspan="16"><hr></td></tr>#}
                 <tr id="{{ "%s" % cand.id }}">
                     <th>Cand ID</th>
                     <th>Glon</th>
@@ -27,106 +26,62 @@
                     <th>n<sub>objs,tot</sub></th>
                     <th>t<sub>0</sub></th>
                     <th>t<sub>E</sub></th>
-                    <th>mag<sub>src</sub></th>
-                    <th>b<sub>sff</sub></th>
                     <th>&pi;<sub>E</sub></th>
+                    <th>mag<sub>base,1</sub></th>
+                    <th>b<sub>sff,1</sub></th>
                     <th>&#916;&#967;<super>2</super></th>
-                    <th>&#951;</th>
-                    <th>&#951;<sub>residual</sub></th>
-                    <th>idx<sub>best</sub></th>
-                    <th>Source ID</th>
-                    <th>Color</th>
-                    <th>Pass</th>
+                    <th>&#916;&#967;<sub>red</sub><super>2</super></th>
+                    <th>Log L</th>
                 </tr>
                 <tr>
-                    <td><a href="{{ url_for('candidate_level3', candid=cand.id) }}">{{ "%s" % cand.id}}</a></td>
+                    <td><a href="{{ url_for('candidate_level4', candid=cand.id) }}">{{ "%s" % cand.id}}</a></td>
                     <td>{{ "%.5f" % cand.glon }}</td>
                     <td>{{ "%.5f" % cand.glat }}</td>
                     <td>{{ "%i" % cand.num_objs_pass }}</td>
                     <td>{{ "%i" % cand.num_objs_tot }}</td>
-                    {% if cand.t0_best is float %}
-                        <td>{{ "%.2f" % cand.t0_best }}</td>
+                    {% if cand.t0_pspl_gp is float %}
+                        <td>{{ "%.2f" % cand.t0_pspl_gp }}</td>
                     {%  else %}
                         <td>{{ "None" }}</td>
                     {% endif %}
-                    {% if cand.tE_best is float %}
-                        <td>{{ "%.2f" % cand.tE_best }}</td>
+                    {% if cand.tE_pspl_gp is float %}
+                        <td>{{ "%.2f" % cand.tE_pspl_gp }}</td>
                     {%  else %}
                         <td>{{ "None" }}</td>
                     {% endif %}
-                    {% if cand.mag_src_best is float %}
-                        <td>{{ "%.2f" % cand.mag_src_best }}</td>
+                    {% if cand.piE_pspl_gp is float %}
+                        <td>{{ "%.3f" % cand.piE_pspl_gp }}</td>
                     {%  else %}
                         <td>{{ "None" }}</td>
                     {% endif %}
-                    {% if cand.b_sff_best is float %}
-                        <td>{{ "%.2f" % cand.b_sff_best }}</td>
+                    {% if cand.mag_base_pspl_gp is float %}
+                        <td>{{ "%.2f" % cand.mag_base_pspl_gp }}</td>
                     {%  else %}
                         <td>{{ "None" }}</td>
                     {% endif %}
-                    {% if cand.piE_best is float %}
-                        <td>{{ "%.3f" % cand.piE_best }}</td>
+                    {% if cand.b_sff_pspl_gp is float %}
+                        <td>{{ "%.2f" % cand.b_sff_pspl_gp }}</td>
                     {%  else %}
                         <td>{{ "None" }}</td>
                     {% endif %}
-                    {% if cand.chi_squared_ulens_best is float %}
-                        <td>{{ "%.2f" % cand.chi_squared_ulens_best }}</td>
+                    {% if cand.chi2_pspl_gp is float %}
+                        <td>{{ "%.2f" % cand.chi2_pspl_gp }}</td>
                     {%  else %}
                         <td>{{ "None" }}</td>
                     {% endif %}
-                    {% if cand.eta_best is float %}
-                        <td>{{ "%.2f" % cand.eta_best }}</td>
+                    {% if cand.rchi2_pspl_gp is float %}
+                        <td>{{ "%.2f" % cand.rchi2_pspl_gp }}</td>
                     {%  else %}
                         <td>{{ "None" }}</td>
                     {% endif %}
-                    {% if cand.eta_residual_best is float %}
-                        <td>{{ "%.2f" % cand.eta_residual_best }}</td>
+                    {% if cand.logL_pspl_gp is float %}
+                        <td>{{ "%.2f" % cand.logL_pspl_gp }}</td>
                     {%  else %}
                         <td>{{ "None" }}</td>
                     {% endif %}
-                    <td>{{ "%i" % cand.idx_best }}</td>
-                    <td></td>
-                    <td></td>
                 </tr>
-                {% for source_id, color, pass in zip(cand.source_id_arr, cand.color_arr, cand.pass_arr) %}
-                    <tr>
-                        {% if loop.index == 1 %}
-                        <td>
-                            {% if current_user.is_following_candidate(cand.id) %}
-                                 <form action="{{ url_for('unfollow_candidate', candid=cand.id, whichpage="same") }}" method="post">
-                                     {{ form.hidden_tag() }}
-                                     {{ form.submit(value='Unfollow') }}
-                                 </form>
-                            {% else %}
-                            <form action="{{ url_for('follow_candidate', candid=cand.id, whichpage="same") }}" method="post">
-                                {{ form.hidden_tag() }}
-                                {{ form.submit(value='Follow') }}
-                            </form>
-                            {% endif %}
-                        </td>
-                        {% else %}
-                        <td></td>
-                        {% endif %}
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td><a href="{{ url_for('source', sourceid=source_id) }}">{{ source_id }}</a></td>
-                        <td>{{ "%s" % color }}</td>
-                        <td>{{ "%r" % pass }}</td>
-                    </tr>
-                {% endfor %}
                 <tr>
-                    <td colspan="16">
+                    <td colspan="13">
                     {% for source_id in cand.unique_source_id_arr %}
                     <img width="200" src="{{ url_for('static', filename='source/') }}{{ source_id.split('_')[0][:3] }}/{{ source_id.split('_')[0] }}/{{ source_id }}_lightcurve.png">
                     {% endfor %}

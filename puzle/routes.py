@@ -474,9 +474,11 @@ def radial_search():
         paginate = True
 
         for cand in cands.items:
-            sources = Source.query.filter(Source.id.in_(cand.source_id_arr)).all()
-            for source in sources:
-                source.load_lightcurve_plot()
+            pspl_gp_fit_dct = cand.pspl_gp_fit_dct
+            for source_id in pspl_gp_fit_dct:
+                source = Source.query.filter(Source.id == source_id).first_or_404()
+                model_params = pspl_gp_fit_dct[source_id]
+                source.load_lightcurve_plot(model_params=model_params, model=PSPL_Phot_Par_Param1)
     else:
         cands = None
         next_url = None
@@ -500,6 +502,13 @@ def reset_radial_search():
     return redirect(url_for('radial_search'))
 
 
+def _return_filter_search_query_fields():
+    form_filter = FilterSearchForm()
+    query_fields = [k for k in form_filter.__dir__() if 'pspl_gp' in k]
+    query_fields = list(set([k.replace('_min', '').replace('_max', '') for k in query_fields]))
+    return query_fields
+
+
 @app.route('/filter_search', methods=['GET', 'POST'])
 @login_required
 def filter_search():
@@ -509,25 +518,14 @@ def filter_search():
             if val_min > val_max:
                 flash(f'{field} minimum must be less than {field} maximum', 'danger')
                 return None
-        if 'opt' in field:
-            cand = CandidateLevel3
-            field_cand = field.replace('opt_', '')
-        else:
-            cand = CandidateLevel2
-            field_cand = field.replace('minmax_', '')
         if val_min:
-            query = query.filter(getattr(cand, field_cand) >= val_min)
+            query = query.filter(getattr(CandidateLevel4, field) >= val_min)
         if val_max:
-            query = query.filter(getattr(cand, field_cand) <= val_max)
+            query = query.filter(getattr(CandidateLevel4, field) <= val_max)
         return query
 
-    query_fields = ['num_objs_pass', 'rf_score_best', 'eta_best',
-                    'minmax_t_0_best', 'minmax_t_E_best',
-                    'minmax_chi_squared_delta_best', 'minmax_eta_residual_best',
-                    'opt_t0_best', 'opt_tE_best',
-                    'opt_chi_squared_ulens_best', 'opt_eta_residual_best']
-
     form_filter = FilterSearchForm()
+    query_fields = _return_filter_search_query_fields()
     if form_filter.validate_on_submit():
         for field in query_fields:
             val_min = getattr(form_filter, f'{field}_min').data
@@ -536,7 +534,6 @@ def filter_search():
             session[f'{field}_max'] = val_max
 
         session['order_by'] = form_filter.order_by.data
-        session['order_by_num_objs'] = form_filter.order_by_num_objs.data
 
         flash('Filter Search Results', 'info')
     else:
@@ -547,14 +544,13 @@ def filter_search():
                     getattr(form_filter, key).data = session[key]
                 else:
                     session[key] = None
-        for order_by_type in ['order_by', 'order_by_num_objs']:
-            if order_by_type in session:
-                getattr(form_filter, order_by_type).data = session[order_by_type]
-            else:
-                session[order_by_type] = None
+        if 'order_by' in session:
+            form_filter.order_by.data = session['order_by']
+        else:
+            session['order_by'] = None
 
-    query = db.session.query(CandidateLevel3).\
-        join(CandidateLevel2, CandidateLevel3.id==CandidateLevel2.id)
+    print(session)
+    query = db.session.query(CandidateLevel4)
     current_query = False
     for field in query_fields:
         val_min = session[f'{field}_min']
@@ -564,21 +560,15 @@ def filter_search():
             current_query = True
 
     if current_query:
-        if session['order_by'] == 'minmax_eta_residual_best':
-            order_by_cond = CandidateLevel2.eta_residual_best.desc()
-        elif session['order_by'] == 'opt_eta_residual_best':
-            order_by_cond = CandidateLevel3.eta_residual_best.desc()
-        elif session['order_by'] == 'eta_best':
-            order_by_cond = CandidateLevel3.eta_best.asc()
-        elif session['order_by'] == 'minmax_chi_squared_delta_best':
-            order_by_cond = CandidateLevel2.chi_squared_delta_best.desc()
-        elif session['order_by'] == 'opt_chi_squared_ulens_best':
-            order_by_cond = CandidateLevel3.chi_squared_ulens_best.desc()
-
-        if session['order_by_num_objs']:
-            query = query.order_by(CandidateLevel3.num_objs_pass.desc(), order_by_cond)
-        else:
-            query = query.order_by(order_by_cond)
+        if session['order_by'] == 'chi2':
+            order_by_cond = CandidateLevel4.chi2_pspl_gp.asc()
+        elif session['order_by'] == 'rchi2':
+            order_by_cond = CandidateLevel4.rchi2_pspl_gp.asc()
+        elif session['order_by'] == 'logL':
+            order_by_cond = CandidateLevel4.logL_pspl_gp.desc()
+        elif session['order_by'] == 'tE':
+            order_by_cond = CandidateLevel4.tE_pspl_gp.desc()
+        query = query.order_by(order_by_cond)
 
         print(query)
         page = request.args.get('page', 1, type=int)
@@ -590,9 +580,11 @@ def filter_search():
         paginate = True
 
         for cand in cands.items:
-            sources = Source.query.filter(Source.id.in_(cand.source_id_arr)).all()
-            for source in sources:
-                source.load_lightcurve_plot()
+            pspl_gp_fit_dct = cand.pspl_gp_fit_dct
+            for source_id in pspl_gp_fit_dct:
+                source = Source.query.filter(Source.id == source_id).first_or_404()
+                model_params = pspl_gp_fit_dct[source_id]
+                source.load_lightcurve_plot(model_params=model_params, model=PSPL_Phot_Par_Param1)
     else:
         cands = None
         next_url = None
@@ -608,9 +600,7 @@ def filter_search():
 @app.route('/reset_filter_search', methods=['GET'])
 @login_required
 def reset_filter_search():
-    query_fields = ['num_objs_pass', 't_0_best', 't_E_best',
-                    'chi_squared_ulens_best', 'rf_score_best',
-                    'eta_best', 'eta_residual_best']
+    query_fields = _return_filter_search_query_fields()
 
     for field in query_fields:
         for minmax in ['min', 'max']:
