@@ -8,7 +8,7 @@ from puzle.forms import LoginForm, RegistrationForm, \
     EditCommentForm, RadialSearchForm, EmptyForm, \
     FilterSearchForm
 from puzle.models import User, Source, \
-    CandidateLevel2, CandidateLevel3
+    CandidateLevel2, CandidateLevel3, CandidateLevel4
 from puzle.email import send_password_reset_email
 
 
@@ -148,6 +148,23 @@ def source(sourceid):
                            form=form, title=title)
 
 
+@app.route('/candidate_level4/<candid>')
+@login_required
+def candidate_level4(candid):
+    title = 'Candidate %s' % candid
+    form = EmptyForm()
+    cand2 = CandidateLevel2.query.filter_by(id=candid).first()
+    cand4 = CandidateLevel4.query.filter_by(id=candid).first()
+    sources = []
+    for source_id in cand4.pspl_gp_fit_dct:
+        source = Source.query.filter(Source.id == source_id).first_or_404()
+        model_params = cand4.pspl_gp_fit_dct[source_id]
+        source.load_lightcurve_plot(model_params=model_params)
+        sources.append(source)
+    return render_template('candidate_level4.html', cand=cand4, cand2=cand2,
+                           sources=sources, form=form, title=title, zip=zip)
+
+
 @app.route('/candidate_level3/<candid>')
 @login_required
 def candidate_level3(candid):
@@ -235,17 +252,17 @@ def fetch_source_ztf_ids(sourceid):
 @app.route('/fetch_candidate_ztf_ids/<candid>', methods=['POST'])
 @login_required
 def fetch_candidate_ztf_ids(candid):
-    cand = CandidateLevel3.query.filter_by(id=candid).first_or_404()
+    cand = CandidateLevel4.query.filter_by(id=candid).first_or_404()
     n_ids = cand.fetch_ztf_ids()
     flash('%i ZTF IDs Found' % n_ids, 'success')
     db.session.commit()
-    return redirect(url_for('candidate_level3', candid=candid))
+    return redirect(url_for('candidate_level4', candid=candid))
 
 
 @app.route('/fetch_candidate_ogle_target/<candid>', methods=['POST'])
 @login_required
 def fetch_candidate_ogle_target(candid):
-    cand = CandidateLevel3.query.filter_by(id=candid).first_or_404()
+    cand = CandidateLevel4.query.filter_by(id=candid).first_or_404()
     ogle_target = cand.fetch_ogle_target()
     if ogle_target:
         flash('OGLE Target Found', 'success')

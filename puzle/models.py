@@ -12,6 +12,7 @@ import requests
 import numpy as np
 from collections import defaultdict
 from zort.source import Source as zort_source
+from zort.photometry import fluxes_to_magnitudes, magnitudes_to_fluxes
 
 from puzle import app
 from puzle import db
@@ -247,7 +248,7 @@ class Source(db.Model):
                              check_initialization=False)
         return source
 
-    def load_lightcurve_plot(self):
+    def load_lightcurve_plot(self, model_params=None, model=None):
         job_id = self.id.split('_')[0]
         job_id_prefix = job_id[:3]
         folder = f'puzle/static/source/{job_id_prefix}/{job_id}'
@@ -256,17 +257,16 @@ class Source(db.Model):
 
         lightcurve_plot_filename = f'{folder}/{self.id}_lightcurve.png'
         if not os.path.exists(lightcurve_plot_filename):
-            if self.fit_t_0:
+            if model_params is None and self.fit_t_0 is not None:
                 model_params = {self.fit_filter: {'t_0': self.fit_t_0,
                                                   't_E': self.fit_t_E,
                                                   'a_type': self.fit_a_type,
                                                   'f_0': self.fit_f_0,
                                                   'f_1': self.fit_f_1}
                                 }
-            else:
-                model_params = None
             self.zort_source.plot_lightcurves(filename=lightcurve_plot_filename,
-                                              model_params=model_params)
+                                              model_params=model_params,
+                                              model=model)
 
     def _fetch_mars_results(self):
         radius_deg = 2. / 3600.
@@ -1094,12 +1094,29 @@ class CandidateLevel4(db.Model):
 
         return len(ztf_ids)
 
-    @hybrid_method
-    def return_source_dct(self):
-        source_dct = defaultdict(list)
-        for source_id, color, pass_id, idx in zip(self.source_id_arr, self.color_arr, self.pass_arr, range(self.num_objs_tot)):
-            source_dct[source_id].append((color, pass_id, idx))
-        return source_dct
+    @property
+    def pspl_gp_fit_dct(self):
+        pspl_gp_fit_dct = {}
+        for idx in range(len(self.source_id_arr_pspl_gp)):
+            source_id = self.source_id_arr_pspl_gp[idx]
+            if source_id not in pspl_gp_fit_dct:
+                pspl_gp_fit_dct[source_id] = {}
+            color = self.color_arr_pspl_gp[idx]
+            b_sff = self.b_sff_arr_pspl_gp[idx]
+            mag_base = self.mag_base_arr_pspl_gp[idx]
+            flux_base, _ = magnitudes_to_fluxes(mag_base)
+            flux_src = flux_base * b_sff
+            mag_src, _ = fluxes_to_magnitudes(flux_src)
+            pspl_gp_fit_dct[source_id][color] = {'t0': self.t0_pspl_gp,
+                                                 'u0_amp': self.u0_amp_pspl_gp,
+                                                 'tE': self.tE_pspl_gp,
+                                                 'piE_E': self.piE_E_pspl_gp,
+                                                 'piE_N': self.piE_N_pspl_gp,
+                                                 'b_sff': b_sff,
+                                                 'mag_src': mag_src,
+                                                 'raL': self.ra,
+                                                 'decL': self.dec}
+        return pspl_gp_fit_dct
 
     @property
     def best_source_id(self):
