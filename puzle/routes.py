@@ -162,7 +162,7 @@ def candidate_level4(candid):
     sources = []
     for source_id in pspl_gp_fit_dct:
         source = Source.query.filter(Source.id == source_id).first_or_404()
-        model_params = cand4.pspl_gp_fit_dct[source_id]
+        model_params = pspl_gp_fit_dct[source_id]
         source.load_lightcurve_plot(model_params=model_params, model=PSPL_Phot_Par_Param1)
         sources.append(source)
     return render_template('candidate_level4.html', cand=cand4, cand2=cand2,
@@ -388,7 +388,7 @@ def sources():
 def candidates():
     form = EmptyForm()
     page = request.args.get('page', 1, type=int)
-    cands = CandidateLevel3.query.order_by(CandidateLevel3.eta_best.asc()).\
+    cands = CandidateLevel4.query.order_by(CandidateLevel4.rchi2_pspl_gp.asc()).\
         paginate(page, app.config['ITEMS_PER_PAGE'], False)
     next_url = url_for('candidates', page=cands.next_num) \
         if cands.has_next else None
@@ -396,9 +396,11 @@ def candidates():
         if cands.has_prev else None
 
     for cand in cands.items:
-        sources = Source.query.filter(Source.id.in_(cand.source_id_arr)).all()
-        for source in sources:
-            source.load_lightcurve_plot()
+        pspl_gp_fit_dct = cand.pspl_gp_fit_dct
+        for source_id in pspl_gp_fit_dct:
+            source = Source.query.filter(Source.id == source_id).first_or_404()
+            model_params = pspl_gp_fit_dct[source_id]
+            source.load_lightcurve_plot(model_params=model_params, model=PSPL_Phot_Par_Param1)
 
     return render_template('candidates.html', cands=cands,
                            next_url=next_url, prev_url=prev_url,
