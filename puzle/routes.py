@@ -158,13 +158,15 @@ def candidate_level4(candid):
     form = EmptyForm()
     cand2 = CandidateLevel2.query.filter_by(id=candid).first()
     cand4 = CandidateLevel4.query.filter_by(id=candid).first()
+    pspl_gp_fit_dct = cand4.pspl_gp_fit_dct
     sources = []
-    for source_id in cand4.pspl_gp_fit_dct:
+    for source_id in pspl_gp_fit_dct:
         source = Source.query.filter(Source.id == source_id).first_or_404()
         model_params = cand4.pspl_gp_fit_dct[source_id]
         source.load_lightcurve_plot(model_params=model_params, model=PSPL_Phot_Par_Param1)
         sources.append(source)
     return render_template('candidate_level4.html', cand=cand4, cand2=cand2,
+                           pspl_gp_fit_dct=pspl_gp_fit_dct,
                            sources=sources, form=form, title=title, zip=zip)
 
 
@@ -229,13 +231,13 @@ def edit_source_comments(sourceid):
 @app.route('/edit_candidate_comments/<candid>', methods=['GET', 'POST'])
 @login_required
 def edit_candidate_comments(candid):
-    cand = CandidateLevel3.query.filter_by(id=candid).first_or_404()
+    cand = CandidateLevel4.query.filter_by(id=candid).first_or_404()
     form = EditCommentForm()
     if form.validate_on_submit():
         cand.comments = form.comments.data
         db.session.commit()
         flash('Your changes have been saved.', 'success')
-        return redirect(url_for('candidate_level3', candid=candid))
+        return redirect(url_for('candidate_level4', candid=candid))
     elif request.method == 'GET':
         form.comments.data = cand.comments
     return render_template('edit_candidate_comments.html',
@@ -272,7 +274,7 @@ def fetch_candidate_ogle_target(candid):
     else:
         flash('No OGLE Target Found', 'success')
     db.session.commit()
-    return redirect(url_for('candidate_level3', candid=candid))
+    return redirect(url_for('candidate_level4', candid=candid))
 
 
 @app.route('/follow_source/<sourceid>', methods=['POST'])
@@ -316,10 +318,13 @@ def follow_candidate(candid, whichpage):
     if form.validate_on_submit():
         cand2 = CandidateLevel2.query.filter_by(id=candid).first()
         cand3 = CandidateLevel3.query.filter_by(id=candid).first()
-        if cand3 is None:
-            cand_pagename = 'candidate_level2'
-        else:
+        cand4 = CandidateLevel3.query.filter_by(id=candid).first()
+        if cand4 is not None:
+            cand_pagename = 'candidate_level4'
+        elif cand3 is not None:
             cand_pagename = 'candidate_level3'
+        else:
+            cand_pagename = 'candidate_level2'
         if user is None:
             flash('Candidate {} not found.'.format(cand2.id), 'danger')
             return redirect(url_for(cand_pagename, candid=candid))
@@ -342,10 +347,13 @@ def unfollow_candidate(candid, whichpage):
     if form.validate_on_submit():
         cand2 = CandidateLevel2.query.filter_by(id=candid).first()
         cand3 = CandidateLevel3.query.filter_by(id=candid).first()
-        if cand3 is None:
-            cand_pagename = 'candidate_level2'
-        else:
+        cand4 = CandidateLevel3.query.filter_by(id=candid).first()
+        if cand4 is not None:
+            cand_pagename = 'candidate_level4'
+        elif cand3 is not None:
             cand_pagename = 'candidate_level3'
+        else:
+            cand_pagename = 'candidate_level2'
         if user is None:
             flash('Candidate {} not found.'.format(cand2.id), 'danger')
             return redirect(url_for(cand_pagename, candidateid=candid))

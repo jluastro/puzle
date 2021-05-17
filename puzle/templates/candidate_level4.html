@@ -20,67 +20,84 @@
        	<col style="width:55%">
         <table width="100%">
             <tr>
-                <h1>Level 3 Candidate {{ cand.id }}</h1>
+                <h1>Level 4 Candidate {{ cand.id }}</h1>
                 <h4>Glon Glat &nbsp; &nbsp;{{ "%.5f" % cand.glon }} , {{ "%.5f" % cand.glat }}</h4>
                 <h4>RA Dec &nbsp; &nbsp; &nbsp; {{ "%.5f" % cand.ra }} , {{ "%.5f" % cand.dec }}</h4>
-                <p><a href="{{ url_for('candidate_level2', candid=cand.id) }}">Level 2 Candidate Page</a></p>
-                <p><a href="{{ url_for('candidate_level4', candid=cand.id) }}">Level 4 Candidate Page</a></p>
+                <p><a href="{{ url_for('candidate_level3', candid=cand.id) }}">Level 3 Candidate Page</a></p>
             </tr>
             <tr>
                 <th>n<sub>objs,pass</sub></th>
                 <th>n<sub>objs,tot</sub></th>
                 <th>t<sub>0</sub></th>
                 <th>t<sub>E</sub></th>
-                <th>mag<sub>src</sub></th>
-                <th>b<sub>sff</sub></th>
                 <th>&pi;<sub>E</sub></th>
-                <th>&#916;&#967;<super>2</super></th>
-                <th>&#951;</th>
-                <th>&#951;<sub>residual</sub></th>
+                <th>mag<sub>base,1</sub></th>
+                <th>b<sub>sff,1</sub></th>
+                <th>&#916;&#967;<sub>red</sub><super>2</super></th>
             </tr>
             <tr>
                 <td>{{ "%i" % cand.num_objs_pass }}</td>
                 <td>{{ "%i" % cand.num_objs_tot }}</td>
-                {% if cand.t0_best is float %}
-                    <td>{{ "%.2f" % cand.t0_best }}</td>
+                {% if cand.t0_pspl_gp is float %}
+                    <td>{{ "%.2f" % cand.t0_pspl_gp }}</td>
                 {%  else %}
                     <td>{{ "None" }}</td>
                 {% endif %}
-                {% if cand.tE_best is float %}
-                    <td>{{ "%.2f" % cand.tE_best }}</td>
+                {% if cand.tE_pspl_gp is float %}
+                    <td>{{ "%.2f" % cand.tE_pspl_gp }}</td>
                 {%  else %}
                     <td>{{ "None" }}</td>
                 {% endif %}
-                {% if cand.mag_src_best is float %}
-                    <td>{{ "%.2f" % cand.mag_src_best }}</td>
+                {% if cand.piE_pspl_gp is float %}
+                    <td>{{ "%.3f" % cand.piE_pspl_gp }}</td>
                 {%  else %}
                     <td>{{ "None" }}</td>
                 {% endif %}
-                {% if cand.b_sff_best is float %}
-                    <td>{{ "%.2f" % cand.b_sff_best }}</td>
+                {% if cand.mag_base_pspl_gp is float %}
+                    <td>{{ "%.2f" % cand.mag_base_pspl_gp }}</td>
                 {%  else %}
                     <td>{{ "None" }}</td>
                 {% endif %}
-                {% if cand.piE_best is float %}
-                    <td>{{ "%.3f" % cand.piE_best }}</td>
+                {% if cand.b_sff_pspl_gp is float %}
+                    <td>{{ "%.2f" % cand.b_sff_pspl_gp }}</td>
                 {%  else %}
                     <td>{{ "None" }}</td>
                 {% endif %}
-                {% if cand.chi_squared_ulens_best is float %}
-                    <td>{{ "%.2f" % cand.chi_squared_ulens_best }}</td>
+                {% if cand.rchi2_pspl_gp is float %}
+                    <td>{{ "%.2f" % cand.rchi2_pspl_gp }}</td>
                 {%  else %}
                     <td>{{ "None" }}</td>
                 {% endif %}
-                {% if cand.eta_best is float %}
-                    <td>{{ "%.2f" % cand.eta_best }}</td>
+            </tr>
+            <tr>
+                <td></td>
+                <td></td>
+                {% if cand.t0_err_pspl_gp is float %}
+                    <td>&plusmn;{{ "%.2f" % cand.t0_err_pspl_gp }}</td>
                 {%  else %}
                     <td>{{ "None" }}</td>
                 {% endif %}
-                {% if cand.eta_residual_best is float %}
-                    <td>{{ "%.2f" % cand.eta_residual_best }}</td>
+                {% if cand.tE_err_pspl_gp is float %}
+                    <td>&plusmn;{{ "%.2f" % cand.tE_err_pspl_gp }}</td>
                 {%  else %}
                     <td>{{ "None" }}</td>
                 {% endif %}
+                {% if cand.piE_err_pspl_gp is float %}
+                    <td>&plusmn;{{ "%.3f" % cand.piE_err_pspl_gp }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+                {% if cand.mag_base_err_pspl_gp is float %}
+                    <td>&plusmn;{{ "%.2f" % cand.mag_base_err_pspl_gp }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+                {% if cand.b_sff_err_pspl_gp is float %}
+                    <td>&plusmn;{{ "%.2f" % cand.b_sff_err_pspl_gp }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+                <td></td>
             </tr>
             <tr class="blank_row"></tr>
             <tr>
@@ -184,73 +201,25 @@
                         <td>{{ source.zort_source.object_i.rcid }}</td>
                     {% endif %}
                     </tr>
-                    <tr>
-                        <th>Is Best</th>
-                        {% if source.id == cand.best_source_id %}
-                            <td>True</td>
-                        {% else %}
-                            <td>False</td>
-                        {% endif %}
-                    </tr>
-                    <tr>
-                        <th>Fit Filter</th>
-                        {% if source.fit_filter is string %}
-                            <td>{{ "%s" % source.fit_filter }}</td>
-                        {% else %}
-                            <td>{{ "None" }}</td>
-                        {% endif %}
-                    </tr>
-                    <tr>
-                        <th>t<sub>0</sub></th>
-                        {% if source.fit_t_0 is float %}
-                            <td>{{ "%.2f" % source.fit_t_0 }}</td>
-                        {% else %}
-                            <td></td>
-                        {% endif %}
-                    </tr>
-                    <tr>
-                        <th>t<sub>E</sub></th>
-                        {% if source.fit_t_E is float %}
-                            <td>{{ "%.2f" % source.fit_t_E }}</td>
-                        {% else %}
-                            <td></td>
-                        {% endif %}
-                    </tr>
-                    <tr>
-                        <th>Chi Squared Flat</th>
-                        {% if source.fit_chi_squared_flat is float %}
-                            <td>{{ "%.2f" % source.fit_chi_squared_flat }}</td>
-                        {% else %}
-                            <td></td>
-                        {% endif %}
-                    </tr>
-                    <tr>
-                       <th>Chi Squared Delta</th>
-                        {% if source.fit_chi_squared_ulens is float %}
-                            <td>{{ "%.2f" % source.fit_chi_squared_ulens }}</td>
-                        {% else %}
-                            <td></td>
-                        {% endif %}
-                    </tr>
                     {% if source.zort_source.object_g %}
                         <tr>
                             <th>N<sub>epochs,g</sub></th><td>{{ source.zort_source.object_g.nepochs }}</td>
-                            <th>ID<sub>g</sub></th><td>{{ source.zort_source.object_g.object_id }}</td>
-                            <th>Pass</th><td>{{ pass_dct[source.id]["g"] }}</td>
+                            <th>mag<sub>src</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["g"]["mag_src"] }}</td>
+                            <th>b<sub>sff</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["g"]["b_sff"] }}</td>
                         </tr>
                     {% endif %}
                    {% if source.zort_source.object_r %}
                         <tr>
                             <th>N<sub>epochs,r</sub></th><td>{{ source.zort_source.object_r.nepochs }}</td>
-                            <th>ID<sub>r</sub></th><td>{{ source.zort_source.object_r.object_id }}</td>
-                            <th>Pass</th><td>{{ pass_dct[source.id]["r"] }}</td>
+                            <th>mag<sub>src</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["r"]["mag_src"] }}</td>
+                            <th>b<sub>sff</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["r"]["b_sff"] }}</td>
                         </tr>
                     {% endif %}
                    {% if source.zort_source.object_i %}
                         <tr>
                             <th>N<sub>epochs,i</sub></th><td>{{ source.zort_source.object_i.nepochs }}</td>
-                            <th>ID<sub>i</sub></th><td>{{ source.zort_source.object_i.object_id }}</td>
-                            <th>Pass</th><td>{{ pass_dct[source.id]["i"] }}</td>
+                            <th>mag<sub>src</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["i"]["mag_src"] }}</td>
+                            <th>b<sub>sff</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["i"]["b_sff"] }}</td>
                         </tr>
                     {% endif %}
                     </table>
