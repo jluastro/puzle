@@ -160,10 +160,15 @@ def candidate_level4(candid):
     cand4 = CandidateLevel4.query.filter_by(id=candid).first()
     pspl_gp_fit_dct = cand4.pspl_gp_fit_dct
     sources = []
-    for source_id in pspl_gp_fit_dct:
+    for source_id in cand4.unique_source_id_arr:
         source = Source.query.filter(Source.id == source_id).first_or_404()
-        model_params = pspl_gp_fit_dct[source_id]
-        source.load_lightcurve_plot(model_params=model_params, model=PSPL_Phot_Par_Param1)
+        if source.id in pspl_gp_fit_dct:
+            model_params = pspl_gp_fit_dct[source_id]
+            model = PSPL_Phot_Par_Param1
+        else:
+            model_params = None
+            model = None
+        source.load_lightcurve_plot(model_params=model_params, model=model)
         sources.append(source)
     return render_template('candidate_level4.html', cand=cand4, cand2=cand2,
                            pspl_gp_fit_dct=pspl_gp_fit_dct,
@@ -397,10 +402,15 @@ def candidates():
 
     for cand in cands.items:
         pspl_gp_fit_dct = cand.pspl_gp_fit_dct
-        for source_id in pspl_gp_fit_dct:
+        for source_id in cand.unique_source_id_arr:
             source = Source.query.filter(Source.id == source_id).first_or_404()
-            model_params = pspl_gp_fit_dct[source_id]
-            source.load_lightcurve_plot(model_params=model_params, model=PSPL_Phot_Par_Param1)
+            if source.id in pspl_gp_fit_dct:
+                model_params = pspl_gp_fit_dct[source_id]
+                model = PSPL_Phot_Par_Param1
+            else:
+                model_params = None
+                model = None
+            source.load_lightcurve_plot(model_params=model_params, model=model)
 
     return render_template('candidates.html', cands=cands,
                            next_url=next_url, prev_url=prev_url,
@@ -475,10 +485,15 @@ def radial_search():
 
         for cand in cands.items:
             pspl_gp_fit_dct = cand.pspl_gp_fit_dct
-            for source_id in pspl_gp_fit_dct:
+            for source_id in cand.unique_source_id_arr:
                 source = Source.query.filter(Source.id == source_id).first_or_404()
-                model_params = pspl_gp_fit_dct[source_id]
-                source.load_lightcurve_plot(model_params=model_params, model=PSPL_Phot_Par_Param1)
+                if source.id in pspl_gp_fit_dct:
+                    model_params = pspl_gp_fit_dct[source_id]
+                    model = PSPL_Phot_Par_Param1
+                else:
+                    model_params = None
+                    model = None
+                source.load_lightcurve_plot(model_params=model_params, model=model)
     else:
         cands = None
         next_url = None
@@ -582,10 +597,15 @@ def filter_search():
 
         for cand in cands.items:
             pspl_gp_fit_dct = cand.pspl_gp_fit_dct
-            for source_id in pspl_gp_fit_dct:
+            for source_id in cand.unique_source_id_arr:
                 source = Source.query.filter(Source.id == source_id).first_or_404()
-                model_params = pspl_gp_fit_dct[source_id]
-                source.load_lightcurve_plot(model_params=model_params, model=PSPL_Phot_Par_Param1)
+                if source.id in pspl_gp_fit_dct:
+                    model_params = pspl_gp_fit_dct[source_id]
+                    model = PSPL_Phot_Par_Param1
+                else:
+                    model_params = None
+                    model = None
+                source.load_lightcurve_plot(model_params=model_params, model=model)
     else:
         cands = None
         next_url = None
