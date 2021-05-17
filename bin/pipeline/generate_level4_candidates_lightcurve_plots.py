@@ -11,13 +11,27 @@ from puzle.models import Source, CandidateLevel4
 from puzle import db
 
 
+def return_source_folder(source_id):
+    job_id = source_id.split('_')[0]
+    job_id_prefix = job_id[:3]
+    folder = f'/global/cfs/cdirs/uLens/puzleapp/static/source/{job_id_prefix}/{job_id}'
+    return folder
+
+
 def generate_level4_candidates_lightcurve_plots():
     cands = db.session.query(CandidateLevel4).\
         filter(CandidateLevel4.pspl_gp_fit_finished == True,
                CandidateLevel4.fit_type_pspl_gp != None).\
         order_by(CandidateLevel4.id).\
         all()
-    cands_data = [(c.pspl_gp_fit_dct, c.unique_source_id_arr) for c in cands]
+
+    cands_data = []
+    for cand in cands:
+        for source_id in cand.unique_source_id_arr:
+            folder = return_source_folder(source_id)
+            fname = f'{folder}/{source_id}_lightcurve.png'
+            if not os.path.exists(fname):
+                cands_data.append((cand.pspl_gp_fit_dct, cand.unique_source_id_arr))
 
     if 'SLURMD_NODENAME' in os.environ:
         from mpi4py import MPI
@@ -40,9 +54,7 @@ def generate_level4_candidates_lightcurve_plots():
             else:
                 model_params = None
                 model = None
-            job_id = source.id.split('_')[0]
-            job_id_prefix = job_id[:3]
-            folder = f'/global/cfs/cdirs/uLens/puzleapp/static/source/{job_id_prefix}/{job_id}'
+            folder = return_source_folder(source_id)
             source.load_lightcurve_plot(folder=folder, model_params=model_params, model=model)
 
 
