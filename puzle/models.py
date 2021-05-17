@@ -1096,6 +1096,8 @@ class CandidateLevel4(db.Model):
 
     @property
     def pspl_gp_fit_dct(self):
+        if self.source_id_arr_pspl_gp is None:
+            return None
         pspl_gp_fit_dct = {}
         for idx in range(len(self.source_id_arr_pspl_gp)):
             source_id = self.source_id_arr_pspl_gp[idx]
