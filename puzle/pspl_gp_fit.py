@@ -875,5 +875,58 @@ def fetch_pspl_gp_results_by_best_fit(def_best='median', errFlag=True, recompute
     return results
 
 
+def upload_pspl_gp_results_by_cand_id(cand_id, def_best='map', recomputeFlag=False):
+    sol_prefix = {'maxl': 'MaxLike_',
+                  'mean': 'Mean_',
+                  'map': 'MAP_',
+                  'median': 'Med_'}
+
+    if def_best not in sol_prefix:
+        print(f'def_best ({def_best}) must be in [%s]' % ', '.join(sol_prefix.keys()))
+        return
+
+    cand_fitter_data = load_cand_fitter_data(cand_id)
+    phot_files = cand_fitter_data['data']['phot_files']
+    source_id_arr = ['_'.join(k.split('_')[:-1]) for k in phot_files]
+    color_arr = [k.split('_')[-1] for k in phot_files]
+
+    stats = calc_summary_statistics(cand_id, recomputeFlag=recomputeFlag)
+    best_fit = calc_summary_stats_to_best_fit(stats, def_best=def_best)
+
+    update_dct = {'fit_type_pspl_gp': def_best,
+                  'source_id_arr_pspl_gp': source_id_arr,
+                  'color_arr_pspl_gp': color_arr}
+    cand_keys = [k for k in CandidateLevel4.__dict__.keys() if k.endswith('pspl_gp')]
+    for cand_key in cand_keys:
+        if 'source_id' in cand_key or 'color' in cand_key:
+            continue
+        if 'arr' in cand_key:
+            if 'err' in cand_key:
+                best_fit_keys = [k for k in best_fit if cand_key.replace('_err','').replace('_arr_pspl_gp', '')==k[:-5]]
+                best_fit_keys = sorted([k for k in best_fit_keys if 'err' in k])
+            else:
+                best_fit_keys = [k for k in best_fit if cand_key.replace('_arr_pspl_gp', '')==k[:-1]]
+                best_fit_keys = sorted([k for k in best_fit_keys if 'err' not in k])
+            update_dct[cand_key] = [best_fit[k] for k in best_fit_keys]
+        else:
+            best_fit_key = cand_key.replace('_pspl_gp', '')
+            if best_fit_key in best_fit:
+                update_dct[cand_key] = best_fit[best_fit_key]
+                continue
+
+            best_fit_key_one = f'{best_fit_key}1'
+            if best_fit_key_one in best_fit:
+                update_dct[cand_key] = best_fit[best_fit_key_one]
+                continue
+
+            best_fit_key_one_err = best_fit_key.replace('_err', '1_err')
+            if best_fit_key_one_err in best_fit:
+                update_dct[cand_key] = best_fit[best_fit_key_one_err]
+                continue
+
+    db.session.query(CandidateLevel4).filter(CandidateLevel4.id==cand_id).update(update_dct)
+    db.session.commit()
+
+
 if __name__ == '__main__':
     save_all_cand_fitter_data()
