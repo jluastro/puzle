@@ -18,7 +18,7 @@ def return_source_folder(source_id):
     return folder
 
 
-def generate_level4_candidates_lightcurve_plots():
+def return_uncompleted_cands():
     cands = db.session.query(CandidateLevel4).\
         filter(CandidateLevel4.pspl_gp_fit_finished == True,
                CandidateLevel4.fit_type_pspl_gp != None).\
@@ -32,6 +32,12 @@ def generate_level4_candidates_lightcurve_plots():
             fname = f'{folder}/{source_id}_lightcurve.png'
             if not os.path.exists(fname):
                 cands_data.append((cand.pspl_gp_fit_dct, cand.unique_source_id_arr))
+
+    return cands_data
+
+
+def generate_level4_candidates_lightcurve_plots():
+    cands_data = return_uncompleted_cands()
 
     if 'SLURMD_NODENAME' in os.environ:
         from mpi4py import MPI
