@@ -867,6 +867,8 @@ class CandidateLevel4(db.Model):
     node = db.Column(db.String(64))
     num_pspl_gp_fit_lightcurves = db.Column(db.Integer)
     fit_type_pspl_gp = db.Column(db.String(128))
+    source_id_arr_pspl_gp = db.Column(db.ARRAY(db.String(128)))
+    color_arr_pspl_gp = db.Column(db.ARRAY(db.String(8)))
     chi2_pspl_gp = db.Column(db.Float)
     rchi2_pspl_gp = db.Column(db.Float)
     logL_pspl_gp = db.Column(db.Float)
@@ -926,6 +928,7 @@ class CandidateLevel4(db.Model):
                  pspl_gp_fit_started=None, pspl_gp_fit_finished=None,
                  pspl_gp_fit_datetime_started=None, pspl_gp_fit_datetime_finished=None,
                  slurm_job_id=None, node=None, num_pspl_gp_fit_lightcurves=None,
+                 source_id_arr_pspl_gp=None, color_arr_pspl_gp=None,
                  chi2_pspl_gp=None, rchi2_pspl_gp=None, logL_pspl_gp=None,
                  fit_type_pspl_gp=None, t0_pspl_gp=None, t0_err_pspl_gp=None,
                  u0_amp_pspl_gp=None, u0_amp_err_pspl_gp=None, tE_pspl_gp=None,
@@ -980,6 +983,8 @@ class CandidateLevel4(db.Model):
         self.node = node
         self.num_pspl_gp_fit_lightcurves = num_pspl_gp_fit_lightcurves
         self.fit_type_pspl_gp = fit_type_pspl_gp
+        self.source_id_arr_pspl_gp = source_id_arr_pspl_gp
+        self.color_arr_pspl_gp = color_arr_pspl_gp
         self.chi2_pspl_gp = chi2_pspl_gp
         self.rchi2_pspl_gp = rchi2_pspl_gp
         self.logL_pspl_gp = logL_pspl_gp
