@@ -866,6 +866,7 @@ class CandidateLevel4(db.Model):
     slurm_job_id = db.Column(db.Integer, nullable=True)
     node = db.Column(db.String(64))
     num_pspl_gp_fit_lightcurves = db.Column(db.Integer)
+    fit_type_pspl_gp = db.Column(db.String(128))
     chi2_pspl_gp = db.Column(db.Float)
     rchi2_pspl_gp = db.Column(db.Float)
     logL_pspl_gp = db.Column(db.Float)
@@ -924,7 +925,7 @@ class CandidateLevel4(db.Model):
                  pspl_gp_fit_datetime_started=None, pspl_gp_fit_datetime_finished=None,
                  slurm_job_id=None, node=None, num_pspl_gp_fit_lightcurves=None,
                  chi2_pspl_gp=None, rchi2_pspl_gp=None, logL_pspl_gp=None,
-                 t0_pspl_gp=None, t0_err_pspl_gp=None,
+                 fit_type_pspl_gp=None, t0_pspl_gp=None, t0_err_pspl_gp=None,
                  u0_amp_pspl_gp=None, u0_amp_err_pspl_gp=None, tE_pspl_gp=None,
                  tE_err_pspl_gp=None, piE_E_pspl_gp=None, piE_E_err_pspl_gp=None,
                  piE_N_pspl_gp=None, piE_N_err_pspl_gp=None, b_sff_pspl_gp=None,
@@ -975,6 +976,7 @@ class CandidateLevel4(db.Model):
         self.slurm_job_id = slurm_job_id
         self.node = node
         self.num_pspl_gp_fit_lightcurves = num_pspl_gp_fit_lightcurves
+        self.fit_type_pspl_gp = fit_type_pspl_gp
         self.chi2_pspl_gp = chi2_pspl_gp
         self.rchi2_pspl_gp = rchi2_pspl_gp
         self.logL_pspl_gp = logL_pspl_gp
