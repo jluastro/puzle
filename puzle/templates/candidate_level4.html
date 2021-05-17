@@ -216,22 +216,34 @@
                     {% if source.zort_source.object_g %}
                         <tr>
                             <th>N<sub>epochs,g</sub></th><td>{{ source.zort_source.object_g.nepochs }}</td>
-                            <th>mag<sub>src</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["g"]["mag_src"] }}</td>
-                            <th>b<sub>sff</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["g"]["b_sff"] }}</td>
+                            {% if source.id in pspl_gp_fit_dct %}
+                                {% if "g" in pspl_gp_fit_dct[source.id] %}
+                                    <th>mag<sub>src</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["g"]["mag_src"] }}</td>
+                                    <th>b<sub>sff</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["g"]["b_sff"] }}</td>
+                                {% endif %}
+                            {% endif %}
                         </tr>
                     {% endif %}
-                   {% if source.zort_source.object_r %}
+                    {% if source.zort_source.object_r %}
                         <tr>
                             <th>N<sub>epochs,r</sub></th><td>{{ source.zort_source.object_r.nepochs }}</td>
-                            <th>mag<sub>src</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["r"]["mag_src"] }}</td>
-                            <th>b<sub>sff</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["r"]["b_sff"] }}</td>
+                            {% if source.id in pspl_gp_fit_dct %}
+                                {% if "r" in pspl_gp_fit_dct[source.id] %}
+                                    <th>mag<sub>src</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["r"]["mag_src"] }}</td>
+                                    <th>b<sub>sff</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["r"]["b_sff"] }}</td>
+                                {% endif %}
+                            {% endif %}
                         </tr>
                     {% endif %}
-                   {% if source.zort_source.object_i %}
+                    {% if source.zort_source.object_i %}
                         <tr>
                             <th>N<sub>epochs,i</sub></th><td>{{ source.zort_source.object_i.nepochs }}</td>
-                            <th>mag<sub>src</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["i"]["mag_src"] }}</td>
-                            <th>b<sub>sff</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["i"]["b_sff"] }}</td>
+                            {% if source.id in pspl_gp_fit_dct %}
+                                {% if "i" in pspl_gp_fit_dct[source.id] %}
+                                    <th>mag<sub>src</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["i"]["mag_src"] }}</td>
+                                    <th>b<sub>sff</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["i"]["b_sff"] }}</td>
+                                {% endif %}
+                            {% endif %}
                         </tr>
                     {% endif %}
                     </table>

@@ -534,8 +534,6 @@ def filter_search():
             session[f'{field}_max'] = val_max
 
         session['order_by'] = form_filter.order_by.data
-
-        flash('Filter Search Results', 'info')
     else:
         for field in query_fields:
             for minmax in ['min', 'max']:
@@ -571,6 +569,9 @@ def filter_search():
         query = query.order_by(order_by_cond)
 
         print(query)
+        count = query.count()
+        flash('Filter Search: %i Results' % count, 'info')
+
         page = request.args.get('page', 1, type=int)
         cands = query.paginate(page, app.config['ITEMS_PER_PAGE'], False)
         next_url = url_for('candidates', page=cands.next_num) \
