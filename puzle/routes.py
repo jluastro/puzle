@@ -2,6 +2,9 @@ from flask import render_template, flash, redirect, url_for, request, session
 from flask_login import current_user, login_user, logout_user, login_required
 from werkzeug.urls import url_parse
 from datetime import datetime
+
+from microlens.jlu.model import PSPL_Phot_Par_Param1
+
 from puzle import app, db
 from puzle.forms import LoginForm, RegistrationForm, \
     EditProfileForm, ResetPasswordRequestForm, ResetPasswordForm, \
@@ -159,7 +162,7 @@ def candidate_level4(candid):
     for source_id in cand4.pspl_gp_fit_dct:
         source = Source.query.filter(Source.id == source_id).first_or_404()
         model_params = cand4.pspl_gp_fit_dct[source_id]
-        source.load_lightcurve_plot(model_params=model_params)
+        source.load_lightcurve_plot(model_params=model_params, model=PSPL_Phot_Par_Param1)
         sources.append(source)
     return render_template('candidate_level4.html', cand=cand4, cand2=cand2,
                            sources=sources, form=form, title=title, zip=zip)

@@ -266,7 +266,8 @@ class Source(db.Model):
                                 }
             self.zort_source.plot_lightcurves(filename=lightcurve_plot_filename,
                                               model_params=model_params,
-                                              model=model)
+                                              model=model,
+                                              hmjd_survey_bounds=True)
 
     def _fetch_mars_results(self):
         radius_deg = 2. / 3600.
