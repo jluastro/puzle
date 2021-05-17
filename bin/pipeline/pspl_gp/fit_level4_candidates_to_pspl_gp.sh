@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --account=ulens
-#SBATCH --qos=premium
+#SBATCH --account=m2218
+#SBATCH --qos=regular
 #SBATCH --constraint=haswell
 #SBATCH --nodes=6
-#SBATCH --time=6:00:00
+#SBATCH --time=48:00:00
 #SBATCH --job-name=pspl_gp
 #SBATCH --output=pspl_gp.%j.out
 echo "---------------------------"
@@ -28,7 +28,7 @@ for node_name in $nodelist; do
     echo "Launching ${node_name} - ${i}"
     node_name_ext="$node_name.$i"
     fname_log="/global/homes/m/mmedford/puzle/bin/pipeline/pspl_gp/pspl_gp.$SLURM_JOBID.$node_name_ext.log"
-    srun -N 1 -n 8 -c 1 -w $node_name --mem=30000 python /global/homes/m/mmedford/puzle/bin/pipeline/fit_level4_candidates_to_pspl_gp.py $SLURM_JOBID $node_name_ext > $fname_log &
+    srun -N 1 -n 8 -w $node_name --mem=30000 python /global/homes/m/mmedford/puzle/bin/pipeline/fit_level4_candidates_to_pspl_gp.py $SLURM_JOBID $node_name_ext > $fname_log &
     sleep 10
   done
 done;
