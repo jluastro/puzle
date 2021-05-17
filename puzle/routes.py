@@ -393,12 +393,17 @@ def sources():
 def candidates():
     form = EmptyForm()
     page = request.args.get('page', 1, type=int)
-    cands = CandidateLevel4.query.order_by(CandidateLevel4.rchi2_pspl_gp.asc()).\
+    query = CandidateLevel4.query.filter(CandidateLevel4.pspl_gp_fit_finished==True,
+                                         CandidateLevel4.fit_type_pspl_gp!=None)
+    cands = query.order_by(CandidateLevel4.rchi2_pspl_gp.asc()).\
         paginate(page, app.config['ITEMS_PER_PAGE'], False)
     next_url = url_for('candidates', page=cands.next_num) \
         if cands.has_next else None
     prev_url = url_for('candidates', page=cands.prev_num) \
         if cands.has_prev else None
+
+    count = query.count()
+    flash('%i Candidates Fit in Database' % count, 'info')
 
     for cand in cands.items:
         pspl_gp_fit_dct = cand.pspl_gp_fit_dct
