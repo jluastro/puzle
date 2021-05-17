@@ -866,6 +866,43 @@ class CandidateLevel4(db.Model):
     slurm_job_id = db.Column(db.Integer, nullable=True)
     node = db.Column(db.String(64))
     num_pspl_gp_fit_lightcurves = db.Column(db.Integer)
+    chi2_pspl_gp = db.Column(db.Float)
+    rchi2_pspl_gp = db.Column(db.Float)
+    logL_pspl_gp = db.Column(db.Float)
+    t0_pspl_gp = db.Column(db.Float)
+    t0_err_pspl_gp = db.Column(db.Float)
+    u0_amp_pspl_gp = db.Column(db.Float)
+    u0_amp_err_pspl_gp = db.Column(db.Float)
+    tE_pspl_gp = db.Column(db.Float)
+    tE_err_pspl_gp = db.Column(db.Float)
+    piE_E_pspl_gp = db.Column(db.Float)
+    piE_E_err_pspl_gp = db.Column(db.Float)
+    piE_N_pspl_gp = db.Column(db.Float)
+    piE_N_err_pspl_gp = db.Column(db.Float)
+    b_sff_pspl_gp = db.Column(db.Float)
+    b_sff_err_pspl_gp = db.Column(db.Float)
+    mag_base_pspl_gp = db.Column(db.Float)
+    mag_base_err_pspl_gp = db.Column(db.Float)
+    gp_log_sigma_pspl_gp = db.Column(db.Float)
+    gp_log_sigma_err_pspl_gp = db.Column(db.Float)
+    gp_rho_pspl_gp = db.Column(db.Float)
+    gp_rho_err_pspl_gp = db.Column(db.Float)
+    gp_log_omega04_S0_pspl_gp = db.Column(db.Float)
+    gp_log_omega04_S0_err_pspl_gp = db.Column(db.Float)
+    gp_log_omega0_pspl_gp = db.Column(db.Float)
+    gp_log_omega0_err_pspl_gp = db.Column(db.Float)
+    b_sff_arr_pspl_gp = db.Column(db.ARRAY(db.Float))
+    b_sff_err_arr_pspl_gp = db.Column(db.ARRAY(db.Float))
+    mag_base_arr_pspl_gp = db.Column(db.ARRAY(db.Float))
+    mag_base_err_arr_pspl_gp = db.Column(db.ARRAY(db.Float))
+    gp_log_sigma_arr_pspl_gp = db.Column(db.ARRAY(db.Float))
+    gp_log_sigma_err_arr_pspl_gp = db.Column(db.ARRAY(db.Float))
+    gp_rho_arr_pspl_gp = db.Column(db.ARRAY(db.Float))
+    gp_rho_err_arr_pspl_gp = db.Column(db.ARRAY(db.Float))
+    gp_log_omega04_S0_arr_pspl_gp = db.Column(db.ARRAY(db.Float))
+    gp_log_omega04_S0_err_arr_pspl_gp = db.Column(db.ARRAY(db.Float))
+    gp_log_omega0_arr_pspl_gp = db.Column(db.ARRAY(db.Float))
+    gp_log_omega0_err_arr_pspl_gp = db.Column(db.ARRAY(db.Float))
     comments = db.Column(db.String(1024))
     _ztf_ids = db.Column(db.String(256))
     ogle_target = db.Column(db.String(128))
@@ -886,6 +923,19 @@ class CandidateLevel4(db.Model):
                  pspl_gp_fit_started=None, pspl_gp_fit_finished=None,
                  pspl_gp_fit_datetime_started=None, pspl_gp_fit_datetime_finished=None,
                  slurm_job_id=None, node=None, num_pspl_gp_fit_lightcurves=None,
+                 chi2_pspl_gp=None, rchi2_pspl_gp=None, logL_pspl_gp=None,
+                 t0_pspl_gp=None, t0_err_pspl_gp=None,
+                 u0_amp_pspl_gp=None, u0_amp_err_pspl_gp=None, tE_pspl_gp=None,
+                 tE_err_pspl_gp=None, piE_E_pspl_gp=None, piE_E_err_pspl_gp=None,
+                 piE_N_pspl_gp=None, piE_N_err_pspl_gp=None, b_sff_pspl_gp=None,
+                 b_sff_err_pspl_gp=None, mag_base_pspl_gp=None, mag_base_err_pspl_gp=None,
+                 gp_log_sigma_pspl_gp=None, gp_log_sigma_err_pspl_gp=None, gp_rho_pspl_gp=None,
+                 gp_rho_err_pspl_gp=None, gp_log_omega04_S0_pspl_gp=None, gp_log_omega04_S0_err_pspl_gp=None,
+                 gp_log_omega0_pspl_gp=None, gp_log_omega0_err_pspl_gp=None, b_sff_arr_pspl_gp=None,
+                 b_sff_err_arr_pspl_gp=None, mag_base_arr_pspl_gp=None, mag_base_err_arr_pspl_gp=None,
+                 gp_log_sigma_arr_pspl_gp=None, gp_log_sigma_err_arr_pspl_gp=None, gp_rho_arr_pspl_gp=None,
+                 gp_rho_err_arr_pspl_gp=None, gp_log_omega04_S0_arr_pspl_gp=None, gp_log_omega04_S0_err_arr_pspl_gp=None,
+                 gp_log_omega0_arr_pspl_gp=None, gp_log_omega0_err_arr_pspl_gp=None,
                  comments=None, _ztf_ids=None, ogle_target=None):
         self.id = id
         self.ra = ra
@@ -925,6 +975,43 @@ class CandidateLevel4(db.Model):
         self.slurm_job_id = slurm_job_id
         self.node = node
         self.num_pspl_gp_fit_lightcurves = num_pspl_gp_fit_lightcurves
+        self.chi2_pspl_gp = chi2_pspl_gp
+        self.rchi2_pspl_gp = rchi2_pspl_gp
+        self.logL_pspl_gp = logL_pspl_gp
+        self.t0_pspl_gp = t0_pspl_gp
+        self.t0_err_pspl_gp = t0_err_pspl_gp
+        self.u0_amp_pspl_gp = u0_amp_pspl_gp
+        self.u0_amp_err_pspl_gp = u0_amp_err_pspl_gp
+        self.tE_pspl_gp = tE_pspl_gp
+        self.tE_err_pspl_gp = tE_err_pspl_gp
+        self.piE_E_pspl_gp = piE_E_pspl_gp
+        self.piE_E_err_pspl_gp = piE_E_err_pspl_gp
+        self.piE_N_pspl_gp = piE_N_pspl_gp
+        self.piE_N_err_pspl_gp = piE_N_err_pspl_gp
+        self.b_sff_pspl_gp = b_sff_pspl_gp
+        self.b_sff_err_pspl_gp = b_sff_err_pspl_gp
+        self.mag_base_pspl_gp = mag_base_pspl_gp
+        self.mag_base_err_pspl_gp = mag_base_err_pspl_gp
+        self.gp_log_sigma_pspl_gp = gp_log_sigma_pspl_gp
+        self.gp_log_sigma_err_pspl_gp = gp_log_sigma_err_pspl_gp
+        self.gp_rho_pspl_gp = gp_rho_pspl_gp
+        self.gp_rho_err_pspl_gp = gp_rho_err_pspl_gp
+        self.gp_log_omega04_S0_pspl_gp = gp_log_omega04_S0_pspl_gp
+        self.gp_log_omega04_S0_err_pspl_gp = gp_log_omega04_S0_err_pspl_gp
+        self.gp_log_omega0_pspl_gp = gp_log_omega0_pspl_gp
+        self.gp_log_omega0_err_pspl_gp = gp_log_omega0_err_pspl_gp
+        self.b_sff_arr_pspl_gp = b_sff_arr_pspl_gp
+        self.b_sff_err_arr_pspl_gp = b_sff_err_arr_pspl_gp
+        self.mag_base_arr_pspl_gp = mag_base_arr_pspl_gp
+        self.mag_base_err_arr_pspl_gp = mag_base_err_arr_pspl_gp
+        self.gp_log_sigma_arr_pspl_gp = gp_log_sigma_arr_pspl_gp
+        self.gp_log_sigma_err_arr_pspl_gp = gp_log_sigma_err_arr_pspl_gp
+        self.gp_rho_arr_pspl_gp = gp_rho_arr_pspl_gp
+        self.gp_rho_err_arr_pspl_gp = gp_rho_err_arr_pspl_gp
+        self.gp_log_omega04_S0_arr_pspl_gp = gp_log_omega04_S0_arr_pspl_gp
+        self.gp_log_omega04_S0_err_arr_pspl_gp = gp_log_omega04_S0_err_arr_pspl_gp
+        self.gp_log_omega0_arr_pspl_gp = gp_log_omega0_arr_pspl_gp
+        self.gp_log_omega0_err_arr_pspl_gp = gp_log_omega0_err_arr_pspl_gp
         self.comments = comments
         self._ztf_ids = _ztf_ids
         self.ogle_target = ogle_target
