@@ -629,7 +629,9 @@ def reset_filter_search():
 @app.route('/categorize_candidates', methods=['GET'])
 @login_required
 def categorize_candidates():
-    cand4 = CandidateLevel4.query.filter(CandidateLevel4.category==None).\
+    cand4 = CandidateLevel4.query.filter(CandidateLevel4.category == None,
+                                         CandidateLevel4.pspl_gp_fit_finished == True,
+                                         CandidateLevel4.fit_type_pspl_gp != None).\
         order_by(func.random()).first()
     if cand4 is None:
         return redirect(url_for('home'))
@@ -645,7 +647,9 @@ def categorize_candidate(candid, category, category_return):
     if category_return == 'same':
         cand4_new = cand4_old
     elif category_return == 'random':
-        cand4_new = CandidateLevel4.query.filter(CandidateLevel4.category==None).\
+        cand4_new = CandidateLevel4.query.filter(CandidateLevel4.category == None,
+                                                 CandidateLevel4.pspl_gp_fit_finished == True,
+                                                 CandidateLevel4.fit_type_pspl_gp != None). \
             order_by(func.random()).first()
         if cand4_new is None:
             return redirect(url_for('home'))
