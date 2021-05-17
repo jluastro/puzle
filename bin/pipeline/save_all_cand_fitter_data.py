@@ -7,4 +7,4 @@ from puzle.pspl_gp_fit import save_all_cand_fitter_data
 
 
 if __name__ == '__main__':
-    save_all_cand_fitter_data()
+    save_all_cand_fitter_data(num_max_lightcurves=3)

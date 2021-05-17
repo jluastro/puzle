@@ -27,7 +27,7 @@ def return_cand_dir(cand_id):
     return out_dir
 
 
-def gather_cand_data(cand, num_max_lightcurves=4):
+def gather_cand_data(cand, num_max_lightcurves=3):
     source_dct = {}
     n_days_arr = []
     tmp_data_arr = []
@@ -73,7 +73,7 @@ def fill_data_and_fitter_params(obj, phot_file, idx_data,
     fitter_params_dct[f'b_sff_{idx_data}'] = fitter_params_dct['b_sff']
 
 
-def save_cand_fitter_data(cand, num_max_lightcurves=4):
+def save_cand_fitter_data(cand, num_max_lightcurves=3):
     data_dct = {'target': cand.id,
                 'raL': cand.ra,
                 'decL': cand.dec,
@@ -105,12 +105,12 @@ def save_cand_fitter_data(cand, num_max_lightcurves=4):
     pickle.dump(cand_fitter_data, open(fname, 'wb'))
 
 
-def save_cand_fitter_data_by_id(cand_id):
+def save_cand_fitter_data_by_id(cand_id, num_max_lightcurves=3):
     cand = CandidateLevel3.query.filter(CandidateLevel3.id==str(cand_id)).first()
-    save_cand_fitter_data(cand)
+    save_cand_fitter_data(cand, num_max_lightcurves=num_max_lightcurves)
 
 
-def save_all_cand_fitter_data():
+def save_all_cand_fitter_data(num_max_lightcurves=3):
     cands = db.session.query(CandidateLevel3, CandidateLevel4).\
         filter(CandidateLevel3.id == CandidateLevel4.id).\
         with_entities(CandidateLevel4.id).\
@@ -132,7 +132,7 @@ def save_all_cand_fitter_data():
     for i, cand_id in enumerate(my_cand_ids):
         if i % 100 == 0:
             print('%i) Saving cand fitter_data %i / %i' % (rank, i, len(my_cand_ids)))
-        save_cand_fitter_data_by_id(cand_id)
+        save_cand_fitter_data_by_id(cand_id, num_max_lightcurves=num_max_lightcurves)
 
 
 def load_cand_fitter_data(cand_id):
