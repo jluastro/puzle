@@ -363,6 +363,7 @@ def load_source(source_id):
     f_sources.close()
     return source
 
+
 def return_level4_cut_filters():
     filter0 = CandidateLevel4.t0_pspl_gp != 0
     filter1 = CandidateLevel4.t0_pspl_gp != 0
