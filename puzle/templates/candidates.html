@@ -5,12 +5,24 @@
     <table class="table table-hover">
     <td>
         <h3>Browse Candidates | {{ cands.items|length }} results</h3>
+        <tr align="right"><td>Ordered by increasing &#916;&#967;<sub>red</sub><super>2</super></td></tr>
         <table width="100%">
-        <tr>Ordered by increasing &#916;&#967;<sub>red</sub><super>2</super></tr>
+        <tr class="blank_row"></tr>
+        <tr><td><h4>Include categories:</h4></td></tr>
+        <tr>
+            <td>
+            <div class="row">
+                <div class="col-md-14" align="left">
+                    {{ wtf.quick_form(form) }}
+                </div>
+            </div>
+            </td>
+        </tr>
         {% for cand in cands.items %}
-            <tr><td colspan="13"><hr></td></tr>
+            <tr><td colspan="14"><hr></td></tr>
             <tr id="{{ "%s" % cand.id }}">
                 <th>Cand ID</th>
+                <th>Category</th>
                 <th>Glon</th>
                 <th>Glat</th>
                 <th>n<sub>objs,pass</sub></th>
@@ -26,6 +38,11 @@
             </tr>
             <tr>
                 <td><a href="{{ url_for('candidate_level4', candid=cand.id) }}">{{ "%s" % cand.id}}</a></td>
+                {% if cand.category is string %}
+                    <td>{{ cand.category }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
                 <td>{{ "%.5f" % cand.glon }}</td>
                 <td>{{ "%.5f" % cand.glat }}</td>
                 <td>{{ "%i" % cand.num_objs_pass }}</td>
@@ -87,7 +104,7 @@
                 </td>
             </tr>
             <tr>
-                <td colspan="13">
+                <td colspan="14">
                 {% for source_id in cand.unique_source_id_arr %}
                 <img width="200" src="{{ url_for('static', filename='source/') }}{{ source_id.split('_')[0][:3] }}/{{ source_id.split('_')[0] }}/{{ source_id }}_lightcurve.png">
                 {% endfor %}

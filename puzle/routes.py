@@ -3,6 +3,7 @@ from flask_login import current_user, login_user, logout_user, login_required
 from werkzeug.urls import url_parse
 from datetime import datetime
 from sqlalchemy.sql.expression import func
+from sqlalchemy import or_
 
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
@@ -10,7 +11,7 @@ from puzle import app, db
 from puzle.forms import LoginForm, RegistrationForm, \
     EditProfileForm, ResetPasswordRequestForm, ResetPasswordForm, \
     EditCommentForm, RadialSearchForm, EmptyForm, \
-    FilterSearchForm, CategorizeForm
+    FilterSearchForm, CategorizeForm, BrowseForm
 from puzle.models import User, Source, \
     CandidateLevel2, CandidateLevel3, CandidateLevel4
 from puzle.email import send_password_reset_email
@@ -407,11 +408,32 @@ def load_candidate_lightcurves(cand, return_sources=False):
 @app.route('/candidates', methods=['GET', 'POST'])
 @login_required
 def candidates():
-    form = EmptyForm()
+    form = BrowseForm()
+    keys = [k for k in form.__dir__() if k.startswith('category')]
+    if form.validate_on_submit():
+        for key in keys:
+            session[key] = getattr(form, f'{key}').data
+    else:
+        for key in keys:
+            if key in session:
+                getattr(form, key).data = session[key]
+            else:
+                session[key] = False
     page = request.args.get('page', 1, type=int)
-    query = CandidateLevel4.query.filter(CandidateLevel4.pspl_gp_fit_finished==True,
-                                         CandidateLevel4.fit_type_pspl_gp!=None,
+    query = CandidateLevel4.query.filter(CandidateLevel4.pspl_gp_fit_finished == True,
+                                         CandidateLevel4.fit_type_pspl_gp != None,
                                          CandidateLevel4.level5 == True)
+    category_keys = []
+    for key in keys:
+        if session[key] and key != 'category_none':
+            key_val = key.replace('category_', '')
+            category_keys.append(key_val)
+
+    if session['category_none']:
+        query = query.filter(or_(CandidateLevel4.category.in_(category_keys),
+                                 CandidateLevel4.category == None))
+    else:
+        query = query.filter(CandidateLevel4.category.in_(category_keys))
     cands = query.order_by(CandidateLevel4.rchi2_pspl_gp.asc()).\
         paginate(page, app.config['ITEMS_PER_PAGE'], False)
     next_url = url_for('candidates', page=cands.next_num) \

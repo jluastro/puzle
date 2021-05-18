@@ -20,6 +20,7 @@
             {% for cand in cands.items %}
                 <tr id="{{ "%s" % cand.id }}">
                     <th>Cand ID</th>
+                    <th>Category</th>
                     <th>Glon</th>
                     <th>Glat</th>
                     <th>n<sub>objs,pass</sub></th>
@@ -35,6 +36,11 @@
                 </tr>
                 <tr>
                     <td><a href="{{ url_for('candidate_level4', candid=cand.id) }}">{{ "%s" % cand.id}}</a></td>
+                    {% if cand.category is string %}
+                        <td>{{ cand.category }}</td>
+                    {%  else %}
+                        <td>{{ "None" }}</td>
+                    {% endif %}
                     <td>{{ "%.5f" % cand.glon }}</td>
                     <td>{{ "%.5f" % cand.glat }}</td>
                     <td>{{ "%i" % cand.num_objs_pass }}</td>
@@ -81,7 +87,7 @@
                     {% endif %}
                 </tr>
                 <tr>
-                    <td colspan="13">
+                    <td colspan="14">
                     {% for source_id in cand.unique_source_id_arr %}
                     <img width="200" src="{{ url_for('static', filename='source/') }}{{ source_id.split('_')[0][:3] }}/{{ source_id.split('_')[0] }}/{{ source_id }}_lightcurve.png">
                     {% endfor %}

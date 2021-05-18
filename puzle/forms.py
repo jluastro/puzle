@@ -150,3 +150,13 @@ class CategorizeForm(FlaskForm):
                                           ('same', 'Return to same candidate after categorization')],
                                  default='random')
     submit = SubmitField('Submit')
+
+
+class BrowseForm(FlaskForm):
+    category_none = BooleanField('no category', default=True)
+    category_clear_microlensing = BooleanField('clear microlensing', default=True)
+    category_possible_microlensing = BooleanField('possible microlensing', default=True)
+    category_no_variability = BooleanField('no variability', default=True)
+    category_poor_model_fit = BooleanField('poor model fit', default=True)
+    category_non_microlensing_variable = BooleanField('non-microlensing variable', default=True)
+    submit = SubmitField('Submit')
