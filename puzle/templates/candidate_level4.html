@@ -43,27 +43,33 @@
             <tr class="blank_row"></tr>
             <tr>
                 <td colspan="2">
-                    <form action="{{ url_for('categorize_candidate', candid=cand.id, category="microlensing_clear", category_return=category_return) }}" method="post">
+                    <form action="{{ url_for('categorize_candidate', candid=cand.id, category="clear_microlensing", category_return=category_return) }}" method="post">
                         {{ form.hidden_tag() }}
                         {{ form.submit(value='Clear Microlensing') }}
                     </form>
                 </td>
                 <td colspan="2">
-                    <form action="{{ url_for('categorize_candidate', candid=cand.id, category="microlensing_possible", category_return=category_return) }}" method="post">
+                    <form action="{{ url_for('categorize_candidate', candid=cand.id, category="possible_microlensing", category_return=category_return) }}" method="post">
                         {{ form.hidden_tag() }}
                         {{ form.submit(value='Possible Microlensing') }}
                     </form>
                 </td>
                 <td colspan="2">
-                    <form action="{{ url_for('categorize_candidate', candid=cand.id, category="variable", category_return=category_return) }}" method="post">
+                    <form action="{{ url_for('categorize_candidate', candid=cand.id, category="poor_model_fit", category_return=category_return) }}" method="post">
                         {{ form.hidden_tag() }}
-                        {{ form.submit(value='Variable') }}
+                        {{ form.submit(value='Poor Model Fit') }}
                     </form>
                 </td>
                 <td colspan="2">
-                    <form action="{{ url_for('categorize_candidate', candid=cand.id, category="artifact", category_return=category_return) }}" method="post">
+                    <form action="{{ url_for('categorize_candidate', candid=cand.id, category="no_variability", category_return=category_return) }}" method="post">
                         {{ form.hidden_tag() }}
-                        {{ form.submit(value='Artifcat') }}
+                        {{ form.submit(value='No Variability') }}
+                    </form>
+                </td>
+                <td colspan="2">
+                    <form action="{{ url_for('categorize_candidate', candid=cand.id, category="non_microlensing_variable", category_return=category_return) }}" method="post">
+                        {{ form.hidden_tag() }}
+                        {{ form.submit(value='Non-Microlensing Variable') }}
                     </form>
                 </td>
             </tr>
