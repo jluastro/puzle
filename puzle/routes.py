@@ -410,7 +410,8 @@ def candidates():
     form = EmptyForm()
     page = request.args.get('page', 1, type=int)
     query = CandidateLevel4.query.filter(CandidateLevel4.pspl_gp_fit_finished==True,
-                                         CandidateLevel4.fit_type_pspl_gp!=None)
+                                         CandidateLevel4.fit_type_pspl_gp!=None,
+                                         CandidateLevel4.level5 == True)
     cands = query.order_by(CandidateLevel4.rchi2_pspl_gp.asc()).\
         paginate(page, app.config['ITEMS_PER_PAGE'], False)
     next_url = url_for('candidates', page=cands.next_num) \
@@ -477,7 +478,8 @@ def radial_search():
         ra = session['ra']
         dec = session['dec']
         radius = session['radius']
-        query = CandidateLevel4.query.filter(CandidateLevel4.cone_search(ra, dec, radius))
+        query = CandidateLevel4.query.filter(CandidateLevel4.cone_search(ra, dec, radius),
+                                             CandidateLevel4.level5 == True)
         if session['order_by'] == 'chi2':
             order_by_cond = CandidateLevel4.chi2_pspl_gp.asc()
         elif session['order_by'] == 'rchi2':
@@ -565,8 +567,7 @@ def filter_search():
         else:
             session['order_by'] = None
 
-    print(session)
-    query = db.session.query(CandidateLevel4)
+    query = db.session.query(CandidateLevel4).filter(CandidateLevel4.level5 == True)
     current_query = False
     for field in query_fields:
         val_min = session[f'{field}_min']
@@ -631,7 +632,8 @@ def reset_filter_search():
 def categorize_candidates():
     cand4 = CandidateLevel4.query.filter(CandidateLevel4.category == None,
                                          CandidateLevel4.pspl_gp_fit_finished == True,
-                                         CandidateLevel4.fit_type_pspl_gp != None).\
+                                         CandidateLevel4.fit_type_pspl_gp != None,
+                                         CandidateLevel4.level5 == True).\
         order_by(func.random()).first()
     if cand4 is None:
         return redirect(url_for('home'))
@@ -649,7 +651,8 @@ def categorize_candidate(candid, category, category_return):
     elif category_return == 'random':
         cand4_new = CandidateLevel4.query.filter(CandidateLevel4.category == None,
                                                  CandidateLevel4.pspl_gp_fit_finished == True,
-                                                 CandidateLevel4.fit_type_pspl_gp != None). \
+                                                 CandidateLevel4.fit_type_pspl_gp != None,
+                                                 CandidateLevel4.level5 == True). \
             order_by(func.random()).first()
         if cand4_new is None:
             return redirect(url_for('home'))
