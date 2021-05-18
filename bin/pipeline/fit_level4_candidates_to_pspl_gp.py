@@ -27,20 +27,23 @@ def fetch_cand(slurm_job_id=None, node_name=None):
 
     db.session.execute('LOCK TABLE candidate_level3, candidate_level4 '
                        'IN ROW EXCLUSIVE MODE;')
-    cand3, cand4 = db.session.query(CandidateLevel3, CandidateLevel4). \
-        filter(CandidateLevel3.id == CandidateLevel4.id,
-               CandidateLevel3.t0_best + CandidateLevel3.tE_best < MJD_finish,
-               CandidateLevel4.pspl_gp_fit_started == False).\
-        order_by(CandidateLevel4.num_pspl_gp_fit_lightcurves, func.random()).\
-        with_for_update().\
+    cand = db.session.query(CandidateLevel4).outerjoin(CandidateLevel3,
+                                                       CandidateLevel4.id == CandidateLevel3.id). \
+        filter(CandidateLevel3.t0_best + CandidateLevel3.tE_best < MJD_finish,
+               CandidateLevel4.pspl_gp_fit_started == False). \
+                order_by(CandidateLevel4.num_pspl_gp_fit_lightcurves, func.random()). \
+        with_for_update(). \
         first()
 
-    cand_id = cand4.id
-    cand4.pspl_gp_fit_started = True
-    cand4.pspl_gp_fit_datetime_started = datetime.now()
-    cand4.slurm_job_id = slurm_job_id
-    cand4.node = node_name
-    db.session.commit()
+    if cand is not None:
+        cand_id = cand.id
+        cand.pspl_gp_fit_started = True
+        cand.pspl_gp_fit_datetime_started = datetime.now()
+        cand.slurm_job_id = slurm_job_id
+        cand.node = node_name
+        db.session.commit()
+    else:
+        cand_id = None
     db.session.close()
 
     remove_db_id(node_name=node_name)  # release permission for this db connection
@@ -151,6 +154,9 @@ def fit_level4_cands_to_pspl_gp(single_job=False):
         else:
             cand_id = None
         cand_id = comm.bcast(cand_id, root=0)
+        if cand_id is None:
+            logger.info(f'{node_name} : Complete!')
+            return
         fit_level4_cand_to_pspl_gp(cand_id, node_name)
         comm.Barrier()
         if single_job:
