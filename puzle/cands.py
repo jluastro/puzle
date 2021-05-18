@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle.stats import calculate_eta, average_xy_on_round_x
-from puzle.models import CandidateLevel2, CandidateLevel3, Source
+from puzle.models import CandidateLevel2, CandidateLevel3, CandidateLevel4, Source
 from puzle.utils import return_figures_dir, return_DR5_dir
 from puzle import db
 
@@ -362,3 +362,23 @@ def load_source(source_id):
     source = csv_line_to_source(line_source)
     f_sources.close()
     return source
+
+def return_level4_cut_filters():
+    filter0 = CandidateLevel4.t0_pspl_gp != 0
+    filter1 = CandidateLevel4.t0_pspl_gp != 0
+    filter2 = CandidateLevel4.t0_pspl_gp != 0
+    return filter0, filter1, filter2
+
+
+def apply_level4_cuts_to_query(query):
+    filter0, filter1, filter2 = return_level4_cut_filters()
+    query = query.filter(filter0, filter1, filter2)
+    return query
+
+
+def print_level4_cuts():
+    filter0, filter1, filter2 = return_level4_cut_filters()
+    query = CandidateLevel4.query
+    print('Filters up to 0', query.filter(filter0).count(), 'cands')
+    print('Filters up to 1', query.filter(filter0, filter1).count(), 'cands')
+    print('Filters up to 2', query.filter(filter0, filter1, filter2).count(), 'cands')

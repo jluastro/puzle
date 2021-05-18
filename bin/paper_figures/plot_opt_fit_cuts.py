@@ -1,19 +1,18 @@
 #! /usr/bin/env python
 """
-plot_opt_fits.py
+plot_opt_fit_cuts.py
 """
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 from puzle.cands import apply_level3_cuts_to_query
-from puzle.ulens import return_ulens_data, return_ulens_metadata, return_ulens_stats
+from puzle.ulens import return_ulens_data, return_ulens_stats
 from puzle.models import CandidateLevel3
 from puzle.utils import return_figures_dir
-from puzle.stats import return_CDF
 
 
-def plot_opt_fits():
+def plot_opt_fit_cuts():
     cands = CandidateLevel3.query.with_entities(CandidateLevel3.chi_squared_ulens_best,
                                                 CandidateLevel3.num_days_best,
                                                 CandidateLevel3.chi_squared_flat_outside_2tE_best,
@@ -118,11 +117,11 @@ def plot_opt_fits():
 
     fig.tight_layout()
 
-    fname = '%s/plot_opt_fits.png' % return_figures_dir()
+    fname = '%s/plot_opt_fit_cuts.png' % return_figures_dir()
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
     plt.close(fig)
 
 
 if __name__ == '__main__':
-    plot_opt_fits()
+    plot_opt_fit_cuts()
