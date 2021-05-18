@@ -12,22 +12,23 @@
         {
             height: 10px !important; /* overwrites any other rules */
         }
+
+        .table-no-border {
+          border: 0;
+          overflow: hidden;
+          width:100%;
+        }
     </style>
 {% endblock %}
 
 {% block app_content %}
     <table class="table table-hover" width="auto">
-        <col style="width:45%">
-       	<col style="width:55%">
-        <table width="100%">
-            <tr colspan="10">
-                <div class="row">
-                    <div class="col-md-4">
-                        {{ wtf.quick_form(form) }}
-                    </div>
+        <table width="100%" rules="none">
+            <div class="row">
+                <div class="col-md-13" align="right">
+                    {{ wtf.quick_form(form) }}
                 </div>
-            </tr>
-            <tr class="blank_row"></tr>
+            </div>
             <tr>
                 <h1>Level 4 Candidate {{ cand.id }}</h1>
                 <h4>Glon Glat &nbsp; &nbsp;{{ "%.5f" % cand.glon }} , {{ "%.5f" % cand.glat }}</h4>
@@ -39,6 +40,7 @@
                 {% endif %}
                 <p><a href="{{ url_for('candidate_level3', candid=cand.id) }}">Level 3 Candidate Page</a></p>
             </tr>
+            <tr class="blank_row"></tr>
             <tr>
                 <td colspan="2">
                     <form action="{{ url_for('categorize_candidate', candid=cand.id, category="microlensing_clear", category_return=category_return) }}" method="post">
@@ -66,6 +68,82 @@
                 </td>
             </tr>
             <tr class="blank_row"></tr>
+        </table>
+    <hr>
+        <table class="table table-hover" width="auto" rules="none">
+            <col style="width:45%">
+            <col style="width:55%">
+            {% for source in sources %}
+            <tr>
+                <td>
+                    <table width="100%">
+                    <tr>
+                        <th>Source ID</th>
+{#                        <td><a href="{{ url_for('source', sourceid=source.id) }}">{{ source.id }}</a></td>#}
+                        <td>{{ source.id }}</td>
+                    </tr>
+                    <tr>
+                        <th>Field</th>
+                    {% if source.zort_source.object_g %}
+                        <td>{{ source.zort_source.object_g.fieldid }}</td>
+                    {% elif source.zort_source.object_id_r %}
+                        <td>{{ source.zort_source.object_r.fieldid }}</td>
+                    {% else %}
+                        <td>{{ source.zort_source.object_i.fieldid }}</td>
+                    {% endif %}
+                    </tr>
+                    <tr>
+                        <th>RCID</th>
+                    {% if source.zort_source.object_g %}
+                        <td>{{ source.zort_source.object_g.rcid }}</td>
+                    {% elif source.zort_source.object_id_r %}
+                        <td>{{ source.zort_source.object_r.rcid }}</td>
+                    {% else %}
+                        <td>{{ source.zort_source.object_i.rcid }}</td>
+                    {% endif %}
+                    </tr>
+                    {% if source.zort_source.object_g %}
+                        <tr>
+                            <th>N<sub>epochs,g</sub></th><td>{{ source.zort_source.object_g.nepochs }}</td>
+                            {% if source.id in pspl_gp_fit_dct %}
+                                {% if "g" in pspl_gp_fit_dct[source.id] %}
+                                    <th>mag<sub>src</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["g"]["mag_src"] }}</td>
+                                    <th>b<sub>sff</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["g"]["b_sff"] }}</td>
+                                {% endif %}
+                            {% endif %}
+                        </tr>
+                    {% endif %}
+                    {% if source.zort_source.object_r %}
+                        <tr>
+                            <th>N<sub>epochs,r</sub></th><td>{{ source.zort_source.object_r.nepochs }}</td>
+                            {% if source.id in pspl_gp_fit_dct %}
+                                {% if "r" in pspl_gp_fit_dct[source.id] %}
+                                    <th>mag<sub>src</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["r"]["mag_src"] }}</td>
+                                    <th>b<sub>sff</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["r"]["b_sff"] }}</td>
+                                {% endif %}
+                            {% endif %}
+                        </tr>
+                    {% endif %}
+                    {% if source.zort_source.object_i %}
+                        <tr>
+                            <th>N<sub>epochs,i</sub></th><td>{{ source.zort_source.object_i.nepochs }}</td>
+                            {% if source.id in pspl_gp_fit_dct %}
+                                {% if "i" in pspl_gp_fit_dct[source.id] %}
+                                    <th>mag<sub>src</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["i"]["mag_src"] }}</td>
+                                    <th>b<sub>sff</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["i"]["b_sff"] }}</td>
+                                {% endif %}
+                            {% endif %}
+                        </tr>
+                    {% endif %}
+                    </table>
+                </td>
+                <td>
+                    <img src="{{ url_for('static', filename='source/') }}{{ source.id.split('_')[0][:3] }}/{{ source.id.split('_')[0] }}/{{ source.id }}_lightcurve.png">
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        <table class="table-no-border" width="auto" rules="none">
             <tr>
                 <th>n<sub>objs,pass</sub></th>
                 <th>n<sub>objs,tot</sub></th>
@@ -151,6 +229,8 @@
                     <td>{{ "None" }}</td>
                 {% endif %}
                 <td></td>
+            <td></td>
+            <td></td>
             </tr>
             <tr class="blank_row"></tr>
             <tr>
@@ -220,80 +300,6 @@
                     <p><a href="{{ url_for('edit_candidate_comments', candid=cand.id) }}">Edit comments</a></p>
                 </td>
             </tr>
-        </table>
-    <hr>
-        <table class="table table-hover" width="auto">
-            <col style="width:45%">
-            <col style="width:55%">
-            {% for source in sources %}
-            <tr>
-                <td>
-                    <table width="100%">
-                    <tr>
-                        <th>Source ID</th>
-{#                        <td><a href="{{ url_for('source', sourceid=source.id) }}">{{ source.id }}</a></td>#}
-                        <td>{{ source.id }}</td>
-                    </tr>
-                    <tr>
-                        <th>Field</th>
-                    {% if source.zort_source.object_g %}
-                        <td>{{ source.zort_source.object_g.fieldid }}</td>
-                    {% elif source.zort_source.object_id_r %}
-                        <td>{{ source.zort_source.object_r.fieldid }}</td>
-                    {% else %}
-                        <td>{{ source.zort_source.object_i.fieldid }}</td>
-                    {% endif %}
-                    </tr>
-                    <tr>
-                        <th>RCID</th>
-                    {% if source.zort_source.object_g %}
-                        <td>{{ source.zort_source.object_g.rcid }}</td>
-                    {% elif source.zort_source.object_id_r %}
-                        <td>{{ source.zort_source.object_r.rcid }}</td>
-                    {% else %}
-                        <td>{{ source.zort_source.object_i.rcid }}</td>
-                    {% endif %}
-                    </tr>
-                    {% if source.zort_source.object_g %}
-                        <tr>
-                            <th>N<sub>epochs,g</sub></th><td>{{ source.zort_source.object_g.nepochs }}</td>
-                            {% if source.id in pspl_gp_fit_dct %}
-                                {% if "g" in pspl_gp_fit_dct[source.id] %}
-                                    <th>mag<sub>src</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["g"]["mag_src"] }}</td>
-                                    <th>b<sub>sff</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["g"]["b_sff"] }}</td>
-                                {% endif %}
-                            {% endif %}
-                        </tr>
-                    {% endif %}
-                    {% if source.zort_source.object_r %}
-                        <tr>
-                            <th>N<sub>epochs,r</sub></th><td>{{ source.zort_source.object_r.nepochs }}</td>
-                            {% if source.id in pspl_gp_fit_dct %}
-                                {% if "r" in pspl_gp_fit_dct[source.id] %}
-                                    <th>mag<sub>src</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["r"]["mag_src"] }}</td>
-                                    <th>b<sub>sff</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["r"]["b_sff"] }}</td>
-                                {% endif %}
-                            {% endif %}
-                        </tr>
-                    {% endif %}
-                    {% if source.zort_source.object_i %}
-                        <tr>
-                            <th>N<sub>epochs,i</sub></th><td>{{ source.zort_source.object_i.nepochs }}</td>
-                            {% if source.id in pspl_gp_fit_dct %}
-                                {% if "i" in pspl_gp_fit_dct[source.id] %}
-                                    <th>mag<sub>src</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["i"]["mag_src"] }}</td>
-                                    <th>b<sub>sff</sub></th><td> {{ "%.2f" % pspl_gp_fit_dct[source.id]["i"]["b_sff"] }}</td>
-                                {% endif %}
-                            {% endif %}
-                        </tr>
-                    {% endif %}
-                    </table>
-                </td>
-                <td>
-                    <img src="{{ url_for('static', filename='source/') }}{{ source.id.split('_')[0][:3] }}/{{ source.id.split('_')[0] }}/{{ source.id }}_lightcurve.png">
-                </td>
-            </tr>
-            {% endfor %}
         </table>
     </table>
 {% endblock %}
