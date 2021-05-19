@@ -157,6 +157,6 @@ class BrowseForm(FlaskForm):
     category_clear_microlensing = BooleanField('clear microlensing', default=True)
     category_possible_microlensing = BooleanField('possible microlensing', default=True)
     category_no_variability = BooleanField('no variability', default=True)
-    category_poor_model_fit = BooleanField('poor model fit', default=True)
+    category_poor_model_data = BooleanField('poor model / data', default=True)
     category_non_microlensing_variable = BooleanField('non-microlensing variable', default=True)
     submit = SubmitField('Submit')

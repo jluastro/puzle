@@ -55,9 +55,9 @@
                     </form>
                 </td>
                 <td colspan="2">
-                    <form action="{{ url_for('categorize_candidate', candid=cand.id, category="poor_model_fit", category_return=category_return) }}" method="post">
+                    <form action="{{ url_for('categorize_candidate', candid=cand.id, category="poor_model_data", category_return=category_return) }}" method="post">
                         {{ form.hidden_tag() }}
-                        {{ form.submit(value='Poor Model Fit') }}
+                        {{ form.submit(value='Poor Model / Data') }}
                     </form>
                 </td>
                 <td colspan="2">
