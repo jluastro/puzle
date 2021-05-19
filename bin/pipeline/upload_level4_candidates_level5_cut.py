@@ -28,7 +28,8 @@ def upload_level4_candidates_level5_cut():
             'piE_N_err',
             'piE',
             'piE_err',
-            'rchi2']
+            'rchi2',
+            'delta_hmjd_outside']
     keys_err = [k for k in keys if f'{k}_err' in keys]
 
     data = {}
@@ -47,6 +48,10 @@ def upload_level4_candidates_level5_cut():
     cond4 = np.abs(data['u0_amp']) <= 1.0
     cond5 = data['b_sff'] <= 1.2
     cond6 = data['rchi2'] <= 3
+    # cond7 = data['delta_hmjd_outside'] / data['tE'] >= 4
+    cond7 = np.ones(len(data['cand_id'])).astype(bool)
+
+    level5_cond = cond1 * cond2 * cond3 * cond4 * cond5 * cond6 * cond7
 
     print('No filters', len(cond1), 'cands')
     print('Filters up to 1', np.sum(cond1), 'cands')
@@ -55,8 +60,7 @@ def upload_level4_candidates_level5_cut():
     print('Filters up to 4', np.sum(cond1 * cond2 * cond3 * cond4), 'cands')
     print('Filters up to 5', np.sum(cond1 * cond2 * cond3 * cond4 * cond5), 'cands')
     print('Filters up to 6', np.sum(cond1 * cond2 * cond3 * cond4 * cond5 * cond6), 'cands')
-
-    level5_cond = cond1 * cond2 * cond3 * cond4 * cond5 * cond6
+    print('Filters up to 7', np.sum(cond1 * cond2 * cond3 * cond4 * cond5 * cond6 * cond7), 'cands')
 
     for i, (cand, level5_cond) in enumerate(zip(cands, level5_cond)):
         cand.level5 = level5_cond

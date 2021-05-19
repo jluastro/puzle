@@ -28,7 +28,8 @@ def plot_pspl_gp_fit_cuts():
             'piE_N_err',
             'piE',
             'piE_err',
-            'rchi2']
+            'rchi2',
+            'delta_hmjd_outside']
     keys_err = [k for k in keys if f'{k}_err' in keys]
 
     data = {}
@@ -52,8 +53,9 @@ def plot_pspl_gp_fit_cuts():
     cond4 = np.abs(data['u0_amp']) <= 1.0
     cond5 = data['b_sff'] <= 1.2
     cond6 = data['rchi2'] <= 3
+    cond7 = data['delta_hmjd_outside'] / data['tE'] >= 4
 
-    level5_cond = cond1 * cond2 * cond3 * cond4 * cond5 * cond6
+    level5_cond = cond1 * cond2 * cond3 * cond4 * cond5 * cond6 * cond7
 
     print('No filters', len(cond1), 'cands')
     print('Filters up to 1', np.sum(cond1), 'cands')
@@ -62,6 +64,7 @@ def plot_pspl_gp_fit_cuts():
     print('Filters up to 4', np.sum(cond1 * cond2 * cond3 * cond4), 'cands')
     print('Filters up to 5', np.sum(cond1 * cond2 * cond3 * cond4 * cond5), 'cands')
     print('Filters up to 6', np.sum(cond1 * cond2 * cond3 * cond4 * cond5 * cond6), 'cands')
+    print('Filters up to 7', np.sum(cond1 * cond2 * cond3 * cond4 * cond5 * cond6 * cond7), 'cands')
 
     # fractional error hist
     fig, ax = plt.subplots(3, 2, figsize=(10, 10))

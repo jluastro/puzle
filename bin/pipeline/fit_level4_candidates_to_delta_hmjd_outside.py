@@ -17,7 +17,7 @@ def fit_level4_candidates_to_delta_hmjd_outside():
                                                   CandidateLevel4.t0_pspl_gp,
                                                   CandidateLevel4.tE_pspl_gp).\
                                     filter(CandidateLevel4.fit_type_pspl_gp != None,
-                                           CandidateLevel4.delta_hmjd_outside_pspl_gp != None).all()
+                                           CandidateLevel4.delta_hmjd_outside_pspl_gp == None).all()
     num_cands = len(cands)
     cand_id_arr = [c[0] for c in cands]
     t0_arr = [c[1] for c in cands]
