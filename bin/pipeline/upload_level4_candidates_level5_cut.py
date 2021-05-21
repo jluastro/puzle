@@ -48,8 +48,7 @@ def upload_level4_candidates_level5_cut():
     cond4 = np.abs(data['u0_amp']) <= 1.0
     cond5 = data['b_sff'] <= 1.2
     cond6 = data['rchi2'] <= 3
-    # cond7 = data['delta_hmjd_outside'] / data['tE'] >= 4
-    cond7 = np.ones(len(data['cand_id'])).astype(bool)
+    cond7 = data['delta_hmjd_outside'] / data['tE'] >= 2
 
     level5_cond = cond1 * cond2 * cond3 * cond4 * cond5 * cond6 * cond7
 
