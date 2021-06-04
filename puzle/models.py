@@ -912,6 +912,7 @@ class CandidateLevel4(db.Model):
     gp_log_omega0_err_arr_pspl_gp = db.Column(db.ARRAY(db.Float))
     category = db.Column(db.String(128))
     level5 = db.Column(db.Boolean, nullable=False, server_default='f')
+    ongoing = db.Column(db.Boolean, nullable=False, server_default='f')
     delta_hmjd_outside_pspl_gp = db.Column(db.Float)
     comments = db.Column(db.String(1024))
     _ztf_ids = db.Column(db.String(256))
@@ -949,7 +950,8 @@ class CandidateLevel4(db.Model):
                  gp_rho_err_arr_pspl_gp=None, gp_log_omega04_S0_arr_pspl_gp=None, gp_log_omega04_S0_err_arr_pspl_gp=None,
                  gp_log_omega0_arr_pspl_gp=None, gp_log_omega0_err_arr_pspl_gp=None,
                  delta_hmjd_outside_pspl_gp=None,
-                 category=None, level5=None, comments=None, _ztf_ids=None, ogle_target=None):
+                 category=None, level5=None, ongoing=None,
+                 comments=None, _ztf_ids=None, ogle_target=None):
         self.id = id
         self.ra = ra
         self.dec = dec
@@ -1033,6 +1035,7 @@ class CandidateLevel4(db.Model):
         self.delta_hmjd_outside_pspl_gp = delta_hmjd_outside_pspl_gp
         self.category = category
         self.level5 = level5
+        self.ongoing = ongoing
         self.comments = comments
         self._ztf_ids = _ztf_ids
         self.ogle_target = ogle_target
