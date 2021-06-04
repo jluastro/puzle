@@ -19,7 +19,7 @@ def upload_level4_candidates_ongoing_cut():
         all()
 
     keys = ['t0',
-            't0_err'
+            't0_err',
             'tE',
             'tE_err',
             'rchi2']
@@ -35,8 +35,8 @@ def upload_level4_candidates_ongoing_cut():
         key_err = f'{key}_err'
         error_frac[key] = data[key_err] / data[key]
 
-    cond1 = error_frac['t0'] <= 0.8
-    cond2 = error_frac['tE'] <= 0.8
+    cond1 = error_frac['t0'] <= 0.5
+    cond2 = error_frac['tE'] <= 0.5
     cond3 = data['rchi2'] <= 3
 
     ongoing_cond = cond1 * cond2 * cond3
