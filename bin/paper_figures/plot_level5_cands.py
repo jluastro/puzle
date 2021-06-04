@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """
-plot_level5_cands_on_sky.py
+plot_level5_cands.py
 """
 
 import matplotlib.pyplot as plt
@@ -211,6 +211,7 @@ def plot_cands_tE_piE_overlapping_popsycle():
 def generate_all_figures():
     plot_cands_on_sky()
     plot_cands_tE_overlapping_popsycle()
+    plot_cands_tE_piE_overlapping_popsycle()
 
 
 if __name__ == '__main__':
