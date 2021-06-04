@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """
-plot_cands_on_sky.py
+plot_level2_cands_on_sky.py
 """
 
 import matplotlib.pyplot as plt
@@ -57,7 +57,7 @@ def plot_cands_on_sky():
     fig.tight_layout()
     fig.subplots_adjust(top=.9)
 
-    fname = '%s/cands_on_sky.png' % return_figures_dir()
+    fname = '%s/level2_cands_on_sky.png' % return_figures_dir()
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
     plt.close(fig)
