@@ -34,6 +34,9 @@ def gather_PopSyCLE_refined_events():
     folders.sort()
     N_folders = len(folders)
     N_samples = 0
+    l_arr = []
+    b_arr = []
+    area_arr = []
     for i, folder in enumerate(folders):
         print(f'Processing {folder} ({i}/{N_folders})')
         lb = os.path.basename(folder)
@@ -49,6 +52,19 @@ def gather_PopSyCLE_refined_events():
 
         fi_new = f'{popsycle_base_folder}/{lb}_refined_events_ztf_r_Damineli16.fits'
         table_new.write(fi_new, overwrite=True)
+
+        l = float(lb.split('_')[0].replace('l', ''))
+        b = float(lb.split('_')[1].replace('b', ''))
+        fname = f'{folder}/base0_galaxia_params.txt'
+        line = [l for l in open(fname, 'r') if 'surveyArea' in l][0]
+        area = float(line.split()[1])
+
+        l_arr.append(l)
+        b_arr.append(b)
+        area_arr.append(area)
+
+    popsycle_map_fname = return_data_dir() + '/popsycle_map.npz'
+    np.savez(popsycle_map_fname, l=l_arr, b=b_arr, area=area_arr)
 
     print(f'{N_samples} Samples')
 
