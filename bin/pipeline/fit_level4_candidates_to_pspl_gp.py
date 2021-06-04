@@ -27,8 +27,7 @@ def fetch_cand(slurm_job_id=None, node_name=None):
 
     db.session.execute('LOCK TABLE candidate_level3, candidate_level4 '
                        'IN ROW EXCLUSIVE MODE;')
-    cand = db.session.query(CandidateLevel4).outerjoin(CandidateLevel3,
-                                                       CandidateLevel4.id == CandidateLevel3.id). \
+    cand = CandidateLevel4.query.\
         filter(CandidateLevel4.pspl_gp_fit_started == False). \
         order_by(CandidateLevel4.num_pspl_gp_fit_lightcurves, func.random()). \
         with_for_update(). \
