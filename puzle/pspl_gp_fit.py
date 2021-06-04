@@ -146,7 +146,7 @@ def save_all_cand_fitter_data(num_max_lightcurves=3):
 
     for i, cand_id in enumerate(my_cand_ids_ongoing):
         if i % 100 == 0:
-            print('%i) Saving ongoing cand fitter_data %i / %i' % (rank, i, len(my_cand_ids_comp)))
+            print('%i) Saving ongoing cand fitter_data %i / %i' % (rank, i, len(my_cand_ids_ongoing)))
         save_cand_fitter_data_by_id(cand_id, num_max_lightcurves=1)
 
 
