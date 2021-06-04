@@ -111,13 +111,13 @@ def save_cand_fitter_data_by_id(cand_id, num_max_lightcurves=3):
 
 
 def save_all_cand_fitter_data(num_max_lightcurves=3):
-    # cands_comp = db.session.query(CandidateLevel4).outerjoin(CandidateLevel3,
-    #                                                     CandidateLevel4.id == CandidateLevel3.id). \
-    #     filter(CandidateLevel3.t0_best + CandidateLevel3.tE_best < MJD_finish).\
-    #     with_entities(CandidateLevel4.id).\
-    #     order_by(CandidateLevel4.id).\
-    #     all()
-    # cand_ids_comp = [c[0] for c in cands_comp]
+    cands_comp = db.session.query(CandidateLevel4).outerjoin(CandidateLevel3,
+                                                        CandidateLevel4.id == CandidateLevel3.id). \
+        filter(CandidateLevel3.t0_best + CandidateLevel3.tE_best < MJD_finish).\
+        with_entities(CandidateLevel4.id).\
+        order_by(CandidateLevel4.id).\
+        all()
+    cand_ids_comp = [c[0] for c in cands_comp]
 
     cands_ongoing = db.session.query(CandidateLevel4).outerjoin(CandidateLevel3,
                                                                 CandidateLevel4.id == CandidateLevel3.id). \
@@ -136,13 +136,13 @@ def save_all_cand_fitter_data(num_max_lightcurves=3):
         rank = 0
         size = 1
 
-    # my_cand_ids_comp = np.array_split(cand_ids_comp, size)[rank]
+    my_cand_ids_comp = np.array_split(cand_ids_comp, size)[rank]
     my_cand_ids_ongoing = np.array_split(cand_ids_ongoing, size)[rank]
 
-    # for i, cand_id in enumerate(my_cand_ids_comp):
-    #     if i % 100 == 0:
-    #         print('%i) Saving completed cand fitter_data %i / %i' % (rank, i, len(my_cand_ids_comp)))
-    #     save_cand_fitter_data_by_id(cand_id, num_max_lightcurves=num_max_lightcurves)
+    for i, cand_id in enumerate(my_cand_ids_comp):
+        if i % 100 == 0:
+            print('%i) Saving completed cand fitter_data %i / %i' % (rank, i, len(my_cand_ids_comp)))
+        save_cand_fitter_data_by_id(cand_id, num_max_lightcurves=num_max_lightcurves)
 
     for i, cand_id in enumerate(my_cand_ids_ongoing):
         if i % 100 == 0:
