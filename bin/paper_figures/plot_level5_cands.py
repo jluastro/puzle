@@ -114,7 +114,8 @@ def plot_cands_on_sky():
     plt.close(fig)
 
 
-def fetch_popsycle_tE_piE(glon_arr, glat_arr):
+def fetch_popsycle_tE_piE(glon_arr, glat_arr, seed=0):
+    np.random.seed(seed)
     popsycle_map_fname = return_data_dir() + '/popsycle_map.npz'
     popsycle_map = np.load(popsycle_map_fname)
     glon_popsycle = popsycle_map['l']
@@ -134,6 +135,8 @@ def fetch_popsycle_tE_piE(glon_arr, glat_arr):
     popsycle_base_folder = '/global/cfs/cdirs/uLens/PopSyCLE_runs/PopSyCLE_runs_v3_refined_events'
     tE_popsycle = []
     piE_popsycle = []
+    tE_BH_popsycle = []
+    piE_BH_popsycle = []
     for idx, num in popsycle_idx_dct.items():
         l = glon_popsycle[idx]
         b = glat_popsycle[idx]
@@ -141,7 +144,6 @@ def fetch_popsycle_tE_piE(glon_arr, glat_arr):
         popsycle_catalog = Table.read(popsycle_fname, format='fits')
         popsycle_cond = popsycle_catalog['u0'] <= 1.0
         popsycle_cond *= popsycle_catalog['delta_m_r'] >= 0.1
-        popsycle_cond *= popsycle_catalog['f_blend_r'] >= 0.1
         popsycle_cond *= popsycle_catalog['ztf_r_app_LSN'] <= 22
         num_popsycle_cond = np.sum(popsycle_cond)
         if num_popsycle_cond == 0:
@@ -155,7 +157,17 @@ def fetch_popsycle_tE_piE(glon_arr, glat_arr):
         piE_popsycle_sample = np.random.choice(piE_popsycle_catalog, size=num, replace=True)
         piE_popsycle.extend(list(piE_popsycle_sample))
 
-    return cond_arr, tE_popsycle, piE_popsycle
+        BH_cond = popsycle_catalog['rem_id_L'] == 103
+        if np.sum(BH_cond * popsycle_cond) != 0:
+            tE_BH_popsycle.extend(list(popsycle_catalog['t_E'][popsycle_cond * BH_cond]))
+            piE_BH_popsycle.extend(list(popsycle_catalog['pi_E'][popsycle_cond * BH_cond]))
+
+    tE_popsycle = np.array(tE_popsycle)
+    piE_popsycle = np.array(piE_popsycle)
+    tE_BH_popsycle = np.array(tE_BH_popsycle)
+    piE_BH_popsycle = np.array(piE_BH_popsycle)
+
+    return cond_arr, tE_popsycle, piE_popsycle, tE_BH_popsycle, piE_BH_popsycle
 
 
 def plot_cands_tE_overlapping_popsycle():
@@ -172,11 +184,13 @@ def plot_cands_tE_overlapping_popsycle():
     glon_arr[cond] -= 360
     glat_arr = coords.galactic.b.value
 
-    cond_arr, tE_popsycle, _ = fetch_popsycle_tE_piE(glon_arr, glat_arr)
+    cond_arr, tE_popsycle, _, _, _ = fetch_popsycle_tE_piE(glon_arr, glat_arr)
     tE_cands = np.array([c.tE_pspl_gp for c in cands[cond_arr]])
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    bins = np.logspace(0.5, 3, 20)
+    bins = np.logspace(np.log10(np.min([tE_cands.min(), tE_popsycle.min()])),
+                       np.log10(np.max([tE_cands.max(), tE_popsycle.max()])),
+                       20)
     ax.clear()
     ax.hist(tE_cands, bins=bins, histtype='step', color='r', label='candidates')
     ax.hist(tE_popsycle, bins=bins, histtype='step', color='b', label='popsycle')
@@ -206,7 +220,7 @@ def plot_cands_tE_piE_overlapping_popsycle():
     glon_arr[cond] -= 360
     glat_arr = coords.galactic.b.value
 
-    cond_arr, tE_popsycle, piE_popsycle = fetch_popsycle_tE_piE(glon_arr, glat_arr)
+    cond_arr, tE_popsycle, piE_popsycle, tE_BH_popsycle, piE_BH_popsycle = fetch_popsycle_tE_piE(glon_arr, glat_arr)
 
     tE_cands = np.array([c.tE_pspl_gp for c in cands[cond_arr]])
     tE_err_cands = np.array([c.tE_err_pspl_gp for c in cands[cond_arr]])
@@ -216,15 +230,16 @@ def plot_cands_tE_piE_overlapping_popsycle():
 
     fig, ax = plt.subplots(figsize=(8, 5))
     ax.clear()
-    ax.scatter(tE_popsycle, piE_popsycle, color='b', s=5, label='popsycle')
     ax.errorbar(tE_cands[~cond_piE_err], piE_cands[~cond_piE_err],
                 xerr=tE_err_cands[~cond_piE_err], yerr=piE_err_cands[~cond_piE_err],
                 color='r', linestyle='', alpha=.2)
-    ax.scatter(tE_cands[~cond_piE_err], piE_cands[~cond_piE_err], color='r', s=5, label='level5')
+    ax.scatter(tE_cands[~cond_piE_err], piE_cands[~cond_piE_err], color='r', s=5, label='candidates')
     ax.errorbar(tE_cands[cond_piE_err], piE_cands[cond_piE_err],
                 xerr=tE_err_cands[cond_piE_err], yerr=piE_err_cands[cond_piE_err],
                 color='g', linestyle='', alpha=.2)
-    ax.scatter(tE_cands[cond_piE_err], piE_cands[cond_piE_err], color='g', s=5, label='level5 cut on u0_err, piE_err')
+    ax.scatter(tE_cands[cond_piE_err], piE_cands[cond_piE_err], color='g', s=5, label='candidates cut on u0_err, piE_err')
+    ax.scatter(tE_popsycle, piE_popsycle, color='b', s=5, label='sample PopSyCLE stars + BH')
+    ax.scatter(tE_BH_popsycle, piE_BH_popsycle, color='c', s=5, label='all PopSyCLE BH')
     ax.set_xscale('log')
     ax.set_yscale('log')
     ax.set_xlabel(r'$t_E$', fontsize=16)
