@@ -60,20 +60,26 @@ def plot_cands_on_sky():
     ax = ax.flatten()
     for a in ax: a.clear()
 
+    ax[0].set_title('Level 5 Candidates')
     ax[0].scatter(glon_cands_arr, glat_cands_arr, c='b', s=3)
     ax[0].set_xlim(-180, 180)
     ax[0].set_ylim(-90, 90)
 
+    ax[1].set_title('Level 6 Candidates')
     ax[1].scatter(glon_cands_arr[clear_cond], glat_cands_arr[clear_cond], c='r', s=3)
     ax[1].set_xlim(-180, 180)
     ax[1].set_ylim(-90, 90)
 
+    ax[2].set_title(r'Number of Objects with $N_{\rm epochs} \geq 20$')
     norm = LogNorm(vmin=1e4, vmax=8e5)
     ax[2].imshow(num_objs_hist, norm=norm, extent=extent, origin='lower', aspect=0.75)
 
+    ax[3].set_title('Level 6 Candidates - Galactic Plane')
     ax[3].scatter(glon_cands_arr[clear_cond], glat_cands_arr[clear_cond], c='r', s=3)
-    ax[3].set_xlim(0, 120)
+    ax[3].set_xlim(0, 150)
     ax[3].set_ylim(-30, 30)
+    ax[3].axhline(-10, color='k', alpha=.2)
+    ax[3].axhline(10, color='k', alpha=.2)
 
     for a in ax:
         a.plot(glon_ztf, glat_ztf, color='k')
@@ -81,12 +87,12 @@ def plot_cands_on_sky():
         a.set_ylabel('glat', fontsize=16)
         if a == ax[-1]:
             continue
-        rect = Rectangle((0, -30), 120, 60, facecolor='none', edgecolor='k')
+        rect = Rectangle((0, -30), 150, 60, facecolor='none', edgecolor='k')
         a.add_patch(rect)
 
     fig.tight_layout()
 
-    for xy in [(0, -30), (120, -30), (120, 30), (0, 30)]:
+    for xy in [(0, -30), (150, -30), (150, 30), (0, 30)]:
         transFigure = fig.transFigure.inverted()
         coord1 = transFigure.transform(ax[1].transData.transform([xy[0], xy[1]]))
         coord2 = transFigure.transform(ax[3].transData.transform([xy[0], xy[1]]))
@@ -107,6 +113,14 @@ def plot_cands_on_sky():
             patch = Circle((l, b), radius=radius+6,
                            facecolor='g', edgecolor='None', alpha=0.2)
             a.add_patch(patch)
+
+    plane_cond = np.abs(glat_cands_arr) <= 10
+    num_clear_cand = np.sum(clear_cond)
+    num_clear_plane_cand = np.sum(clear_cond * plane_cond)
+    frac_clear_plane_cand = 100 * num_clear_plane_cand / num_clear_cand
+    print(f'{num_clear_cand} clear microlensing candidates')
+    print(f'{num_clear_plane_cand} clear microlensing candidates within galactic plane')
+    print(f'{frac_clear_plane_cand:.1f}% of clear microlensing candidates within galactic plane')
 
     fname = '%s/level5_cands_on_sky.png' % return_figures_dir()
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
