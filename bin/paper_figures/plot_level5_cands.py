@@ -233,7 +233,7 @@ def plot_cands_tE_overlapping_popsycle():
     max_num = np.max(np.histogram(tE_popsycle, bins=bins)[0])
     tE_ogle, tE_num_ogle = return_tE_ogle(max_num)
 
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(8, 4))
     ax.clear()
     ax.hist(tE_cands, bins=bins, histtype='step', color='r', label='candidates')
     ax.hist(tE_popsycle, bins=bins, histtype='step', color='b', label='popsycle')
