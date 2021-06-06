@@ -134,13 +134,15 @@ def fetch_popsycle_tE_piE(glon_arr, glat_arr, seed=0):
     popsycle_map = np.load(popsycle_map_fname)
     glon_popsycle = popsycle_map['l']
     glat_popsycle = popsycle_map['b']
+    area_popsycle = popsycle_map['area']
+    radius_popsycle = np.max(np.sqrt(area_popsycle / np.pi))
 
     popsycle_idx_dct = defaultdict(int)
     cond_arr = []
     for glon, glat in zip(glon_arr, glat_arr):
         dist = np.hypot(np.cos(np.radians(glat)) * (glon - glon_popsycle),
                         glat - glat_popsycle)
-        if np.min(dist) < 6:
+        if np.min(dist) < radius_popsycle + 6:
             popsycle_idx_dct[np.argmin(dist)] += 1
             cond_arr.append(True)
         else:
@@ -184,14 +186,38 @@ def fetch_popsycle_tE_piE(glon_arr, glat_arr, seed=0):
     return cond_arr, tE_popsycle, piE_popsycle, tE_BH_popsycle, piE_BH_popsycle
 
 
+def return_tE_ogle(max_num):
+    tE_density_ogle = np.array([
+        [5.5395015809930115, 0.07071284778943003],
+        [7.55300129064756, 0.0824874655261459],
+        [10.188854554294219, 0.14696843861124467],
+        [14.041622573959856, 0.43867255910484987],
+        [19.145475792949043, 0.3508734455902715],
+        [26.10447912324336, 0.5969249509970737],
+        [35.97551043496946, 1.015521127634569],
+        [48.53027680430488, 0.9847160957933774],
+        [66.17007649137457, 0.5832923594286206],
+        [90.2215959024979, 0.3563193971228586],
+        [123.01536886170413, 0.20309176209047378],
+        [169.53185180413578, 0.2916640776023707],
+        [228.69523172084783, 0.06447102107323877],
+        [311.8214436979837, 0.04558929499981069],
+        [429.73221371866487, 0.08441534596012994]])
+    tE_ogle = tE_density_ogle[:, 0]
+    tE_num_ogle = tE_density_ogle[:, 1] * max_num / np.max(tE_density_ogle[:, 1])
+    return tE_ogle, tE_num_ogle
+
+
 def plot_cands_tE_overlapping_popsycle():
     cands = CandidateLevel4.query.\
         filter(CandidateLevel4.level5 == True,
-               CandidateLevel4.category == 'clear_microlensing').\
+               CandidateLevel4.category != None).\
         all()
     cands = np.array(cands)
     ra_arr = np.array([c.ra for c in cands])
     dec_arr = np.array([c.dec for c in cands])
+    category_arr = np.array([c.category for c in cands])
+    clear_cond = category_arr == 'clear_microlensing'
     coords = SkyCoord(ra_arr, dec_arr, frame='icrs', unit='degree')
     glon_arr = coords.galactic.l.value
     cond = glon_arr >= 180
@@ -199,15 +225,19 @@ def plot_cands_tE_overlapping_popsycle():
     glat_arr = coords.galactic.b.value
 
     cond_arr, tE_popsycle, _, _, _ = fetch_popsycle_tE_piE(glon_arr, glat_arr)
-    tE_cands = np.array([c.tE_pspl_gp for c in cands[cond_arr]])
+    tE_cands = np.array([c.tE_pspl_gp for c in cands[cond_arr * clear_cond]])
 
-    fig, ax = plt.subplots(figsize=(8, 5))
     bins = np.logspace(np.log10(np.min([tE_cands.min(), tE_popsycle.min()])),
                        np.log10(np.max([tE_cands.max(), tE_popsycle.max()])),
                        20)
+    max_num = np.max(np.histogram(tE_popsycle, bins=bins)[0])
+    tE_ogle, tE_num_ogle = return_tE_ogle(max_num)
+
+    fig, ax = plt.subplots(figsize=(8, 5))
     ax.clear()
     ax.hist(tE_cands, bins=bins, histtype='step', color='r', label='candidates')
     ax.hist(tE_popsycle, bins=bins, histtype='step', color='b', label='popsycle')
+    ax.plot(tE_ogle, tE_num_ogle, color='k', alpha=.5, label='OGLE', marker='.')
     ax.set_xscale('log')
     ax.set_yscale('log')
     ax.set_xlabel(r'$t_E$', fontsize=16)
@@ -223,11 +253,13 @@ def plot_cands_tE_overlapping_popsycle():
 def plot_cands_tE_piE_overlapping_popsycle():
     cands = CandidateLevel4.query.\
         filter(CandidateLevel4.level5 == True,
-               CandidateLevel4.category == 'clear_microlensing').\
+               CandidateLevel4.category != None).\
         all()
     cands = np.array(cands)
     ra_arr = np.array([c.ra for c in cands])
     dec_arr = np.array([c.dec for c in cands])
+    category_arr = np.array([c.category for c in cands])
+    clear_cond = category_arr == 'clear_microlensing'
     coords = SkyCoord(ra_arr, dec_arr, frame='icrs', unit='degree')
     glon_arr = coords.galactic.l.value
     cond = glon_arr >= 180
@@ -236,10 +268,10 @@ def plot_cands_tE_piE_overlapping_popsycle():
 
     cond_arr, tE_popsycle, piE_popsycle, tE_BH_popsycle, piE_BH_popsycle = fetch_popsycle_tE_piE(glon_arr, glat_arr)
 
-    tE_cands = np.array([c.tE_pspl_gp for c in cands[cond_arr]])
-    tE_err_cands = np.array([c.tE_err_pspl_gp for c in cands[cond_arr]])
-    piE_cands = np.array([c.piE_pspl_gp for c in cands[cond_arr]])
-    piE_err_cands = np.array([c.piE_err_pspl_gp for c in cands[cond_arr]])
+    tE_cands = np.array([c.tE_pspl_gp for c in cands[cond_arr * clear_cond]])
+    tE_err_cands = np.array([c.tE_err_pspl_gp for c in cands[cond_arr * clear_cond]])
+    piE_cands = np.array([c.piE_pspl_gp for c in cands[cond_arr * clear_cond]])
+    piE_err_cands = np.array([c.piE_err_pspl_gp for c in cands[cond_arr * clear_cond]])
     cond_piE_err = piE_err_cands <= 0.1
 
     fig, ax = plt.subplots(figsize=(8, 5))
