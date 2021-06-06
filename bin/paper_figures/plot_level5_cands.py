@@ -56,25 +56,25 @@ def plot_cands_on_sky():
                                         statistic='sum', bins=(glon_bins, glat_bins))[0].T
     num_objs_hist[num_objs_hist == 0] = 1
 
-    fig, ax = plt.subplots(2, 2, figsize=(14, 6))
+    fig, ax = plt.subplots(2, 2, figsize=(14, 7))
     ax = ax.flatten()
     for a in ax: a.clear()
 
-    ax[0].set_title('Level 5 Candidates')
+    ax[0].set_title('Level 5 Candidates', fontsize=14)
     ax[0].scatter(glon_cands_arr, glat_cands_arr, c='b', s=3)
     ax[0].set_xlim(-180, 180)
     ax[0].set_ylim(-90, 90)
 
-    ax[1].set_title('Level 6 Candidates')
+    ax[1].set_title('Level 6 Candidates', fontsize=14)
     ax[1].scatter(glon_cands_arr[clear_cond], glat_cands_arr[clear_cond], c='r', s=3)
     ax[1].set_xlim(-180, 180)
     ax[1].set_ylim(-90, 90)
 
-    ax[2].set_title(r'Number of Objects with $N_{\rm epochs} \geq 20$')
+    ax[2].set_title(r'Number of Objects with $N_{\rm epochs} \geq 20$', fontsize=14)
     norm = LogNorm(vmin=1e4, vmax=8e5)
     ax[2].imshow(num_objs_hist, norm=norm, extent=extent, origin='lower', aspect=0.75)
 
-    ax[3].set_title('Level 6 Candidates - Galactic Plane')
+    ax[3].set_title('Level 6 Candidates - Galactic Plane', fontsize=14)
     ax[3].scatter(glon_cands_arr[clear_cond], glat_cands_arr[clear_cond], c='r', s=3)
     ax[3].set_xlim(0, 150)
     ax[3].set_ylim(-30, 30)
@@ -83,8 +83,8 @@ def plot_cands_on_sky():
 
     for a in ax:
         a.plot(glon_ztf, glat_ztf, color='k')
-        a.set_xlabel('glon', fontsize=16)
-        a.set_ylabel('glat', fontsize=16)
+        a.set_xlabel('glon', fontsize=14)
+        a.set_ylabel('glat', fontsize=14)
         if a == ax[-1]:
             continue
         rect = Rectangle((0, -30), 150, 60, facecolor='none', edgecolor='k')
