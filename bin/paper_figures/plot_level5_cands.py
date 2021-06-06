@@ -159,8 +159,8 @@ def fetch_popsycle_tE_piE(glon_arr, glat_arr, seed=0):
         popsycle_fname = f'{popsycle_base_folder}/l{l:.1f}_b{b:.1f}_refined_events_ztf_r_Damineli16.fits'
         popsycle_catalog = Table.read(popsycle_fname, format='fits')
         popsycle_cond = popsycle_catalog['u0'] <= 1.0
-        popsycle_cond *= popsycle_catalog['delta_m_r'] >= 0.1
-        popsycle_cond *= popsycle_catalog['ztf_r_app_LSN'] <= 22
+        popsycle_cond *= popsycle_catalog['delta_m_r'] >= 0.3
+        popsycle_cond *= popsycle_catalog['ztf_r_app_LSN'] <= 21.5
         num_popsycle_cond = np.sum(popsycle_cond)
         if num_popsycle_cond == 0:
             continue
@@ -224,7 +224,7 @@ def plot_cands_tE_overlapping_popsycle():
     glon_arr[cond] -= 360
     glat_arr = coords.galactic.b.value
 
-    cond_arr, tE_popsycle, _, _, _ = fetch_popsycle_tE_piE(glon_arr, glat_arr)
+    cond_arr, tE_popsycle, _, _, _ = fetch_popsycle_tE_piE(glon_arr, glat_arr, seed=2)
     tE_cands = np.array([c.tE_pspl_gp for c in cands[cond_arr * clear_cond]])
 
     bins = np.logspace(np.log10(np.min([tE_cands.min(), tE_popsycle.min()])),
