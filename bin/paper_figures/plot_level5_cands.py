@@ -358,7 +358,7 @@ def plot_lightcurve_examples():
     fig.tight_layout(w_pad=1)
 
     fname = '%s/level5_lightcurve_examples.png' % return_figures_dir()
-    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.05)
     print('-- %s saved' % fname)
     plt.close(fig)
 
