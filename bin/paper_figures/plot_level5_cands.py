@@ -13,8 +13,11 @@ from astropy.table import Table
 from collections import defaultdict
 from scipy.stats import binned_statistic_2d
 
+from microlens.jlu.model import PSPL_Phot_Par_Param1
+
 from puzle.models import CandidateLevel4
 from puzle.jobs import return_num_objs_arr
+from puzle.cands import return_best_obj
 from puzle.utils import return_figures_dir, return_data_dir
 
 
@@ -299,10 +302,72 @@ def plot_cands_tE_piE_overlapping_popsycle():
     plt.close(fig)
 
 
+def plot_lightcurve_examples():
+    cands = CandidateLevel4.query.\
+        filter(CandidateLevel4.level5 == True,
+               CandidateLevel4.category != None).\
+        order_by(CandidateLevel4.id).\
+        all()
+    data = {'clear_microlensing':
+                {'label': 'clear microlensing', 'idx_arr': [460, 526, 490]},
+            'possible_microlensing':
+                {'label': 'possible microlensing', 'idx_arr': [286, 162, 188]},
+            'no_variability':
+                {'label': 'no variability', 'idx_arr': [133, 111, 77]},
+            'poor_model_data':
+                {'label': 'poor model / data', 'idx_arr': [15, 24, 48]},
+            'non_microlensing_variable':
+                {'label': 'non-microlensing variable', 'idx_arr': [112, 14, 44]},
+            }
+
+    fig, ax = plt.subplots(5, 3, figsize=(9, 9))
+    for i, category in enumerate(data):
+        cands_cat = [c for c in cands if c.category == category]
+        label = data[category]['label']
+        idx_arr = data[category]['idx_arr']
+        # idx_arr = np.random.choice(np.arange(len(cands_cat)),
+        #                            size=3, replace=False)
+        for j, idx in enumerate(idx_arr):
+            cand = cands_cat[idx]
+            obj = return_best_obj(cand)
+            ax[i, j].clear()
+            if j == 1:
+                ax[i, j].set_title(f'{label}')
+            ax[i, j].scatter(obj.lightcurve.hmjd,
+                             obj.lightcurve.mag, color='k', s=3)
+
+            pspl_gp_fit_dct = cand.pspl_gp_fit_dct
+            source_id = cand.source_id_arr[cand.idx_best]
+            color = cand.color_arr[cand.idx_best]
+            model_params = pspl_gp_fit_dct[source_id][color]
+
+            model = PSPL_Phot_Par_Param1(**model_params)
+            hmjd_model = np.linspace(obj.lightcurve.hmjd.min(),
+                                     obj.lightcurve.hmjd.max(),
+                                     10000)
+            mag_model = model.get_photometry(hmjd_model)
+            ax[i, j].plot(hmjd_model, mag_model, color='r', alpha=.3)
+
+            ax[i, j].invert_yaxis()
+            ax[i, j].tick_params(axis='x', which='both', bottom=False, labelbottom=False)
+            ax[i, j].tick_params(axis='y', which='both', left=False, labelleft=False)
+            if i == 4 and j == 1:
+                ax[i, j].set_xlabel('Observation Date', fontsize=16)
+        if i == 2:
+            ax[i, 0].set_ylabel('Magnitude', fontsize=16)
+    fig.tight_layout(w_pad=1)
+
+    fname = '%s/level5_lightcurve_examples.png' % return_figures_dir()
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    print('-- %s saved' % fname)
+    plt.close(fig)
+
+
 def generate_all_figures():
     plot_cands_on_sky()
     plot_cands_tE_overlapping_popsycle()
     plot_cands_tE_piE_overlapping_popsycle()
+    plot_lightcurve_examples()
 
 
 if __name__ == '__main__':
