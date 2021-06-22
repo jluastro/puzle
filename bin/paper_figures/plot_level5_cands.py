@@ -131,7 +131,7 @@ def plot_cands_on_sky():
     plt.close(fig)
 
 
-def fetch_popsycle_tE_piE(glon_arr, glat_arr, seed=0):
+def fetch_popsycle_tE_piE(glon_arr, glat_arr, seed=0, sample=True):
     np.random.seed(seed)
     popsycle_map_fname = return_data_dir() + '/popsycle_map.npz'
     popsycle_map = np.load(popsycle_map_fname)
@@ -169,12 +169,18 @@ def fetch_popsycle_tE_piE(glon_arr, glat_arr, seed=0):
             continue
 
         tE_popsycle_catalog = popsycle_catalog['t_E'][popsycle_cond]
-        tE_popsycle_sample = np.random.choice(tE_popsycle_catalog, size=num, replace=True)
-        tE_popsycle.extend(list(tE_popsycle_sample))
+        if sample:
+            tE_popsycle_sample = np.random.choice(tE_popsycle_catalog, size=num, replace=True)
+            tE_popsycle.extend(list(tE_popsycle_sample))
+        else:
+            tE_popsycle.extend(list(tE_popsycle_catalog))
 
         piE_popsycle_catalog = popsycle_catalog['pi_E'][popsycle_cond]
-        piE_popsycle_sample = np.random.choice(piE_popsycle_catalog, size=num, replace=True)
-        piE_popsycle.extend(list(piE_popsycle_sample))
+        if sample:
+            piE_popsycle_sample = np.random.choice(piE_popsycle_catalog, size=num, replace=True)
+            piE_popsycle.extend(list(piE_popsycle_sample))
+        else:
+            piE_popsycle.extend(list(piE_popsycle_catalog))
 
         BH_cond = popsycle_catalog['rem_id_L'] == 103
         if np.sum(BH_cond * popsycle_cond) != 0:
@@ -214,13 +220,11 @@ def return_tE_ogle(max_num):
 def plot_cands_tE_overlapping_popsycle():
     cands = CandidateLevel4.query.\
         filter(CandidateLevel4.level5 == True,
-               CandidateLevel4.category != None).\
+               CandidateLevel4.category == 'clear_microlensing').\
         all()
     cands = np.array(cands)
     ra_arr = np.array([c.ra for c in cands])
     dec_arr = np.array([c.dec for c in cands])
-    category_arr = np.array([c.category for c in cands])
-    clear_cond = category_arr == 'clear_microlensing'
     coords = SkyCoord(ra_arr, dec_arr, frame='icrs', unit='degree')
     glon_arr = coords.galactic.l.value
     cond = glon_arr >= 180
@@ -228,11 +232,12 @@ def plot_cands_tE_overlapping_popsycle():
     glat_arr = coords.galactic.b.value
 
     cond_arr, tE_popsycle, _, _, _ = fetch_popsycle_tE_piE(glon_arr, glat_arr, seed=2)
-    tE_cands = np.array([c.tE_pspl_gp for c in cands[cond_arr * clear_cond]])
+    tE_cands = np.array([c.tE_pspl_gp for c in cands[cond_arr]])
 
+    bin_size = 19
     bins = np.logspace(np.log10(np.min([tE_cands.min(), tE_popsycle.min()])),
                        np.log10(np.max([tE_cands.max(), tE_popsycle.max()])),
-                       20)
+                       bin_size)
     max_num = np.max(np.histogram(tE_popsycle, bins=bins)[0])
     tE_ogle, tE_num_ogle = return_tE_ogle(max_num)
 
@@ -269,31 +274,30 @@ def plot_cands_tE_piE_overlapping_popsycle():
     glon_arr[cond] -= 360
     glat_arr = coords.galactic.b.value
 
-    cond_arr, tE_popsycle, piE_popsycle, tE_BH_popsycle, piE_BH_popsycle = fetch_popsycle_tE_piE(glon_arr, glat_arr)
+    cond_arr, tE_popsycle, piE_popsycle, tE_BH_popsycle, piE_BH_popsycle = fetch_popsycle_tE_piE(glon_arr, glat_arr, sample=False)
 
     tE_cands = np.array([c.tE_pspl_gp for c in cands[cond_arr * clear_cond]])
     tE_err_cands = np.array([c.tE_err_pspl_gp for c in cands[cond_arr * clear_cond]])
     piE_cands = np.array([c.piE_pspl_gp for c in cands[cond_arr * clear_cond]])
     piE_err_cands = np.array([c.piE_err_pspl_gp for c in cands[cond_arr * clear_cond]])
-    cond_piE_err = piE_err_cands <= 0.1
 
     fig, ax = plt.subplots(figsize=(8, 5))
     ax.clear()
-    ax.errorbar(tE_cands[~cond_piE_err], piE_cands[~cond_piE_err],
-                xerr=tE_err_cands[~cond_piE_err], yerr=piE_err_cands[~cond_piE_err],
-                color='r', linestyle='', alpha=.2)
-    ax.scatter(tE_cands[~cond_piE_err], piE_cands[~cond_piE_err], color='r', s=5, label='candidates')
-    ax.errorbar(tE_cands[cond_piE_err], piE_cands[cond_piE_err],
-                xerr=tE_err_cands[cond_piE_err], yerr=piE_err_cands[cond_piE_err],
-                color='g', linestyle='', alpha=.2)
-    ax.scatter(tE_cands[cond_piE_err], piE_cands[cond_piE_err], color='g', s=5, label='candidates cut on u0_err, piE_err')
-    ax.scatter(tE_popsycle, piE_popsycle, color='b', s=5, label='sample PopSyCLE stars + BH')
-    ax.scatter(tE_BH_popsycle, piE_BH_popsycle, color='c', s=5, label='all PopSyCLE BH')
+    ax.errorbar(tE_cands, piE_cands,
+                xerr=tE_err_cands, yerr=piE_err_cands,
+                color='r', linestyle='', alpha=1)
+    ax.scatter(tE_cands, piE_cands, color='r', s=5, label='ZTF candidates')
+    ax.scatter(tE_popsycle, piE_popsycle, color='b', s=5, label='PopSyCLE stars', alpha=.2)
+    ax.scatter(tE_BH_popsycle, piE_BH_popsycle, color='k', s=5, label='PopSyCLE BH', alpha=.6)
     ax.set_xscale('log')
     ax.set_yscale('log')
     ax.set_xlabel(r'$t_E$', fontsize=16)
     ax.set_ylabel(r'$\pi_E$', fontsize=16)
-    ax.legend(markerscale=3)
+    ax.set_xlim(2e0, 1e3)
+    ax.set_ylim(1e-2, 3e0)
+    leg = ax.legend(markerscale=3)
+    for lh in leg.legendHandles:
+        lh.set_alpha(1)
     fig.tight_layout()
 
     fname = '%s/level5_cands_tE_piE.png' % return_figures_dir()
@@ -309,17 +313,18 @@ def plot_lightcurve_examples():
         order_by(CandidateLevel4.id).\
         all()
     data = {'clear_microlensing':
-                {'label': 'clear microlensing', 'idx_arr': [460, 526, 490]},
+                {'label': 'clear microlensing', 'idx_arr': [13, 63, 45]},
             'possible_microlensing':
-                {'label': 'possible microlensing', 'idx_arr': [286, 162, 188]},
+                {'label': 'possible microlensing', 'idx_arr': [0, 0, 0]},
             'no_variability':
-                {'label': 'no variability', 'idx_arr': [133, 111, 77]},
+                {'label': 'no variability', 'idx_arr': [0, 0, 0]},
             'poor_model_data':
-                {'label': 'poor model / data', 'idx_arr': [15, 24, 48]},
+                {'label': 'poor model / data', 'idx_arr': [85, 41, 89]},
             'non_microlensing_variable':
-                {'label': 'non-microlensing variable', 'idx_arr': [112, 14, 44]},
+                {'label': 'non-microlensing variable', 'idx_arr': [25, 18, 65]}
             }
 
+    # for i in range(10):
     fig, ax = plt.subplots(5, 3, figsize=(9, 9))
     for i, category in enumerate(data):
         cands_cat = [c for c in cands if c.category == category]
@@ -333,6 +338,7 @@ def plot_lightcurve_examples():
             ax[i, j].clear()
             if j == 1:
                 ax[i, j].set_title(f'{label}')
+            ax[i, j].set_title(idx)
             ax[i, j].scatter(obj.lightcurve.hmjd,
                              obj.lightcurve.mag, color='k', s=3)
 
