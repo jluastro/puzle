@@ -35,28 +35,28 @@ def plot_job_cells():
     ra_gal_high = coords_high.icrs.ra.value
     dec_gal_high = coords_high.icrs.dec.value
 
-    fig, ax = plt.subplots(2, 1, figsize=(13, 8))
+    fig, ax = plt.subplots(2, 1, figsize=(11, 8))
     for a in ax: a.clear()
 
     ax[0].set_title('Star Process Jobs')
-    im0 = ax[0].imshow(job_hist / 2, extent=extent, origin='lower')
+    im0 = ax[0].imshow(job_hist / 2, extent=extent, origin='lower', cmap='viridis')
     cbar0 = fig.colorbar(im0, ax=ax[0])
-    cbar0.set_label(r'Number of Jobs / deg$^2$', fontsize=12)
+    cbar0.set_label(r'Number of Jobs / deg$^2$')
 
     ax[1].set_title(r'Objects with $n_{\rm epochs} \geq 20$')
     norm = LogNorm(vmin=1e4, vmax=1e6)
-    im0 = ax[1].imshow(num_objs_hist / 2, norm=norm, extent=extent, origin='lower')
+    im0 = ax[1].imshow(num_objs_hist / 2, norm=norm, extent=extent, origin='lower', cmap='viridis')
     cbar0 = fig.colorbar(im0, ax=ax[1])
-    cbar0.set_label(r'Number of Objects / deg$^2$', fontsize=12)
+    cbar0.set_label(r'Number of Objects / deg$^2$')
 
     for a in ax:
         a.scatter(ra_gal_low, dec_gal_low, c='k', s=.1, alpha=.05)
         a.scatter(ra_gal_high, dec_gal_high, c='k', s=.1, alpha=.05)
-        a.set_xlabel('ra', fontsize=12)
-        a.set_ylabel('dec', fontsize=12)
+        a.set_xlabel('right ascension (degrees)')
+        a.set_ylabel('declination (degrees)')
         a.set_xlim(0, 360)
         a.set_ylim(-28, 90)
-    fig.tight_layout()
+    fig.tight_layout(h_pad=1)
 
     fname = '%s/job_cells.png' % return_figures_dir()
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
