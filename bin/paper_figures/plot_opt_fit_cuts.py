@@ -61,7 +61,7 @@ def plot_opt_fit_cuts():
     chi2_model_ulens = stats['chi_squared_ulens_level3']
     num_days_ulens = np.array([len(np.unique(np.floor(d))) for d in data])
     reduced_chi2_model_ulens = chi2_model_ulens / num_days_ulens
-    
+
     chi2_flat_outside_ulens = stats['chi_squared_outside_level3']
     num_days_outside_ulens = stats['num_days_outside_level3']
     cond_nonzero = num_days_outside_ulens != 0
@@ -75,45 +75,45 @@ def plot_opt_fit_cuts():
     piE_thresh = np.percentile(piE_ulens, 95)
     tE_thresh = np.percentile(tE_ulens, 95)
 
-    fig, ax = plt.subplots(2, 2, figsize=(10, 5))
+    fig, ax = plt.subplots(2, 2, figsize=(14, 8))
     ax = ax.flatten()
     for a in ax: a.clear()
 
-    density=False
+    density=True
     bins = np.linspace(0, 10, 50)
-    ax[0].set_title(r'Reduced $\chi^2$: Model')
-    ax[0].hist(reduced_chi2_model_cands, bins=bins, histtype='step', color='r', density=density, label='candidates Level 3')
-    ax[0].hist(reduced_chi2_model_cands_cut, bins=bins, histtype='step', color='b', density=density, label='candidates Level 4')
-    ax[0].hist(reduced_chi2_model_ulens, bins=bins, histtype='step', color='g', density=density, label='simulated ulens')
+    ax[0].hist(reduced_chi2_model_cands, bins=bins, histtype='step', color='r', density=density, linewidth=2)
+    ax[0].hist(reduced_chi2_model_cands_cut, bins=bins, histtype='step', color='g', density=density, linewidth=2)
+    ax[0].hist(reduced_chi2_model_ulens, bins=bins, histtype='step', color='b', density=density, linewidth=2)
     ax[0].axvline(chi2_model_thresh, color='k', alpha=.5)
-    ax[0].legend(framealpha=1)
-    ax[0].set_xlabel(r'Reduced $\chi^2$')
+    ax[0].set_xlabel(r'$\chi^2_{\rm reduced, model}$')
+    ax[0].set_ylabel('Frequency')
 
     bins = np.linspace(0, 10, 50)
-    ax[1].set_title(r'Reduced $\chi^2$: Flat')
-    ax[1].hist(reduced_chi2_flat_cands, bins=bins, histtype='step', color='r', density=density)
-    ax[1].hist(reduced_chi2_flat_cands_cut, bins=bins, histtype='step', color='b', density=density)
-    ax[1].hist(reduced_chi2_flat_ulens, bins=bins, histtype='step', color='g', density=density)
+    ax[1].hist(reduced_chi2_flat_cands, bins=bins, histtype='step', color='r', density=density, label='ZTF Candidates Level 3', linewidth=2)
+    ax[1].hist(reduced_chi2_flat_cands_cut, bins=bins, histtype='step', color='g', density=density, label='ZTF Candidates Level 4', linewidth=2)
+    ax[1].hist(reduced_chi2_flat_ulens, bins=bins, histtype='step', color='b', density=density, label=r'Simulated $\mu$-lens', linewidth=2)
+    ax[1].legend(framealpha=1)
     ax[1].axvline(chi2_flat_thresh, color='k', alpha=.5)
-    ax[1].set_xlabel(r'Reduced $\chi^2$')
+    ax[1].set_xlabel(r'$\chi^2_{\rm reduced, flat}$')
+    ax[1].set_ylabel('Frequency')
 
     bins = np.logspace(-3, np.log10(30), 50)
-    ax[2].set_title(r'Einstein Parallax: $\pi_E$')
-    ax[2].hist(piE_cands, bins=bins, histtype='step', color='r', density=density)
-    ax[2].hist(piE_cands_cut, bins=bins, histtype='step', color='b', density=density)
-    ax[2].hist(piE_ulens, bins=bins, histtype='step', color='g', density=density)
+    ax[2].hist(piE_cands, bins=bins, histtype='step', color='r', density=density, linewidth=2)
+    ax[2].hist(piE_cands_cut, bins=bins, histtype='step', color='g', density=density, linewidth=2)
+    ax[2].hist(piE_ulens, bins=bins, histtype='step', color='b', density=density, linewidth=2)
     ax[2].axvline(piE_thresh, color='k', alpha=.5)
     ax[2].set_xscale('log')
     ax[2].set_xlabel(r'$\pi_E$')
+    ax[2].set_ylabel('Frequency')
 
     bins = np.logspace(1, 3, 50)
-    ax[3].set_title(r'Einstein Crossing Time: $t_E$')
-    ax[3].hist(tE_cands, bins=bins, histtype='step', color='r', density=density)
-    ax[3].hist(tE_cands_cut, bins=bins, histtype='step', color='b', density=density)
-    ax[3].hist(tE_ulens, bins=bins, histtype='step', color='g', density=density)
-    ax[3].axvline(tE_thresh, color='m', alpha=.5, linestyle='--')
+    ax[3].hist(tE_cands, bins=bins, histtype='step', color='r', density=density, linewidth=2)
+    ax[3].hist(tE_cands_cut, bins=bins, histtype='step', color='g', density=density, linewidth=2)
+    ax[3].hist(tE_ulens, bins=bins, histtype='step', color='b', density=density, linewidth=2)
+    ax[3].axvline(tE_thresh, color='k', alpha=.5)
     ax[3].set_xscale('log')
     ax[3].set_xlabel(r'$t_E$')
+    ax[3].set_ylabel('Frequency')
 
     fig.tight_layout()
 

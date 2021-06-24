@@ -26,17 +26,13 @@ def return_kde(xdata, ydata, xmin, xmax, ymin, ymax):
     return xx, yy, f
 
 
-def plot_eta_eta_residual_cut(eta_arr=None, eta_residual_arr=None,
-                              eta_ulens_arr=None, eta_residual_ulens_arr=None,
-                              observable_arr=None):
-    if eta_arr is None:
-        eta_arr, eta_residual_arr, _ = return_cands_level2_eta_arrs()
-    if eta_ulens_arr is None:
-        eta_ulens_arr, eta_residual_ulens_arr, _, \
-        _, _, observable_arr = return_ulens_level2_eta_arrs()
+def plot_eta_eta_residual_cut():
+    eta_arr, eta_residual_arr, _ = return_cands_level2_eta_arrs()
+    eta_ulens_arr, eta_residual_ulens_arr, _, \
+    _, _, observable_arr = return_ulens_level2_eta_arrs()
 
     cond_obs = observable_arr == True
-    xmin, xmax, ymin, ymax = 0, 1.75, 0, 2.75
+    xmin, xmax, ymin, ymax = 0, 1.6, 0, 2.75
     bounds = (xmin, xmax, ymin, ymax)
 
     ulens_obs_xx, ulens_obs_yy, ulens_obs_f = return_kde(eta_ulens_arr[cond_obs],
@@ -68,43 +64,47 @@ def plot_eta_eta_residual_cut(eta_arr=None, eta_residual_arr=None,
                                             count()
 
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    fig.suptitle('%s of %s CandidateLevel2s Remaining (slope = %.2f | offset = %.2f)' %
+    print('%s of %s CandidateLevel2s Remaining (slope = %.2f | offset = %.2f)' %
                  (format(num_candidates_cut, ','),
                   format(num_candidates, ','),
-                  slope, offset), fontsize=10)
+                  slope, offset))
     for a in ax: a.clear()
-    ax[0].set_title('uLens frac = %.0f%% | cands frac = %.1f%%' %
+    print('uLens frac = %.0f%% | cands frac = %.1f%%' %
                     (100*ulens_is_observable_frac_obs,
-                     100*cands_is_observable_frac),
-                    fontsize=11)
+                     100*cands_is_observable_frac))
     ax[0].contour(ulens_obs_xx, ulens_obs_yy, ulens_obs_f, cmap='viridis', levels=10)
     ax[0].scatter(eta_ulens_arr[cond_obs],
                   eta_residual_ulens_arr[cond_obs],
-                  color='b', alpha=0.05, s=1)
-    ax[1].set_title('BH uLens frac = %.0f%% | cands frac = %.1f%%' %
+                  color='b', alpha=0.05, s=1,
+                  label=r'Simulated $\mu$-lens')
+    print('BH uLens frac = %.0f%% | cands frac = %.1f%%' %
                     (100*ulens_is_observable_BH_frac_obs,
-                     100*cands_is_observable_frac),
-                    fontsize=11)
+                     100*cands_is_observable_frac))
     ax[1].contour(ulens_BH_xx, ulens_BH_yy, ulens_BH_f, cmap='plasma', levels=10)
     ax[1].scatter(eta_ulens_arr[cond_obs*cond_BH],
                   eta_residual_ulens_arr[cond_obs*cond_BH],
                   color='darkgreen', alpha=0.5, s=1,
-                  label='tE >= 150, piE <= 0.08')
-    ax[1].legend(markerscale=10, loc=4, fontsize=12)
+                  label=r'Simulated $\mu$-lens BHs')
+    print('tE >= 150, piE <= 0.08')
+    # ax[1].legend(markerscale=10, loc=4, fontsize=12)
     x = np.linspace(0, xmax)
     y = x * slope + offset
     for i, a in enumerate(ax):
         a.plot(x, y, color='k')
         a.contour(cands_xx, cands_yy, cands_f, cmap='autumn', levels=10)
         a.scatter(eta_arr, eta_residual_arr,
-                  color='gold', alpha=0.01, s=1)
+                  color='gold', alpha=0.01, s=1,
+                  label='ZTF Candidates')
         a.set_xlim((xmin, xmax))
         a.set_ylim((ymin, ymax))
         a.grid(True)
-        a.set_xlabel('eta', fontsize=10)
-        a.set_ylabel('eta_residual', fontsize=10)
+        a.set_xlabel(r'$\eta$')
+        a.set_ylabel(r'$\eta_{\rm residual}$')
+        leg = a.legend(loc=4, markerscale=10)
+        for lh in leg.legendHandles:
+            lh.set_alpha(1)
+
     fig.tight_layout()
-    fig.subplots_adjust(top=.9)
 
     figures_dir = return_figures_dir()
     fname = f'{figures_dir}/eta_eta_residual_cut.png'

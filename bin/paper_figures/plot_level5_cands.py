@@ -63,21 +63,21 @@ def plot_cands_on_sky():
     ax = ax.flatten()
     for a in ax: a.clear()
 
-    ax[0].set_title('Level 5 Candidates', fontsize=14)
+    ax[0].set_title('ZTF Candidates Level 5', fontsize=14)
     ax[0].scatter(glon_cands_arr, glat_cands_arr, c='b', s=3)
     ax[0].set_xlim(-180, 180)
     ax[0].set_ylim(-90, 90)
 
-    ax[1].set_title('Level 6 Candidates', fontsize=14)
+    ax[1].set_title('ZTF Candidates Level 6', fontsize=14)
     ax[1].scatter(glon_cands_arr[clear_cond], glat_cands_arr[clear_cond], c='r', s=3)
     ax[1].set_xlim(-180, 180)
     ax[1].set_ylim(-90, 90)
 
     ax[2].set_title(r'Number of Objects with $N_{\rm epochs} \geq 20$', fontsize=14)
     norm = LogNorm(vmin=1e4, vmax=8e5)
-    ax[2].imshow(num_objs_hist, norm=norm, extent=extent, origin='lower', aspect=0.75)
+    ax[2].imshow(num_objs_hist, norm=norm, extent=extent, origin='lower', aspect=0.75, cmap='viridis')
 
-    ax[3].set_title('Level 6 Candidates - Galactic Plane', fontsize=14)
+    ax[3].set_title('ZTF Candidates Level 6', fontsize=14)
     ax[3].scatter(glon_cands_arr[clear_cond], glat_cands_arr[clear_cond], c='r', s=3)
     ax[3].set_xlim(0, 150)
     ax[3].set_ylim(-30, 30)
@@ -86,8 +86,8 @@ def plot_cands_on_sky():
 
     for a in ax:
         a.plot(glon_ztf, glat_ztf, color='k')
-        a.set_xlabel('glon', fontsize=14)
-        a.set_ylabel('glat', fontsize=14)
+        a.set_xlabel(r'l (degree)')
+        a.set_ylabel(r'b (degree)')
         if a == ax[-1]:
             continue
         rect = Rectangle((0, -30), 150, 60, facecolor='none', edgecolor='k')
@@ -223,6 +223,7 @@ def plot_cands_tE_overlapping_popsycle():
                CandidateLevel4.category == 'clear_microlensing').\
         all()
     cands = np.array(cands)
+    tE_cands = np.array([c.tE_pspl_gp for c in cands])
     ra_arr = np.array([c.ra for c in cands])
     dec_arr = np.array([c.dec for c in cands])
     coords = SkyCoord(ra_arr, dec_arr, frame='icrs', unit='degree')
@@ -232,24 +233,41 @@ def plot_cands_tE_overlapping_popsycle():
     glat_arr = coords.galactic.b.value
 
     cond_arr, tE_popsycle, _, _, _ = fetch_popsycle_tE_piE(glon_arr, glat_arr, seed=2)
-    tE_cands = np.array([c.tE_pspl_gp for c in cands[cond_arr]])
+    tE_cands_overlap = np.array([c.tE_pspl_gp for c in cands[cond_arr]])
 
-    bin_size = 19
-    bins = np.logspace(np.log10(np.min([tE_cands.min(), tE_popsycle.min()])),
-                       np.log10(np.max([tE_cands.max(), tE_popsycle.max()])),
-                       bin_size)
+    bin_size = 10
+    bins = np.logspace(np.log10(5), np.log10(200), bin_size)
+    bin_centers = (bins[:-1] + bins[1:]) / 2
+
+    densityFlag = False
+    tE_cands_num = np.histogram(tE_cands, bins=bins, density=densityFlag)[0]
+    tE_cands_num_err = np.sqrt(tE_cands_num)
+    tE_cands_overlap_num = np.histogram(tE_cands_overlap, bins=bins)[0]
+    tE_cands_overlap_num_err = np.sqrt(tE_cands_overlap_num)
+
     max_num = np.max(np.histogram(tE_popsycle, bins=bins)[0])
     tE_ogle, tE_num_ogle = return_tE_ogle(max_num)
 
-    fig, ax = plt.subplots(figsize=(8, 4))
+    fig, ax = plt.subplots(figsize=(12, 6))
     ax.clear()
-    ax.hist(tE_cands, bins=bins, histtype='step', color='r', label='candidates')
-    ax.hist(tE_popsycle, bins=bins, histtype='step', color='b', label='popsycle')
-    ax.plot(tE_ogle, tE_num_ogle, color='k', alpha=.5, label='OGLE', marker='.')
+    ax.errorbar(bin_centers, tE_cands_num, yerr=tE_cands_num_err, linestyle='None', color='r')
+    ax.plot(bin_centers, tE_cands_num, linewidth=2, color='r', marker='.', label='ZTF: clear_microlensing')
+    # ax.hist(tE_cands, bins=bins, histtype='step', linewidth=2,
+    #            color='r', label='ZTF Candidates Level 6', density=densityFlag)
+    cond_non_zero = tE_cands_overlap_num != 0
+    ax.errorbar(bin_centers[cond_non_zero], tE_cands_overlap_num[cond_non_zero],
+                yerr=tE_cands_overlap_num_err[cond_non_zero], linestyle='None', color='g')
+    ax.plot(bin_centers[cond_non_zero], tE_cands_overlap_num[cond_non_zero], linewidth=2, color='g', marker='.', label='ZTF: clear_microlensing, Galactic plane')
+    # ax.hist(tE_cands_overlap, bins=bins, histtype='step', linewidth=2,
+    #         color='g', label='ZTF Candidates Level 6 in PopSyCLE Fields', density=densityFlag)
+    ax.hist(tE_popsycle, bins=bins, histtype='step', linewidth=2,
+            color='b', label=r'Simulated $\mu$-Lens (scaled)', density=densityFlag)
+    ax.plot(tE_ogle, tE_num_ogle, color='k', marker='.', label='OGLE (scaled)')
     ax.set_xscale('log')
     ax.set_yscale('log')
-    ax.set_xlabel(r'$t_E$', fontsize=16)
-    ax.legend()
+    ax.set_xlabel(r'$t_E$')
+    ax.set_ylabel('Number of Events')
+    ax.legend(markerscale=3, fontsize=14, framealpha=1)
     fig.tight_layout()
 
     fname = '%s/level5_cands_tE.png' % return_figures_dir()
@@ -293,7 +311,7 @@ def plot_cands_tE_piE_overlapping_popsycle():
     ax.set_yscale('log')
     ax.set_xlabel(r'$t_E$', fontsize=16)
     ax.set_ylabel(r'$\pi_E$', fontsize=16)
-    ax.set_xlim(2e0, 1e3)
+    ax.set_xlim(3e0, 2e3)
     ax.set_ylim(1e-2, 3e0)
     leg = ax.legend(markerscale=3)
     for lh in leg.legendHandles:
