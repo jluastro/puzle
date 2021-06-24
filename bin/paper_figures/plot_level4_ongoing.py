@@ -27,12 +27,18 @@ def plot_ongoing_cands_t0_tE():
     ax.clear()
     ax.errorbar(t0, tE, xerr=t0_err, yerr=tE_err, color='b', linestyle='', alpha=.1, ms=.1)
     ax.scatter(t0, tE, color='b', s=2)
-    ax.axvline(MJD_finish, color='k', alpha=.3)
-    ax.axvline(july_2021_mjd, color='r', alpha=.3)
-    ax.axhline(150, color='k', alpha=.3)
+    ax.axvline(MJD_finish, color='k', alpha=.6, label='DR5 End Date')
+    ax.axvline(july_2021_mjd, color='r', alpha=.6, label='2021-07-15')
+    ax.axhline(150, color='g', alpha=.6, label='150 days')
     ax.set_yscale('log')
-    ax.set_xlabel(r'$t_0$', fontsize=16)
-    ax.set_ylabel(r'$t_E$', fontsize=16)
+    ax.set_xlim(58850, 59950)
+    ax.set_ylim(1e1, 1e3)
+    ax.set_xlabel(r'$t_0$ (days)')
+    ax.set_ylabel(r'$t_E$ (hmjd)')
+    leg = ax.legend(loc=4)
+    for lh in leg.legendHandles:
+        lh.set_linewidth(3)
+        lh.set_alpha(1)
     fig.tight_layout()
 
     cond = np.array(tE) >= 150
