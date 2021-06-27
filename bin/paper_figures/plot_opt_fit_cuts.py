@@ -112,7 +112,7 @@ def plot_opt_fit_cuts():
     ax[3].hist(tE_ulens, bins=bins, histtype='step', color='b', density=density, linewidth=2)
     # ax[3].axvline(tE_thresh, color='k', alpha=.5)
     ax[3].set_xscale('log')
-    ax[3].set_xlabel(r'$t_E$')
+    ax[3].set_xlabel(r'$t_E$ (days)')
     ax[3].set_ylabel('Frequency')
 
     fig.tight_layout()

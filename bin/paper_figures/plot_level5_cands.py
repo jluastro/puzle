@@ -57,6 +57,7 @@ def plot_cands_on_sky():
     extent = (glon_bins.min(), glon_bins.max(), glat_bins.min(), glat_bins.max())
     num_objs_hist = binned_statistic_2d(glon_objs_arr, glat_objs_arr, num_objs_arr,
                                         statistic='sum', bins=(glon_bins, glat_bins))[0].T
+    num_objs_hist /= (1.5 * 1.5)
     num_objs_hist[num_objs_hist == 0] = 1
 
     fig, ax = plt.subplots(2, 2, figsize=(14, 7))
@@ -74,8 +75,16 @@ def plot_cands_on_sky():
     ax[1].set_ylim(-90, 90)
 
     ax[2].set_title(r'Number of Objects with $N_{\rm epochs} \geq 20$', fontsize=14)
-    norm = LogNorm(vmin=1e4, vmax=8e5)
-    ax[2].imshow(num_objs_hist, norm=norm, extent=extent, origin='lower', aspect=0.75, cmap='viridis')
+    norm = LogNorm(vmin=1e4, vmax=4e5)
+    im = ax[2].imshow(num_objs_hist, norm=norm, extent=extent, origin='lower', aspect=0.75, cmap='viridis')
+
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    divider = make_axes_locatable(ax[2])
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cbar = fig.colorbar(im, cax=cax)
+    # cbar = fig.colorbar(im, ax=ax[2])
+    cbar.set_label(r'Number of Objects / deg$^2$', fontsize=12)
+    ax[2].set_aspect('auto')
 
     ax[3].set_title('ZTF Candidates Level 6', fontsize=14)
     ax[3].scatter(glon_cands_arr[clear_cond], glat_cands_arr[clear_cond], c='r', s=3)
@@ -86,8 +95,8 @@ def plot_cands_on_sky():
 
     for a in ax:
         a.plot(glon_ztf, glat_ztf, color='k')
-        a.set_xlabel(r'l (degree)')
-        a.set_ylabel(r'b (degree)')
+        a.set_xlabel(r'l (degrees)')
+        a.set_ylabel(r'b (degrees)')
         if a == ax[-1]:
             continue
         rect = Rectangle((0, -30), 150, 60, facecolor='none', edgecolor='k')
@@ -165,6 +174,7 @@ def fetch_popsycle_tE_piE(glon_arr, glat_arr, seed=0, sample=True):
         popsycle_cond *= popsycle_catalog['delta_m_r'] >= 0.3
         popsycle_cond *= popsycle_catalog['ztf_r_app_LSN'] <= 21.5
         num_popsycle_cond = np.sum(popsycle_cond)
+        print(idx, num, num_popsycle_cond)
         if num_popsycle_cond == 0:
             continue
 
@@ -251,13 +261,14 @@ def plot_cands_tE_overlapping_popsycle():
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.clear()
     ax.errorbar(bin_centers, tE_cands_num, yerr=tE_cands_num_err, linestyle='None', color='r')
-    ax.plot(bin_centers, tE_cands_num, linewidth=2, color='r', marker='.', label='ZTF: clear_microlensing')
+    ax.plot(bin_centers, tE_cands_num, linewidth=2, color='r', marker='.', label='ZTF Candidates Level 6')
     # ax.hist(tE_cands, bins=bins, histtype='step', linewidth=2,
     #            color='r', label='ZTF Candidates Level 6', density=densityFlag)
     cond_non_zero = tE_cands_overlap_num != 0
     ax.errorbar(bin_centers[cond_non_zero], tE_cands_overlap_num[cond_non_zero],
                 yerr=tE_cands_overlap_num_err[cond_non_zero], linestyle='None', color='g')
-    ax.plot(bin_centers[cond_non_zero], tE_cands_overlap_num[cond_non_zero], linewidth=2, color='g', marker='.', label='ZTF: clear_microlensing, Galactic plane')
+    ax.plot(bin_centers[cond_non_zero], tE_cands_overlap_num[cond_non_zero], linewidth=2,
+            color='g', marker='.', label='ZTF Candidates Level 6: Galactic Plane')
     # ax.hist(tE_cands_overlap, bins=bins, histtype='step', linewidth=2,
     #         color='g', label='ZTF Candidates Level 6 in PopSyCLE Fields', density=densityFlag)
     ax.hist(tE_popsycle, bins=bins, histtype='step', linewidth=2,
@@ -265,13 +276,13 @@ def plot_cands_tE_overlapping_popsycle():
     ax.plot(tE_ogle, tE_num_ogle, color='k', marker='.', label='OGLE (scaled)')
     ax.set_xscale('log')
     ax.set_yscale('log')
-    ax.set_xlabel(r'$t_E$')
+    ax.set_xlabel(r'$t_E$ (days)')
     ax.set_ylabel('Number of Events')
     ax.legend(markerscale=3, fontsize=14, framealpha=1)
     fig.tight_layout()
 
     fname = '%s/level5_cands_tE.png' % return_figures_dir()
-    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.02)
     print('-- %s saved' % fname)
     plt.close(fig)
 
@@ -304,22 +315,22 @@ def plot_cands_tE_piE_overlapping_popsycle():
     ax.errorbar(tE_cands, piE_cands,
                 xerr=tE_err_cands, yerr=piE_err_cands,
                 color='r', linestyle='', alpha=1)
-    ax.scatter(tE_cands, piE_cands, color='r', s=5, label='ZTF candidates')
-    ax.scatter(tE_popsycle, piE_popsycle, color='b', s=5, label='PopSyCLE stars', alpha=.2)
-    ax.scatter(tE_BH_popsycle, piE_BH_popsycle, color='k', s=5, label='PopSyCLE BH', alpha=.6)
+    ax.scatter(tE_cands, piE_cands, color='r', s=5, label='ZTF Candidates Level 6')
+    ax.scatter(tE_popsycle, piE_popsycle, color='b', s=5, label=r'Simulated $\mu$-Lens: Stellar Lens', alpha=.2)
+    ax.scatter(tE_BH_popsycle, piE_BH_popsycle, color='k', s=5, label=r'Simulated $\mu$-Lens: BH Lens', alpha=.6)
     ax.set_xscale('log')
     ax.set_yscale('log')
-    ax.set_xlabel(r'$t_E$', fontsize=16)
+    ax.set_xlabel(r'$t_E$ (days)', fontsize=16)
     ax.set_ylabel(r'$\pi_E$', fontsize=16)
-    ax.set_xlim(3e0, 2e3)
-    ax.set_ylim(1e-2, 3e0)
-    leg = ax.legend(markerscale=3)
+    ax.set_xlim(3e0, 3e3)
+    ax.set_ylim(1e-2, 1e1)
+    leg = ax.legend(markerscale=3, fontsize=14, loc=1)
     for lh in leg.legendHandles:
         lh.set_alpha(1)
     fig.tight_layout()
 
     fname = '%s/level5_cands_tE_piE.png' % return_figures_dir()
-    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.02)
     print('-- %s saved' % fname)
     plt.close(fig)
 
@@ -356,7 +367,7 @@ def plot_lightcurve_examples():
             ax[i, j].clear()
             if j == 1:
                 ax[i, j].set_title(f'{label}')
-            ax[i, j].set_title(idx)
+            # ax[i, j].set_title(idx)
             ax[i, j].scatter(obj.lightcurve.hmjd,
                              obj.lightcurve.mag, color='k', s=3)
 
@@ -376,9 +387,9 @@ def plot_lightcurve_examples():
             ax[i, j].tick_params(axis='x', which='both', bottom=False, labelbottom=False)
             ax[i, j].tick_params(axis='y', which='both', left=False, labelleft=False)
             if i == 4 and j == 1:
-                ax[i, j].set_xlabel('Observation Date', fontsize=16)
+                ax[i, j].set_xlabel('heliocentric modified julian date (days)', fontsize=16)
         if i == 2:
-            ax[i, 0].set_ylabel('Magnitude', fontsize=16)
+            ax[i, 0].set_ylabel('magnitude', fontsize=16)
     fig.tight_layout(w_pad=1)
 
     fname = '%s/level5_lightcurve_examples.png' % return_figures_dir()

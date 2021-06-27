@@ -94,13 +94,13 @@ def plot_eta_eta_residual_cut():
         a.contour(cands_xx, cands_yy, cands_f, cmap='autumn', levels=10)
         a.scatter(eta_arr, eta_residual_arr,
                   color='gold', alpha=0.01, s=1,
-                  label='ZTF Candidates')
+                  label='ZTF Candidates Level 2')
         a.set_xlim((xmin, xmax))
         a.set_ylim((ymin, ymax))
         a.grid(True)
         a.set_xlabel(r'$\eta$')
         a.set_ylabel(r'$\eta_{\rm residual}$')
-        leg = a.legend(loc=4, markerscale=10)
+        leg = a.legend(loc=4, markerscale=10, fontsize=14)
         for lh in leg.legendHandles:
             lh.set_alpha(1)
 
@@ -108,7 +108,7 @@ def plot_eta_eta_residual_cut():
 
     figures_dir = return_figures_dir()
     fname = f'{figures_dir}/eta_eta_residual_cut.png'
-    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.02)
     print('-- %s saved' % fname)
     plt.close(fig)
 
