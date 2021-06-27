@@ -117,7 +117,7 @@ def plot_opt_fit_cuts():
 
     fig.tight_layout()
 
-    fname = '%s/plot_opt_fit_cuts.png' % return_figures_dir()
+    fname = '%s/opt_fit_cuts.png' % return_figures_dir()
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
     print('-- %s saved' % fname)
     plt.close(fig)
