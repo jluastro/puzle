@@ -110,7 +110,7 @@ def plot_opt_fit_cuts():
     ax[3].hist(tE_cands, bins=bins, histtype='step', color='r', density=density, linewidth=2)
     ax[3].hist(tE_cands_cut, bins=bins, histtype='step', color='g', density=density, linewidth=2)
     ax[3].hist(tE_ulens, bins=bins, histtype='step', color='b', density=density, linewidth=2)
-    ax[3].axvline(tE_thresh, color='k', alpha=.5)
+    # ax[3].axvline(tE_thresh, color='k', alpha=.5)
     ax[3].set_xscale('log')
     ax[3].set_xlabel(r'$t_E$')
     ax[3].set_ylabel('Frequency')
@@ -118,7 +118,7 @@ def plot_opt_fit_cuts():
     fig.tight_layout()
 
     fname = '%s/opt_fit_cuts.png' % return_figures_dir()
-    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.02)
     print('-- %s saved' % fname)
     plt.close(fig)
 
