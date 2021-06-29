@@ -34,9 +34,9 @@ def plot_example_lightcurves():
         # ax[i].set_title(r'$\eta = $ %.2f' % eta_sample_arr[i], fontsize=14)
         hmjd = obj.lightcurve.hmjd
         mag = obj.lightcurve.mag
-        ax[i].scatter(hmjd, mag, s=100, color='b', marker='.')
         hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
-        ax[i].scatter(hmjd_round, mag_round, s=5, color='r', marker='^')
+        ax[i].scatter(hmjd, mag, s=100, color='b', marker='.', label='Epochs')
+        ax[i].scatter(hmjd_round, mag_round, s=5, color='r', marker='^', label='Nightly Averages')
         ax[i].invert_yaxis()
         if i == len(obj_arr) - 1:
             ax[i].set_xlabel('heliocentric modified julian date (days)')
@@ -48,6 +48,10 @@ def plot_example_lightcurves():
         else:
             y_coord = 0
         x_coord = 0.714
+        if i == 0:
+            leg = ax[i].legend(loc=4, fontsize=12)
+            leg.legendHandles[0]._sizes = [200]
+            leg.legendHandles[1]._sizes = [100]
         ax[i].annotate(r'$\eta = $ %.2f' % eta_sample_arr[i], xy=(x_coord, y_coord),
                        xycoords='axes fraction', fontsize=16,
                        horizontalalignment='right', verticalalignment='bottom')
