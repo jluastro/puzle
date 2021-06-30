@@ -259,6 +259,8 @@ def plot_cands_tE_overlapping_popsycle():
     max_num = np.max(np.histogram(tE_popsycle, bins=bins)[0])
     tE_ogle, tE_num_ogle = return_tE_ogle(max_num)
 
+    color_level6_plane = ''
+
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.clear()
 
@@ -360,29 +362,30 @@ def plot_lightcurve_examples():
     data = {'clear_microlensing':
                 {'label': 'clear microlensing', 'idx_arr': [13, 63, 45]},
             'possible_microlensing':
-                {'label': 'possible microlensing', 'idx_arr': [0, 0, 0]},
-            'no_variability':
-                {'label': 'no variability', 'idx_arr': [0, 0, 0]},
+                {'label': 'possible microlensing', 'idx_arr': [127, 300, 0]},
             'poor_model_data':
                 {'label': 'poor model / data', 'idx_arr': [85, 41, 89]},
             'non_microlensing_variable':
                 {'label': 'non-microlensing variable', 'idx_arr': [25, 18, 65]}
             }
 
+    # 125, 127, 0, 300, 50
+
     # for i in range(10):
-    fig, ax = plt.subplots(5, 3, figsize=(9, 9))
+    fig, ax = plt.subplots(4, 3, figsize=(9, 8))
     for i, category in enumerate(data):
         cands_cat = [c for c in cands if c.category == category]
         label = data[category]['label']
         idx_arr = data[category]['idx_arr']
-        # idx_arr = np.random.choice(np.arange(len(cands_cat)),
-        #                            size=3, replace=False)
+        # if category == 'possible_microlensing':
+        #     idx_arr = np.random.choice(np.arange(len(cands_cat)),
+        #                                size=3, replace=False)
         for j, idx in enumerate(idx_arr):
             cand = cands_cat[idx]
             obj = return_best_obj(cand)
             ax[i, j].clear()
             if j == 1:
-                ax[i, j].set_title(f'{label}')
+                ax[i, j].set_title(f'{label}', fontsize=18)
             # ax[i, j].set_title(idx)
             ax[i, j].scatter(obj.lightcurve.hmjd,
                              obj.lightcurve.mag, color='k', s=3)
@@ -402,10 +405,10 @@ def plot_lightcurve_examples():
             ax[i, j].invert_yaxis()
             ax[i, j].tick_params(axis='x', which='both', bottom=False, labelbottom=False)
             ax[i, j].tick_params(axis='y', which='both', left=False, labelleft=False)
-            if i == 4 and j == 1:
+            if i == 3 and j == 1:
                 ax[i, j].set_xlabel('heliocentric modified julian date (days)', fontsize=16)
         if i == 2:
-            ax[i, 0].set_ylabel('magnitude', fontsize=16)
+            ax[i, 0].set_ylabel('      magnitude', horizontalalignment='left', fontsize=16)
     fig.tight_layout(w_pad=1)
 
     fname = '%s/level5_lightcurve_examples.png' % return_figures_dir()

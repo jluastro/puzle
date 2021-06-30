@@ -61,12 +61,6 @@
                     </form>
                 </td>
                 <td colspan="2">
-                    <form action="{{ url_for('categorize_candidate', candid=cand.id, category="no_variability", category_return=category_return) }}" method="post">
-                        {{ form.hidden_tag() }}
-                        {{ form.submit(value='No Variability') }}
-                    </form>
-                </td>
-                <td colspan="2">
                     <form action="{{ url_for('categorize_candidate', candid=cand.id, category="non_microlensing_variable", category_return=category_return) }}" method="post">
                         {{ form.hidden_tag() }}
                         {{ form.submit(value='Non-Microlensing Variable') }}

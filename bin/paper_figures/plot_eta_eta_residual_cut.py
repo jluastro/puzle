@@ -84,7 +84,7 @@ def plot_eta_eta_residual_cut():
     ax[1].scatter(eta_ulens_arr[cond_obs*cond_BH],
                   eta_residual_ulens_arr[cond_obs*cond_BH],
                   color='darkgreen', alpha=0.5, s=1,
-                  label=r'Simulated $\mu$-lens BHs')
+                  label=r'Simulated $\mu$-lens ($t_E\ \geq 150$,$\pi_E \leq 0.08$)')
     print('tE >= 150, piE <= 0.08')
     # ax[1].legend(markerscale=10, loc=4, fontsize=12)
     x = np.linspace(0, xmax)
@@ -100,7 +100,7 @@ def plot_eta_eta_residual_cut():
         a.grid(True)
         a.set_xlabel(r'$\eta$')
         a.set_ylabel(r'$\eta_{\rm residual}$')
-        leg = a.legend(loc=4, markerscale=10, fontsize=14)
+        leg = a.legend(loc=4, markerscale=10, framealpha=1, fontsize=12)
         for lh in leg.legendHandles:
             lh.set_alpha(1)
 
