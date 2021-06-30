@@ -28,9 +28,9 @@ def plot_example_lightcurves():
     for a in ax: a.clear()
     for i, idx in enumerate(idx_arr):
         hmjd, mag = data[idx][:, :2].T
-        ax[i].scatter(hmjd, mag, s=100, color='b', marker='.')
         hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
-        ax[i].scatter(hmjd_round, mag_round, s=5, color='r', marker='^')
+        ax[i].scatter(hmjd, mag, s=100, color='b', marker='.', label='Epochs')
+        ax[i].scatter(hmjd_round, mag_round, s=5, color='r', marker='^', label='Nightly Averages')
 
         model_params = {'t0': metadata['t0'][idx],
                         'u0_amp': metadata['u0'][idx],
@@ -57,6 +57,10 @@ def plot_example_lightcurves():
         else:
             y_coord = 0
         x_coord = 0.714
+        if i == 0:
+            leg = ax[i].legend(loc=2, fontsize=12)
+            leg.legendHandles[0]._sizes = [200]
+            leg.legendHandles[1]._sizes = [100]
         ax[i].annotate(r'$\eta = $ %.2f' % stats['eta'][idx], xy=(x_coord, y_coord),
                        xycoords='axes fraction', fontsize=16,
                        horizontalalignment='right', verticalalignment='bottom')
