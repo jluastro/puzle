@@ -259,8 +259,6 @@ def plot_cands_tE_overlapping_popsycle():
     max_num = np.max(np.histogram(tE_popsycle, bins=bins)[0])
     tE_ogle, tE_num_ogle = return_tE_ogle(max_num)
 
-    color_level6_plane = ''
-
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.clear()
 
@@ -778,14 +776,15 @@ def plot_cands_magnitude():
     def return_mag_base_arrs(cands):
         mag_base_arrs = {
             'g': [],
-            'r': []
+            'r': [],
+            'i': []
         }
 
         for cand in cands:
             cand_fitter_data = load_cand_fitter_data(cand.id)
             filters = [p.split('_')[-1] for p in cand_fitter_data['data']['phot_files']]
             assert len(cand.mag_base_arr_pspl_gp[:3]) == len(filters)
-            for filt in ['g', 'r']:
+            for filt in mag_base_arrs:
                 mag_bases = [m for i, m in enumerate(cand.mag_base_arr_pspl_gp[:3]) if filters[i] == filt]
                 if len(mag_bases) > 0:
                     mag_base = np.median(mag_bases)
@@ -793,6 +792,8 @@ def plot_cands_magnitude():
         return mag_base_arrs
 
     mag_base_arrs = return_mag_base_arrs(cands)
+    for filter in mag_base_arrs:
+        print('%i candidates with %s baseline' % (len(mag_base_arrs[filter]), filter))
     mag_base_plane_box_arrs = return_mag_base_arrs(cands_plane_box)
 
     def return_CDF(arr):
@@ -810,6 +811,7 @@ def plot_cands_magnitude():
     ax[0].set_title(r'ZTF Candidates Level 6', fontsize=16)
     ax[0].hist(mag_base_arrs['r'], histtype='step', color=color_r_band, bins=bins, label='r-band', linewidth=2)
     ax[0].hist(mag_base_arrs['g'], histtype='step', color=color_g_band, bins=bins, label='g-band', linewidth=2)
+    ax[0].hist(mag_base_arrs['i'], histtype='step', color='k', bins=bins, label='i-band', linewidth=2)
     ax[0].set_xlabel('Magnitude')
     ax[0].set_ylabel('Number of Events')
     ax[0].legend(loc=2, fontsize=14)
@@ -838,6 +840,56 @@ def plot_cands_magnitude():
     fig.tight_layout()
 
     fname = '%s/level6_magnitudes.png' % return_figures_dir()
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.05)
+    print('-- %s saved' % fname)
+    plt.close(fig)
+
+
+def plot_cands_blend_fraction():
+    cands = CandidateLevel4.query.\
+        filter(CandidateLevel4.level5 == True,
+               CandidateLevel4.category == 'clear_microlensing').\
+        all()
+
+    def return_b_sff_arrs(cands):
+        b_sff_arrs = {
+            'g': [],
+            'r': [],
+            'i': []
+        }
+
+        for cand in cands:
+            cand_fitter_data = load_cand_fitter_data(cand.id)
+            filters = [p.split('_')[-1] for p in cand_fitter_data['data']['phot_files']]
+            assert len(cand.b_sff_arr_pspl_gp[:3]) == len(filters)
+            for filt in b_sff_arrs:
+                b_sffs = [m for i, m in enumerate(cand.b_sff_arr_pspl_gp[:3]) if filters[i] == filt]
+                if len(b_sffs) > 0:
+                    b_sff = np.median(b_sffs)
+                    b_sff_arrs[filt].append(b_sff)
+        return b_sff_arrs
+
+    b_sff_arrs = return_b_sff_arrs(cands)
+
+    color_r_band = '#e93574'
+    color_g_band = '#47aaae'
+
+    bins = np.linspace(0, 1.5, 12)
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.clear()
+
+    ax.set_title(r'ZTF Candidates Level 6', fontsize=16)
+    ax.hist(b_sff_arrs['r'], histtype='step', color=color_r_band, bins=bins, label='r-band', linewidth=2)
+    ax.hist(b_sff_arrs['g'], histtype='step', color=color_g_band, bins=bins, label='g-band', linewidth=2)
+    ax.hist(b_sff_arrs['i'], histtype='step', color='k', bins=bins, label='i-band', linewidth=2)
+    ax.set_xlabel('Source Flux Fraction')
+    ax.set_ylabel('Number of Events')
+    ax.legend(loc=2, fontsize=14)
+
+    fig.tight_layout()
+
+    fname = '%s/level6_source_flux_fractions.png' % return_figures_dir()
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.05)
     print('-- %s saved' % fname)
     plt.close(fig)
