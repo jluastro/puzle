@@ -772,57 +772,75 @@ def plot_cands_magnitude():
         filter(CandidateLevel4.level5 == True,
                CandidateLevel4.category == 'clear_microlensing').\
         all()
-    cands = [c for c in cands if c.glon >= 10]
-    print('%i cands with glon >= 10 degrees' % len(cands))
+    cands_plane_box = [c for c in cands if c.glon >= 10 and c.glon <= 100 and c.glat >= -10 and c.glat <= 10]
+    print('%i cands within the Galactic box' % len(cands_plane_box))
 
-    mag_base_arrs = {
-        'g': [],
-        'r': []
-    }
+    def return_mag_base_arrs(cands):
+        mag_base_arrs = {
+            'g': [],
+            'r': []
+        }
 
-    for cand in cands:
-        cand_fitter_data = load_cand_fitter_data(cand.id)
-        filters = [p.split('_')[-1] for p in cand_fitter_data['data']['phot_files']]
-        assert len(cand.mag_base_arr_pspl_gp[:3]) == len(filters)
-        for filt in ['g', 'r']:
-            mag_bases = [m for i, m in enumerate(cand.mag_base_arr_pspl_gp[:3]) if filters[i] == filt]
-            if len(mag_bases) > 0:
-                mag_base = np.median(mag_bases)
-                mag_base_arrs[filt].append(mag_base)
+        for cand in cands:
+            cand_fitter_data = load_cand_fitter_data(cand.id)
+            filters = [p.split('_')[-1] for p in cand_fitter_data['data']['phot_files']]
+            assert len(cand.mag_base_arr_pspl_gp[:3]) == len(filters)
+            for filt in ['g', 'r']:
+                mag_bases = [m for i, m in enumerate(cand.mag_base_arr_pspl_gp[:3]) if filters[i] == filt]
+                if len(mag_bases) > 0:
+                    mag_base = np.median(mag_bases)
+                    mag_base_arrs[filt].append(mag_base)
+        return mag_base_arrs
+
+    mag_base_arrs = return_mag_base_arrs(cands)
+    mag_base_plane_box_arrs = return_mag_base_arrs(cands_plane_box)
 
     def return_CDF(arr):
         x = np.sort(arr)
         y = np.arange(len(arr))
         return x, y
 
+    color_r_band = '#e93574'
+    color_g_band = '#47aaae'
+    color_fit = '#564787'
+
     fig, ax = plt.subplots(2, 1, figsize=(8, 8))
     for a in ax: a.clear()
     bins = np.linspace(14, 21.5, 15)
-    ax[0].set_title(r'ZTF Candidates Level 6: $l \geq 10^{\circ}$')
-    ax[0].hist(mag_base_arrs['g'], histtype='step', color='g', bins=bins, label='g-band', linewidth=2)
-    ax[0].hist(mag_base_arrs['r'], histtype='step', color='r', bins=bins, label='r-band', linewidth=2)
+    ax[0].set_title(r'ZTF Candidates Level 6', fontsize=16)
+    ax[0].hist(mag_base_arrs['r'], histtype='step', color=color_r_band, bins=bins, label='r-band', linewidth=2)
+    ax[0].hist(mag_base_arrs['g'], histtype='step', color=color_g_band, bins=bins, label='g-band', linewidth=2)
     ax[0].set_xlabel('Magnitude')
     ax[0].set_ylabel('Number of Events')
     ax[0].legend(loc=2, fontsize=14)
 
-    ax[1].plot(*return_CDF(mag_base_arrs['g']), color='g', label='g-band', linewidth=2)
-    ax[1].plot(*return_CDF(mag_base_arrs['r']), color='r', label='r-band', linewidth=2)
+    ax[1].plot(*return_CDF(mag_base_arrs['r']), color=color_r_band, linestyle='-',
+               label=r'r-band: All Sky', linewidth=2)
+    ax[1].plot(*return_CDF(mag_base_plane_box_arrs['r']), color=color_r_band, linestyle='--',
+               label=r'r-band: Medford2020 Search Area', linewidth=2)
 
     ztf_mag_cdf_3yr = return_ztf_mag_cdf_3yr()
-    ax[1].plot(*ztf_mag_cdf_3yr.T, color='c', linestyle='-', label='Medford2020 Simulation')
+    ax[1].plot(*ztf_mag_cdf_3yr.T, color=color_fit, linestyle='-', label='Medford2020 Simulation')
     m, b = np.polyfit(*np.log10(ztf_mag_cdf_3yr[:60]).T, deg=1)
     x = np.linspace(14, 19, 1000)
-    y = 10**(m*np.log10(x)+b)
-    ax[1].plot(x, y, color='c', linestyle='--', label='Medford2020 Simulation, extended')
+    y = 10**(m*np.log10(x)+b-.05)
+    ax[1].plot(x, y, color=color_fit, linestyle='--', label='Medford2020 Simulation, extended')
+
+    for a in ax:
+        a.set_xlim(13.9, 21.6)
 
     ax[1].set_ylim(1, 1000)
-    ax[1].set_xlim(14, 21.5)
     ax[1].set_yscale('log')
     ax[1].set_xlabel('Faintest Magnitude')
     ax[1].set_ylabel('Total Number of Events')
-    ax[1].legend(loc=2, fontsize=14)
+    ax[1].legend(loc=2, fontsize=13)
 
     fig.tight_layout()
+
+    fname = '%s/level6_magnitudes.png' % return_figures_dir()
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.05)
+    print('-- %s saved' % fname)
+    plt.close(fig)
 
 
 def generate_all_figures():
@@ -830,6 +848,7 @@ def generate_all_figures():
     plot_cands_tE_overlapping_popsycle()
     plot_cands_tE_piE_overlapping_popsycle()
     plot_lightcurve_examples()
+    plot_cands_magnitude()
 
 
 if __name__ == '__main__':
