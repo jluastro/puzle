@@ -243,11 +243,11 @@ def plot_cands_tE_overlapping_popsycle():
     glon_arr[cond] -= 360
     glat_arr = coords.galactic.b.value
 
-    cond_arr, tE_popsycle, _, _, _ = fetch_popsycle_tE_piE(glon_arr, glat_arr, seed=2)
+    cond_arr, tE_popsycle, _, _, _ = fetch_popsycle_tE_piE(glon_arr, glat_arr, seed=2, sample=False)
     tE_cands_overlap = np.array([c.tE_pspl_gp for c in cands[cond_arr]])
 
-    bin_size = 10
-    bins = np.logspace(np.log10(5), np.log10(200), bin_size)
+    bin_size = 11
+    bins = np.logspace(np.log10(3), np.log10(500), bin_size)
     bin_centers = (bins[:-1] + bins[1:]) / 2
 
     densityFlag = False
@@ -256,45 +256,66 @@ def plot_cands_tE_overlapping_popsycle():
     tE_cands_overlap_num = np.histogram(tE_cands_overlap, bins=bins)[0]
     tE_cands_overlap_num_err = np.sqrt(tE_cands_overlap_num)
 
-    max_num = np.max(np.histogram(tE_popsycle, bins=bins)[0])
-    tE_ogle, tE_num_ogle = return_tE_ogle(max_num)
+    tE_popsycle_counts = np.histogram(tE_popsycle, bins=bins, density=False)[0]
+    factor = np.sum(tE_cands_overlap_num) / np.sum(tE_popsycle_counts)
 
-    fig, ax = plt.subplots(figsize=(12, 6))
+    max_num = np.max(np.histogram(tE_popsycle, bins=bins)[0])
+    tE_ogle, tE_num_ogle = return_tE_ogle(max_num * factor)
+
+    # fig, ax = plt.subplots(figsize=(12, 6))
     ax.clear()
 
     cond_non_zero = tE_cands_overlap_num != 0
-    ax.errorbar(np.append(bin_centers[cond_non_zero], 166.37),
-                np.append(tE_cands_overlap_num[cond_non_zero], 5e-1),
-                yerr=np.append(tE_cands_overlap_num_err[cond_non_zero], 1),
-                linestyle='None', color='g')
-    ax.plot(np.append(bin_centers[cond_non_zero], 166.37),
-            np.append(tE_cands_overlap_num[cond_non_zero], 5e-1),
-            linewidth=2, color='g', marker='.',
-            label='ZTF Candidates Level 6: Galactic Plane')
-
-    ax.hist(tE_popsycle, bins=bins, histtype='step', linewidth=2,
-            color='b', label=r'Simulated $\mu$-Lens: Galactic Plane, scaled', density=densityFlag)
-    ax.plot(tE_ogle, tE_num_ogle, color='k', marker='.', label='OGLE: Galactic Plane, scaled')
-
-    ax.errorbar(np.append(bin_centers, 250.6),
-                np.append(tE_cands_num, 5e-1),
-                yerr=np.append(tE_cands_num_err, 1),
+    x = np.append(np.append(bin_centers[0], bin_centers[cond_non_zero]), 239.75)
+    y = np.append(np.append(0.5, tE_cands_overlap_num[cond_non_zero]), 0.5)
+    yerr = np.append(np.append(1, tE_cands_overlap_num_err[cond_non_zero]), 1)
+    ax.errorbar(x, y, yerr=yerr,
                 linestyle='None', color='m')
-    ax.plot(np.append(bin_centers, 250.6),
-            np.append(tE_cands_num, 5e-1),
-            linewidth=2, color='m', marker='.',
+    ax.plot(x, y,
+            linewidth=3, color='m', marker='.',
+            label='ZTF Candidates Level 6: Galactic Plane')
+    # ax.errorbar(bin_centers[cond_non_zero],
+    #             tE_cands_overlap_num[cond_non_zero],
+    #             yerr=tE_cands_overlap_num_err[cond_non_zero],
+    #             linestyle='None', color='m')
+    # ax.plot(bin_centers[cond_non_zero],
+    #         tE_cands_overlap_num[cond_non_zero],
+    #         linewidth=3, color='m', marker='.',
+    #         label='ZTF Candidates Level 6: Galactic Plane')
+
+    ax.hist(bins[:-1], bins=bins, weights=factor*tE_popsycle_counts, histtype='step', linewidth=2,
+            color='b', label=r'Simulated $\mu$-Lens: Galactic Plane, scaled', density=densityFlag)
+    ax.plot(tE_ogle, tE_num_ogle, color='k', marker='.', label='OGLE: Galactic Plane, scaled', alpha=.6)
+
+    cond_non_zero = tE_cands_num != 0
+    x = np.append(np.append(bin_centers[0], bin_centers[cond_non_zero]), 239.75)
+    y = np.append(np.append(0.5, tE_cands_num[cond_non_zero]), 0.5)
+    yerr = np.append(np.append(1, tE_cands_num_err[cond_non_zero]), 1)
+    ax.errorbar(x, y, yerr=yerr,
+                linestyle='None', color='g')
+    ax.plot(x, y,
+            linewidth=2, color='g', marker='.',
             label='ZTF Candidates Level 6: All Sky', linestyle='--')
+    # ax.errorbar(bin_centers[cond_non_zero],
+    #             tE_cands_num[cond_non_zero],
+    #             yerr=tE_cands_num_err[cond_non_zero],
+    #             linestyle='None', color='g')
+    # ax.plot(bin_centers[cond_non_zero],
+    #         tE_cands_num[cond_non_zero],
+    #         linewidth=2, color='g', marker='.',
+    #         label='ZTF Candidates Level 6: All Sky', linestyle='--')
 
     ax.set_xscale('log')
     ax.set_yscale('log')
     ax.set_xlabel(r'$t_E$ (days)')
     ax.set_ylabel('Number of Events')
     ax.set_ylim(5e-1, 5e1)
+    ax.set_xlim(3, 500)
     handles, labels = ax.get_legend_handles_labels()
     handles = [handles[0], handles[3], handles[1], handles[2]]
     labels = [labels[0], labels[3], labels[1], labels[2]]
     ax.legend(handles, labels, loc=8,
-              markerscale=3, framealpha=1, fontsize=14)
+              markerscale=3, framealpha=1, fontsize=15)
     fig.tight_layout()
 
     fname = '%s/level5_cands_tE.png' % return_figures_dir()
