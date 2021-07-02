@@ -262,7 +262,7 @@ def plot_cands_tE_overlapping_popsycle():
     max_num = np.max(np.histogram(tE_popsycle, bins=bins)[0])
     tE_ogle, tE_num_ogle = return_tE_ogle(max_num * factor)
 
-    # fig, ax = plt.subplots(figsize=(12, 6))
+    fig, ax = plt.subplots(figsize=(12, 6))
     ax.clear()
 
     cond_non_zero = tE_cands_overlap_num != 0
@@ -372,6 +372,104 @@ def plot_cands_tE_piE_overlapping_popsycle():
     plt.close(fig)
 
 
+def _plot_lightcurve_axis(cand, ax, color_marker='k', color_model='r', remove_axis=True):
+    obj = return_best_obj(cand)
+    ax.scatter(obj.lightcurve.hmjd,
+                     obj.lightcurve.mag, color=color_marker, s=3)
+
+    pspl_gp_fit_dct = cand.pspl_gp_fit_dct
+    source_id = cand.source_id_arr[cand.idx_best]
+    color = cand.color_arr[cand.idx_best]
+    model_params = pspl_gp_fit_dct[source_id][color]
+
+    model = PSPL_Phot_Par_Param1(**model_params)
+    hmjd_model = np.linspace(obj.lightcurve.hmjd.min(),
+                             obj.lightcurve.hmjd.max(),
+                             10000)
+    mag_model = model.get_photometry(hmjd_model)
+    ax.plot(hmjd_model, mag_model, color=color_model, alpha=.3)
+
+    ax.invert_yaxis()
+    if remove_axis:
+        ax.tick_params(axis='x', which='both', bottom=False, labelbottom=False)
+        ax.tick_params(axis='y', which='both', left=False, labelleft=False)
+
+
+def plot_level6_lightcurve_examples():
+    cands = CandidateLevel4.query.\
+        filter(CandidateLevel4.level5 == True,
+               CandidateLevel4.category == 'clear_microlensing').\
+        order_by(CandidateLevel4.id).\
+        all()
+    print('%i total cands within the Galactic box' % len(cands))
+    cands_plane = [c for c in cands if np.abs(c.glat) <= 15]
+    print('%i cands within the Galactic plane' % len(cands_plane))
+    cands_halo = [c for c in cands if np.abs(c.glat) > 15]
+    print('%i cands within the Galactic plane' % len(cands_halo))
+
+    # idx_plane = np.random.choice(np.arange(len(cands_plane)), replace=False, size=8)
+    # idx_halo = np.random.choice(np.arange(len(cands_halo)), replace=False, size=8)
+    idx_xlim_plane = [
+        (77, [58600, 59250], [.03, .97], 'left'),
+        (28, [58250, 58800], [.97, .97], 'right'),
+        (23, [58250, 58500], [.03, .97], 'left'),
+        (53, [58600, 59250], [.03, .97], 'left'),
+        (10, [58250, 58800], [.97, .97], 'right'),
+        (30, [58600, 59250], [.03, .97], 'left')
+    ]
+    idx_xlim_halo = [
+        (5, [58250, 59250], [.03, .97], 'left'),
+        (8, [58250, 59250], [.97, .97], 'right'),
+        (12, [58400, 59250], [.03, .97], 'left'),
+        (9, [58250, 59250], [.97, .97], 'right'),
+        (34, [58250, 59250], [.97, .97], 'right'),
+        (24, [58250, 59250], [.03, .97], 'left'),
+    ]
+
+    fig, ax = plt.subplots(4, 3, figsize=(12, 8))
+    ax = ax.flatten()
+    for j, (idx, xlim, textcoords, halign) in enumerate(idx_xlim_plane):
+        ax[j].clear()
+        cand = cands_plane[idx]
+        # ax[j].set_title(f'P {idx} {cand.glat:.2f}', fontsize=12)
+        _plot_lightcurve_axis(cand, ax[j], color_marker='m', color_model='k', remove_axis=False)
+        ax[j].set_xlim(xlim)
+        ax[j].text(textcoords[0], textcoords[1],
+                   f'({cand.glon:.2f}, {cand.glat:.2f})',
+                   horizontalalignment=halign, verticalalignment='top',
+                   fontsize=12, transform=ax[j].transAxes)
+    for j, (idx, xlim, textcoords, halign) in enumerate(idx_xlim_halo):
+        ax[j+6].clear()
+        cand = cands_halo[idx]
+        # ax[j+6].set_title(f'H {idx} {cand.glat:.2f}', fontsize=12)
+        _plot_lightcurve_axis(cand, ax[j+6], color_marker='g', color_model='k', remove_axis=False)
+        ax[j+6].set_xlim(xlim)
+        ax[j+6].text(textcoords[0], textcoords[1],
+                     f'({cand.glon:.2f}, {cand.glat:.2f})',
+                     horizontalalignment=halign, verticalalignment='top',
+                     fontsize=12, transform=ax[j+6].transAxes)
+    for a in ax:
+        a.tick_params(axis='both', labelsize=12)
+    #     if i == 3 and j == 1:
+    #         ax[i, j].set_xlabel('heliocentric modified julian date (days)', fontsize=16)
+    # if i == 2:
+    #     ax[i, 0].set_ylabel('      magnitude', horizontalalignment='left', fontsize=16)
+    fig.tight_layout(h_pad=1, w_pad=1)
+    fig.subplots_adjust(bottom=.09, left=0.08)
+    fig.text(0.5, 0.01, 'heliocentric modified julian date (days)',
+             horizontalalignment='center',
+             verticalalignment='bottom', fontsize=18)
+    fig.text(0.01, 0.5, 'magnitude',
+             rotation='vertical',
+             verticalalignment='center',
+             horizontalalignment='left', fontsize=18)
+
+    fname = '%s/level6_lightcurve_examples.png' % return_figures_dir()
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.05)
+    print('-- %s saved' % fname)
+    plt.close(fig)
+
+
 def plot_lightcurve_examples():
     cands = CandidateLevel4.query.\
         filter(CandidateLevel4.level5 == True,
@@ -401,29 +499,10 @@ def plot_lightcurve_examples():
         #                                size=3, replace=False)
         for j, idx in enumerate(idx_arr):
             cand = cands_cat[idx]
-            obj = return_best_obj(cand)
             ax[i, j].clear()
             if j == 1:
                 ax[i, j].set_title(f'{label}', fontsize=18)
-            # ax[i, j].set_title(idx)
-            ax[i, j].scatter(obj.lightcurve.hmjd,
-                             obj.lightcurve.mag, color='k', s=3)
-
-            pspl_gp_fit_dct = cand.pspl_gp_fit_dct
-            source_id = cand.source_id_arr[cand.idx_best]
-            color = cand.color_arr[cand.idx_best]
-            model_params = pspl_gp_fit_dct[source_id][color]
-
-            model = PSPL_Phot_Par_Param1(**model_params)
-            hmjd_model = np.linspace(obj.lightcurve.hmjd.min(),
-                                     obj.lightcurve.hmjd.max(),
-                                     10000)
-            mag_model = model.get_photometry(hmjd_model)
-            ax[i, j].plot(hmjd_model, mag_model, color='r', alpha=.3)
-
-            ax[i, j].invert_yaxis()
-            ax[i, j].tick_params(axis='x', which='both', bottom=False, labelbottom=False)
-            ax[i, j].tick_params(axis='y', which='both', left=False, labelleft=False)
+            _plot_lightcurve_axis(cand, ax[i, j])
             if i == 3 and j == 1:
                 ax[i, j].set_xlabel('heliocentric modified julian date (days)', fontsize=16)
         if i == 2:
@@ -921,6 +1000,7 @@ def generate_all_figures():
     plot_cands_tE_overlapping_popsycle()
     plot_cands_tE_piE_overlapping_popsycle()
     plot_lightcurve_examples()
+    plot_level6_lightcurve_examples()
     plot_cands_magnitude()
 
 
