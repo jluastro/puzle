@@ -52,8 +52,8 @@ def plot_job_cells():
     for a in ax:
         a.scatter(ra_gal_low, dec_gal_low, c='k', s=.1, alpha=.05)
         a.scatter(ra_gal_high, dec_gal_high, c='k', s=.1, alpha=.05)
-        a.set_xlabel('right ascension (degrees)')
-        a.set_ylabel('declination (degrees)')
+        a.set_xlabel('Right Ascension (degrees)')
+        a.set_ylabel('Declination (degrees)')
         a.set_xlim(0, 360)
         a.set_ylim(-28, 90)
     fig.tight_layout(h_pad=1)

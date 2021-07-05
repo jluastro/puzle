@@ -70,7 +70,7 @@ def plot_cands_on_sky():
     ax[0].set_xlim(-180, 180)
     ax[0].set_ylim(-90, 90)
 
-    ax[1].set_title('ZTF Candidates Level 6', fontsize=14)
+    ax[1].set_title('ZTF Events Level 6', fontsize=14)
     ax[1].scatter(glon_cands_arr[clear_cond], glat_cands_arr[clear_cond], c='r', s=3)
     ax[1].set_xlim(-180, 180)
     ax[1].set_ylim(-90, 90)
@@ -87,7 +87,7 @@ def plot_cands_on_sky():
     cbar.set_label(r'Number of Objects / deg$^2$', fontsize=12)
     ax[2].set_aspect('auto')
 
-    ax[3].set_title('ZTF Candidates Level 6', fontsize=14)
+    ax[3].set_title('ZTF Events Level 6', fontsize=14)
     ax[3].scatter(glon_cands_arr[clear_cond], glat_cands_arr[clear_cond], c='r', s=3)
     ax[3].set_xlim(0, 150)
     ax[3].set_ylim(-30, 30)
@@ -273,7 +273,7 @@ def plot_cands_tE_overlapping_popsycle():
                 linestyle='None', color='m')
     ax.plot(x, y,
             linewidth=3, color='m', marker='.',
-            label='ZTF Candidates Level 6: Galactic Plane')
+            label='ZTF Events Level 6: Galactic Plane')
     # ax.errorbar(bin_centers[cond_non_zero],
     #             tE_cands_overlap_num[cond_non_zero],
     #             yerr=tE_cands_overlap_num_err[cond_non_zero],
@@ -295,7 +295,7 @@ def plot_cands_tE_overlapping_popsycle():
                 linestyle='None', color='g')
     ax.plot(x, y,
             linewidth=2, color='g', marker='.',
-            label='ZTF Candidates Level 6: All Sky', linestyle='--')
+            label='ZTF Events Level 6: All Sky', linestyle='--')
     # ax.errorbar(bin_centers[cond_non_zero],
     #             tE_cands_num[cond_non_zero],
     #             yerr=tE_cands_num_err[cond_non_zero],
@@ -352,7 +352,7 @@ def plot_cands_tE_piE_overlapping_popsycle():
     ax.errorbar(tE_cands, piE_cands,
                 xerr=tE_err_cands, yerr=piE_err_cands,
                 color='r', linestyle='', alpha=1)
-    ax.scatter(tE_cands, piE_cands, color='r', s=5, label='ZTF Candidates Level 6')
+    ax.scatter(tE_cands, piE_cands, color='r', s=5, label='ZTF Events Level 6')
     ax.scatter(tE_popsycle, piE_popsycle, color='b', s=5, label=r'Simulated $\mu$-Lens: Stellar Lens', alpha=.2)
     ax.scatter(tE_BH_popsycle, piE_BH_popsycle, color='k', s=5, label=r'Simulated $\mu$-Lens: BH Lens', alpha=.6)
     ax.set_xscale('log')
@@ -456,10 +456,10 @@ def plot_level6_lightcurve_examples():
     #     ax[i, 0].set_ylabel('      magnitude', horizontalalignment='left', fontsize=16)
     fig.tight_layout(h_pad=1, w_pad=1)
     fig.subplots_adjust(bottom=.09, left=0.08)
-    fig.text(0.5, 0.01, 'heliocentric modified julian date (days)',
+    fig.text(0.5, 0.01, 'Heliocentric Modified Julian Date (days)',
              horizontalalignment='center',
              verticalalignment='bottom', fontsize=18)
-    fig.text(0.01, 0.5, 'magnitude',
+    fig.text(0.01, 0.5, 'Magnitude',
              rotation='vertical',
              verticalalignment='center',
              horizontalalignment='left', fontsize=18)
@@ -504,9 +504,9 @@ def plot_lightcurve_examples():
                 ax[i, j].set_title(f'{label}', fontsize=18)
             _plot_lightcurve_axis(cand, ax[i, j])
             if i == 3 and j == 1:
-                ax[i, j].set_xlabel('heliocentric modified julian date (days)', fontsize=16)
+                ax[i, j].set_xlabel('Heliocentric Modified Julian Date (days)', fontsize=16)
         if i == 2:
-            ax[i, 0].set_ylabel('      magnitude', horizontalalignment='left', fontsize=16)
+            ax[i, 0].set_ylabel('      Magnitude', horizontalalignment='left', fontsize=16)
     fig.tight_layout(w_pad=1)
 
     fname = '%s/level5_lightcurve_examples.png' % return_figures_dir()
@@ -908,7 +908,7 @@ def plot_cands_magnitude():
     fig, ax = plt.subplots(2, 1, figsize=(8, 8))
     for a in ax: a.clear()
     bins = np.linspace(14, 21.5, 15)
-    ax[0].set_title(r'ZTF Candidates Level 6', fontsize=16)
+    ax[0].set_title(r'ZTF Events Level 6', fontsize=16)
     ax[0].hist(mag_base_arrs['r'], histtype='step', color=color_r_band, bins=bins, label='r-band', linewidth=2)
     ax[0].hist(mag_base_arrs['g'], histtype='step', color=color_g_band, bins=bins, label='g-band', linewidth=2)
     ax[0].hist(mag_base_arrs['i'], histtype='step', color='k', bins=bins, label='i-band', linewidth=2)
@@ -979,7 +979,7 @@ def plot_cands_blend_fraction():
     fig, ax = plt.subplots(figsize=(8, 5))
     ax.clear()
 
-    ax.set_title(r'ZTF Candidates Level 6', fontsize=16)
+    ax.set_title(r'ZTF Events Level 6', fontsize=16)
     ax.hist(b_sff_arrs['r'], histtype='step', color=color_r_band, bins=bins, label='r-band', linewidth=2)
     ax.hist(b_sff_arrs['g'], histtype='step', color=color_g_band, bins=bins, label='g-band', linewidth=2)
     ax.hist(b_sff_arrs['i'], histtype='step', color='k', bins=bins, label='i-band', linewidth=2)
@@ -1002,6 +1002,7 @@ def generate_all_figures():
     plot_lightcurve_examples()
     plot_level6_lightcurve_examples()
     plot_cands_magnitude()
+    plot_cands_blend_fraction()
 
 
 if __name__ == '__main__':

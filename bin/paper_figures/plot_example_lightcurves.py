@@ -39,9 +39,9 @@ def plot_example_lightcurves():
         ax[i].scatter(hmjd_round, mag_round, s=5, color='r', marker='^', label='Nightly Averages')
         ax[i].invert_yaxis()
         if i == len(obj_arr) - 1:
-            ax[i].set_xlabel('heliocentric modified julian date (days)')
+            ax[i].set_xlabel('Heliocentric Codified Julian Date (days)')
         if i == len(obj_arr) // 2:
-            ax[i].set_ylabel('magnitude', labelpad=25)
+            ax[i].set_ylabel('Magnitude', labelpad=25)
         ax[i].set_xlim(MJD_start, MJD_finish)
         if i == 4:
             y_coord = .5

@@ -48,9 +48,9 @@ def plot_example_lightcurves():
 
         ax[i].invert_yaxis()
         if i == len(idx_arr) - 1:
-            ax[i].set_xlabel('heliocentric modified julian date (days)')
+            ax[i].set_xlabel('Heliocentric Codified Julian Date (days)')
         if i == len(idx_arr) // 2:
-            ax[i].set_ylabel('magnitude', labelpad=25)
+            ax[i].set_ylabel('Magnitude', labelpad=25)
         ax[i].set_xlim(MJD_start, MJD_finish)
         if i in [1, 2, 4, 5, 6, 7]:
             y_coord = .5

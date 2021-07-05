@@ -51,7 +51,7 @@ def plot_eta_eta_residual_cut():
     ulens_is_observable_frac_obs = is_observable_frac_slope_offset(eta_ulens_arr[cond_obs],
                                                       eta_residual_ulens_arr[cond_obs],
                                                       slope=slope, offset=offset)
-    cands_is_observable_frac = is_observable_frac_slope_offset(eta_arr,eta_residual_arr,
+    cands_is_observable_frac = is_observable_frac_slope_offset(eta_arr, eta_residual_arr,
                                                                slope=slope, offset=offset)
 
     ulens_is_observable_BH_frac_obs = is_observable_frac_slope_offset(eta_ulens_arr[cond_obs*cond_BH],
@@ -69,7 +69,7 @@ def plot_eta_eta_residual_cut():
                   format(num_candidates, ','),
                   slope, offset))
     for a in ax: a.clear()
-    print('uLens frac = %.0f%% | cands frac = %.1f%%' %
+    print('uLens frac = %.1f%% | cands frac = %.1f%%' %
                     (100*ulens_is_observable_frac_obs,
                      100*cands_is_observable_frac))
     ax[0].contour(ulens_obs_xx, ulens_obs_yy, ulens_obs_f, cmap='viridis', levels=10)
