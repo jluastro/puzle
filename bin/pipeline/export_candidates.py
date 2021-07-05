@@ -3,6 +3,7 @@
 export_candidates.py
 """
 
+import numpy as np
 from astropy.io import fits
 
 from puzle.pspl_gp_fit import load_cand_fitter_data
@@ -52,10 +53,10 @@ def construct_arrays(cands):
             mag_base_arr = [m for i, m in enumerate(cand.mag_base_arr_pspl_gp[:3]) if filters[i] == filt]
             mag_base_err_arr = [m for i, m in enumerate(cand.mag_base_err_arr_pspl_gp[:3]) if filters[i] == filt]
             if len(b_sff_arr) > 0:
-                arrays['b_sff_%s' % filt].append(b_sff_arr[0])
-                arrays['b_sff_err_%s' % filt].append(b_sff_err_arr[0])
-                arrays['mag_base_%s' % filt].append(mag_base_arr[0])
-                arrays['mag_base_err_%s' % filt].append(mag_base_err_arr[0])
+                arrays['b_sff_%s' % filt].append(np.median(b_sff_arr))
+                arrays['b_sff_err_%s' % filt].append(np.median(b_sff_err_arr))
+                arrays['mag_base_%s' % filt].append(np.median(mag_base_arr))
+                arrays['mag_base_err_%s' % filt].append(np.median(mag_base_err_arr))
             else:
                 arrays['b_sff_%s' % filt].append(None)
                 arrays['b_sff_err_%s' % filt].append(None)
