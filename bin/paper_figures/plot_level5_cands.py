@@ -393,6 +393,8 @@ def _plot_lightcurve_axis(cand, ax, color_marker='k', color_model='r', remove_ax
     if remove_axis:
         ax.tick_params(axis='x', which='both', bottom=False, labelbottom=False)
         ax.tick_params(axis='y', which='both', left=False, labelleft=False)
+    else:
+        ax.tick_params(axis='both', labelsize=12)
 
 
 def plot_level6_lightcurve_examples():
@@ -502,7 +504,7 @@ def plot_lightcurve_examples():
             ax[i, j].clear()
             if j == 1:
                 ax[i, j].set_title(f'{label}', fontsize=18)
-            _plot_lightcurve_axis(cand, ax[i, j])
+            _plot_lightcurve_axis(cand, ax[i, j], remove_axis=False)
             if i == 3 and j == 1:
                 ax[i, j].set_xlabel('Heliocentric Modified Julian Date (days)', fontsize=16)
         if i == 2:
