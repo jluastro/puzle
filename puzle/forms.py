@@ -85,46 +85,77 @@ class RadialSearchForm(FlaskForm):
                       validators=[Optional(), NumberRange(min=-90, max=90)])
     radius = FloatField('radius (arcseconds)',
                         validators=[DataRequired()])
-    order_by = RadioField(choices=[('eta_residual_best', 'Order results by eta_residual descending'),
-                                   ('eta_best', 'Order results by eta ascending'),
-                                   ('chi_squared_delta_best', 'Order results by chi_squared_delta desc')],
-                          default='eta_residual_best')
-    order_by_num_objs = BooleanField('Order by number of objects descending', default=True)
+    order_by = RadioField(choices=[('chi2', 'Order results by chi-squared ascending'),
+                                   ('rchi2', 'Order results by reduced chi-squared ascending'),
+                                   ('logL', 'Order results by log likelihood descending')],
+                          default='rchi2')
     submit = SubmitField('Search')
 
 
 class FilterSearchForm(FlaskForm):
-    num_objs_pass_min = IntegerField('num_objs_pass min',
+    num_objs_pass_min = IntegerField('num_objs_pass Level2 min',
                                    validators=[Optional(), NumberRange(min=1)])
-    num_objs_pass_max = IntegerField('num_objs_pass max',
+    num_objs_pass_max = IntegerField('num_objs_pass Level2 max',
                                    validators=[Optional(), NumberRange(min=1)])
-    t_E_best_min = FloatField('t_E_best min (days)',
-                              validators=[Optional(), NumberRange(min=0)])
-    t_E_best_max = FloatField('t_E_best max (days)',
-                              validators=[Optional(), NumberRange(min=0)])
-    chi_squared_delta_best_min = FloatField('chi_squared_delta_best min',
-                                            validators=[Optional(), NumberRange(min=0)])
-    chi_squared_delta_best_max = FloatField('chi_squared_delta_best max',
-                                            validators=[Optional(), NumberRange(min=0)])
-    rf_score_best_min = FloatField('rf_score_best min',
-                                   validators=[Optional(), NumberRange(min=0, max=1)])
-    rf_score_best_max = FloatField('rf_score_best max',
-                                   validators=[Optional(), NumberRange(min=0, max=1)])
-    eta_best_min = FloatField('eta_best min',
-                              validators=[Optional(), NumberRange(min=0)])
-    eta_best_max = FloatField('eta_best max',
-                              validators=[Optional(), NumberRange(min=0)])
-    eta_residual_best_min = FloatField('eta_residual_best min',
-                              validators=[Optional(), NumberRange(min=0)])
-    eta_residual_best_max = FloatField('eta_residual_best max',
-                              validators=[Optional(), NumberRange(min=0)])
-    order_by = RadioField(choices=[('eta_residual_best', 'Order results by eta_residual descending'),
-                                   ('eta_best', 'Order results by eta ascending'),
-                                   ('chi_squared_delta_best', 'Order results by chi_squared_delta desc')],
-                          default='eta_residual_best')
-    order_by_num_objs = BooleanField('Order by number of objects descending', default=True)
+    t0_pspl_gp_min = FloatField('t0_pspl_gp min (days)',
+                                validators=[Optional(), NumberRange(min=57829)])
+    t0_pspl_gp_max = FloatField('t0_pspl_gp max (days)',
+                                validators=[Optional(), NumberRange(max=59608)])
+    tE_pspl_gp_min = FloatField('tE_pspl_gp min (days)',
+                                validators=[Optional(), NumberRange(min=0.01)])
+    tE_pspl_gp_max = FloatField('tE_pspl_gp max (days)',
+                                validators=[Optional(), NumberRange(max=10000)])
+    u0_amp_pspl_gp_min = FloatField('u0_amp_pspl_gp min (days)',
+                                    validators=[Optional(), NumberRange(min=-2)])
+    u0_amp_pspl_gp_max = FloatField('u0_amp_pspl_gp max (days)',
+                                    validators=[Optional(), NumberRange(max=2)])
+    piE_pspl_gp_min = FloatField('piE_pspl_gp min (days)',
+                                 validators=[Optional(), NumberRange(min=-2)])
+    piE_pspl_gp_max = FloatField('piE_pspl_gp max (days)',
+                                 validators=[Optional(), NumberRange(max=2)])
+    b_sff1_pspl_gp_min = FloatField('b_sff1_pspl_gp min (days)',
+                                    validators=[Optional(), NumberRange(min=0)])
+    b_sff1_pspl_gp_max = FloatField('b_sff1_pspl_gp max (days)',
+                                    validators=[Optional(), NumberRange(max=2)])
+    mag_base1_pspl_gp_min = FloatField('mag_base1_pspl_gp min (days)',
+                                       validators=[Optional(), NumberRange(min=15)])
+    mag_base1_pspl_gp_max = FloatField('mag_base1_pspl_gp max (days)',
+                                       validators=[Optional(), NumberRange(max=25)])
+    chi2_pspl_gp_min = FloatField('chi2_pspl_gp min (days)',
+                                  validators=[Optional(), NumberRange(min=0)])
+    chi2_pspl_gp_max = FloatField('chi2_pspl_gp max (days)',
+                                  validators=[Optional(), NumberRange(max=10000)])
+    rchi2_pspl_gp_min = FloatField('rchi2_pspl_gp min (days)',
+                                   validators=[Optional(), NumberRange(min=0)])
+    rchi2_pspl_gp_max = FloatField('rchi2_pspl_gp max (days)',
+                                   validators=[Optional(), NumberRange(max=100)])
+    logL_pspl_gp_min = FloatField('logL_pspl_gp min (days)',
+                                   validators=[Optional(), NumberRange(min=0)])
+    logL_pspl_gp_max = FloatField('logL_pspl_gp max (days)',
+                                   validators=[Optional(), NumberRange(max=100)])
+    order_by = RadioField(choices=[('chi2', 'Order results by chi-squared ascending'),
+                                   ('rchi2', 'Order results by reduced chi-squared ascending'),
+                                   ('logL', 'Order results by log likelihood descending'),
+                                   ('tE', 'Order results by tE desc')],
+                          default='rchi2')
     submit = SubmitField('Search')
 
 
 class EmptyForm(FlaskForm):
+    submit = SubmitField('Submit')
+
+
+class CategorizeForm(FlaskForm):
+    category_return = RadioField(choices=[('random', 'Randomly select new candidate after categorization'),
+                                          ('same', 'Return to same candidate after categorization')],
+                                 default='random')
+    submit = SubmitField('Submit')
+
+
+class BrowseForm(FlaskForm):
+    category_none = BooleanField('no category', default=True)
+    category_clear_microlensing = BooleanField('clear microlensing', default=True)
+    category_possible_microlensing = BooleanField('possible microlensing', default=True)
+    category_poor_model_data = BooleanField('poor model / data', default=True)
+    category_non_microlensing_variable = BooleanField('non-microlensing variable', default=True)
     submit = SubmitField('Submit')

@@ -9,8 +9,6 @@ import h5py
 import pickle
 import psycopg2
 from collections import namedtuple
-from astropy.coordinates import SkyCoord
-from astropy import units as u
 import requests
 import numpy as np
 from scipy.spatial import cKDTree
@@ -128,26 +126,44 @@ def query_ps1_psc(ra, dec, radius=2, con=None):
     return rf
 
 
+def identify_is_spin():
+    for key in os.environ.keys():
+        if 'KUBERNETES' in key:
+            return True
+    return False
+
+
+def _fetch_ogle_targets():
+    from astropy.coordinates import SkyCoord
+    from astropy import units as u
+
+    target_ids = []
+    ra_arr = []
+    dec_arr = []
+    for year in ['2017', '2018', '2019']:
+        URL = f'http://ogle.astrouw.edu.pl/ogle4/ews/{year}/ews.html'
+        html_lines = requests.get(URL).content.decode().split('\n')
+
+        target_idxs = [i for i, line in enumerate(html_lines) if 'TARGET="event"' in line and 'XX' not in line]
+        target_ids.extend([html_lines[i].split('>')[-2].replace('</A', '') for i in target_idxs])
+        ra_arr.extend([html_lines[i+2].replace('<TD>', '') for i in target_idxs])
+        dec_arr.extend([html_lines[i+3].replace('<TD>', '') for i in target_idxs])
+
+    target_coords = SkyCoord(ra_arr, dec_arr, frame='icrs', unit=u.degree)
+    ogle_targets = {'target_ids': target_ids, 'target_coords': target_coords}
+    return ogle_targets
+
+
 def fetch_ogle_targets():
-    ogle_targets_fname = '%s/ogle_targets.dct' % return_data_dir()
-    if os.path.exists(ogle_targets_fname):
-        ogle_targets = pickle.load(open(ogle_targets_fname, 'rb'))
+    if identify_is_spin():
+        ogle_targets = _fetch_ogle_targets()
     else:
-        target_ids = []
-        ra_arr = []
-        dec_arr = []
-        for year in ['2017', '2018', '2019']:
-            URL = f'http://ogle.astrouw.edu.pl/ogle4/ews/{year}/ews.html'
-            html_lines = requests.get(URL).content.decode().split('\n')
-
-            target_idxs = [i for i, line in enumerate(html_lines) if 'TARGET="event"' in line and 'XX' not in line]
-            target_ids.extend([html_lines[i].split('>')[-2].replace('</A', '') for i in target_idxs])
-            ra_arr.extend([html_lines[i+2].replace('<TD>', '') for i in target_idxs])
-            dec_arr.extend([html_lines[i+3].replace('<TD>', '') for i in target_idxs])
-
-        target_coords = SkyCoord(ra_arr, dec_arr, frame='icrs', unit=u.degree)
-        ogle_targets = {'target_ids': target_ids, 'target_coords': target_coords}
-        pickle.dump(ogle_targets, open(ogle_targets_fname, 'wb'))
+        ogle_targets_fname = '%s/ogle_targets.dct' % return_data_dir()
+        if os.path.exists(ogle_targets_fname):
+            ogle_targets = pickle.load(open(ogle_targets_fname, 'rb'))
+        else:
+            ogle_targets = _fetch_ogle_targets
+            pickle.dump(ogle_targets, open(ogle_targets_fname, 'wb'))
     return ogle_targets
 
 
@@ -155,6 +171,9 @@ OGLE_TARGETS = fetch_ogle_targets()
 
 
 def fetch_ogle_target(ra_cand, dec_cand, radius=5):
+    from astropy.coordinates import SkyCoord
+    from astropy import units as u
+
     target_ids = OGLE_TARGETS['target_ids']
     target_coords = OGLE_TARGETS['target_coords']
 
@@ -188,6 +207,7 @@ def generate_ps1_psc_maps():
 
 
 def return_ps1_psc(dec, ps1_psc_dct=None):
+
     dec_sign = np.sign(dec)
     if dec_sign == 1:
         dec_file = dec
@@ -215,13 +235,17 @@ def return_ps1_psc(dec, ps1_psc_dct=None):
                                  '/global/cfs/cdirs/uLens/PS1_PSC')
     ps1_psc_fname = f'{ps1_psc_dir}/' \
                     f'dec_{dec_prefix}{dec_floor_str}_{dec_ext_str}_classifications.map'
-    if ps1_psc_dct and ps1_psc_fname in ps1_psc_dct:
+    if ps1_psc_dct is not None and ps1_psc_fname in ps1_psc_dct:
         # print('CACHE %s' % ps1_psc_fname)
         ps1_psc_kdtree, rf_scores = ps1_psc_dct[ps1_psc_fname]
     else:
-        # print('loading %s' % ps1_psc_fname)
+        # print('LOADING %s' % ps1_psc_fname)
         ps1_psc_kdtree, rf_scores = pickle.load(open(ps1_psc_fname, 'rb'))
+
+    if ps1_psc_dct is not None and ps1_psc_fname not in ps1_psc_dct:
+        # print('SAVING TO CACHE %s' % ps1_psc_fname)
         ps1_psc_dct[ps1_psc_fname] = ps1_psc_kdtree, rf_scores
+
     return ps1_psc_kdtree, rf_scores
 
 

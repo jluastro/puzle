@@ -8,12 +8,14 @@ import logging
 import subprocess
 import numpy as np
 from datetime import datetime
-from astropy.coordinates import SkyCoord
+
 from zort.radec import return_shifted_ra, return_ZTF_RCID_corners
 from shapely.geometry.polygon import Polygon
 
 
 popsycle_base_folder = '/global/cfs/cdirs/uLens/PopSyCLE_runs/PopSyCLE_runs_v3_refined_events'
+MJD_start = 58194.0
+MJD_finish = 59243.0
 
 
 def return_dir(folder):
@@ -106,6 +108,7 @@ def lightcurve_file_to_ra_dec(lightcurve_file):
 
 
 def lightcurve_file_to_lb(lightcurve_file):
+    from astropy.coordinates import SkyCoord
     ra0, ra1, dec0, dec1 = lightcurve_file_to_ra_dec(lightcurve_file)
     ra = (ra0 + ra1) / 2.
     dec = (dec0 + dec1) / 2.
@@ -122,6 +125,7 @@ def lightcurve_file_to_field_id(lightcurve_file):
 
 
 def find_nearest_lightcurve_file(l, b):
+    from astropy.coordinates import SkyCoord
     coord = SkyCoord(l, b, frame='galactic', unit='degree')
     ra, dec = coord.icrs.ra.value, coord.icrs.dec.value
     lightcurve_files = glob.glob('/global/cfs/cdirs/uLens/ZTF/DR5/*txt')
@@ -251,3 +255,22 @@ def sortsplit(array, size):
     # Have some fun thinking it through! A pen and paper might help :)
     return [[array[i] for i in range(j, len(array), size)]
             for j in range(size)]
+
+
+def parse_nersc_nodelist():
+    nodelist_var = os.getenv('SLURM_NODELIST')
+    if '[' not in nodelist_var:
+        nodelist = [nodelist_var]
+    else:
+        nodelist = []
+        base, nums = nodelist_var.replace(']', '').split('[')
+        spans = nums.split(',')
+        for span in spans:
+            if '-' in span:
+                range_low, range_high = span.split('-')
+                for i in range(int(range_low), int(range_high)+1):
+                    nodelist.append(f'{base}{i}')
+            else:
+                nodelist.append(f'{base}{span}')
+
+    return nodelist

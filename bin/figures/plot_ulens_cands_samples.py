@@ -4,22 +4,24 @@ plot_ulens_cands_samples.py
 """
 
 import numpy as np
+import glob
 from sqlalchemy.sql.expression import func
-from puzle.models import Candidate, Source
+from puzle.models import CandidateLevel2, Source
 from puzle.stats import calculate_eta_on_daily_avg, average_xy_on_round_x
 from puzle.utils import load_stacked_array, return_data_dir, return_figures_dir
-from puzle.eta import return_eta_arrs, return_eta_ulens_arrs
+from puzle.eta import return_cands_level2_eta_arrs
+from puzle.ulens import return_ulens_level2_eta_arrs, return_cond_BH
 from puzle import db
 
 import matplotlib.pyplot as plt
 
 
 def return_cands_sample(eta_low, eta_high, eta_residual_low, eta_residual_high, N_cands=9):
-    cands_tmp = db.session.query(Candidate).\
-        filter(Candidate.eta_best >= eta_low).\
-        filter(Candidate.eta_best <= eta_high).\
-        filter(Candidate.eta_residual_best >= eta_residual_low).\
-        filter(Candidate.eta_residual_best <= eta_residual_high).\
+    cands_tmp = db.session.query(CandidateLevel2).\
+        filter(CandidateLevel2.eta_best >= eta_low).\
+        filter(CandidateLevel2.eta_best <= eta_high).\
+        filter(CandidateLevel2.eta_residual_best >= eta_residual_low).\
+        filter(CandidateLevel2.eta_residual_best <= eta_residual_high).\
         order_by(func.random()).limit(N_cands).all()
     cands = []
     for cand in cands_tmp:
@@ -59,7 +61,7 @@ def _plot_cands(title, eta_arr, eta_residual_arr, cands):
 
 def plot_cands_samples(eta_arr=None, eta_residual_arr=None):
     if eta_arr is None:
-        eta_arr, eta_residual_arr, _ = return_eta_arrs()
+        eta_arr, eta_residual_arr, _ = return_cands_level2_eta_arrs()
     regions_of_interest = [(1, 1.5, 1, 1.5),
                            (1, 1.5, 1.5, 2),
                            (1, 1.5, 2, 2.5),
@@ -115,11 +117,11 @@ def _plot_ulens(title, eta_ulens_arr, eta_residual_ulens_arr, observable_arr,
 def return_ulens_sample(eta_ulens_arr, eta_residual_ulens_arr, observable_arr,
                         eta_low, eta_high, eta_residual_low, eta_residual_high,
                         N_sample=9):
-    fname = '%s/ulens_sample.total.npz' % return_data_dir()
+    data_dir = return_data_dir()
+    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample.??.total.npz')
+    fname_total_arr.sort()
+    fname = fname_total_arr[-1]
     data = load_stacked_array(fname)
-
-    fname = '%s/ulens_sample_metadata.total.npz' % return_data_dir()
-    metadata = np.load(fname)
 
     cond = observable_arr == True
     cond *= eta_ulens_arr >= eta_low
@@ -168,9 +170,9 @@ def plot_ulens_samples(eta_ulens_arr, eta_residual_ulens_arr, observable_arr):
 
 
 def generate_all_figures():
-    eta_arr, eta_residual_arr, eta_threshold_low_best = return_eta_arrs()
+    eta_arr, eta_residual_arr, eta_threshold_low_best = return_cands_level2_eta_arrs()
     eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, \
-    observable1_arr, observable2_arr, observable3_arr = return_eta_ulens_arrs()
+    observable1_arr, observable2_arr, observable3_arr = return_ulens_level2_eta_arrs()
     plot_cands_samples(eta_arr=eta_arr,
                        eta_residual_arr=eta_residual_arr)
     plot_ulens_samples(eta_ulens_arr=eta_ulens_arr,

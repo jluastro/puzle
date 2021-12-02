@@ -9,7 +9,7 @@ from scipy.stats import binned_statistic
 from collections import defaultdict, namedtuple
 import pickle
 
-from puzle.models import Source, StarIngestJob, Star, StarProcessJob, Candidate
+from puzle.models import Source, StarIngestJob, Star, StarProcessJob, CandidateLevel2
 from puzle.utils import return_DR5_dir, get_logger
 from puzle.ulensdb import insert_db_id, remove_db_id
 from puzle.stats import calculate_eta_on_daily_avg, \
@@ -439,7 +439,7 @@ def assemble_candidates(stars_and_sources, eta_residual_idxs_dct, obj_data):
         else:
             t_0, t_E, f_0, f_1, chi_squared_delta, chi_squared_flat, a_type = None, None, None, None, None, None, None
 
-        cand = Candidate(id=star.id,
+        cand = CandidateLevel2(id=star.id,
                          source_id_arr=source_id_arr,
                          color_arr=color_arr,
                          pass_arr=pass_arr,

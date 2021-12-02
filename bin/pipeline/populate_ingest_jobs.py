@@ -69,6 +69,7 @@ def populate_ingest_jobs():
         star_job = StarIngestJob(source_job.id)
         db.session.add(star_job)
     db.session.commit()
+    db.session_close()
 
 
 if __name__ == '__main__':

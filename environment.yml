@@ -24,6 +24,7 @@ dependencies:
   - matplotlib
   - scipy
   - h5py
+  - celerite
   - pip
   - pip:
       - filelock

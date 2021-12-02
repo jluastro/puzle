@@ -1,22 +1,25 @@
 #! /usr/bin/env python
 """
-plot_ulens_eta_by.py
+plot_ulens_minmax_fits.py
 """
 
 import numpy as np
+import glob
+from puzle.cands import return_cands_tE_arrs
 from puzle.stats import calculate_eta_on_daily_avg, average_xy_on_round_x
-from puzle.utils import load_stacked_array, return_data_dir, return_figures_dir
-from puzle.eta import return_eta_ulens_arrs
+from puzle.utils import load_stacked_array, return_data_dir, \
+    return_figures_dir
+from puzle.ulens import return_ulens_level2_eta_arrs, \
+    return_ulens_metadata, return_ulens_stats
 
 import matplotlib.pyplot as plt
 
 
 def plot_ulens_tE_piE(observable_arr=None):
     if observable_arr is None:
-        _, _, _, _, _, observable_arr = return_eta_ulens_arrs()
+        _, _, _, _, _, observable_arr = return_ulens_level2_eta_arrs()
 
-    fname = '%s/ulens_sample_metadata.total.npz' % return_data_dir()
-    metadata = np.load(fname)
+    metadata = return_ulens_metadata()
 
     cond = observable_arr == True
 
@@ -67,10 +70,9 @@ def plot_ulens_tE_piE(observable_arr=None):
 
 def plot_ulens_tE_piE_vs_eta(eta_ulens_arr=None, eta_residual_ulens_arr=None, observable_arr=None):
     if eta_ulens_arr is None:
-        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_eta_ulens_arrs()
+        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_ulens_level2_eta_arrs()
 
-    fname = '%s/ulens_sample_metadata.total.npz' % return_data_dir()
-    metadata = np.load(fname)
+    metadata = return_ulens_metadata()
 
     cond = observable_arr == True
 
@@ -134,10 +136,9 @@ def plot_ulens_tE_piE_vs_eta(eta_ulens_arr=None, eta_residual_ulens_arr=None, ob
 def plot_ulens_eta_by_mag(eta_ulens_arr=None,
                           eta_residual_ulens_arr=None, observable_arr=None):
     if eta_ulens_arr is None:
-        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_eta_ulens_arrs()
+        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_ulens_level2_eta_arrs()
 
-    fname = '%s/ulens_sample_metadata.total.npz' % return_data_dir()
-    metadata = np.load(fname)
+    metadata = return_ulens_metadata()
     mag_src = metadata['mag_src']
 
     cond_obs = observable_arr == True
@@ -172,10 +173,9 @@ def plot_ulens_eta_by_mag(eta_ulens_arr=None,
 
 def plot_ulens_eta_by_tE(eta_ulens_arr=None, eta_residual_ulens_arr=None, observable_arr=None):
     if eta_ulens_arr is None:
-        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_eta_ulens_arrs()
+        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_ulens_level2_eta_arrs()
 
-    fname = '%s/ulens_sample_metadata.total.npz' % return_data_dir()
-    metadata = np.load(fname)
+    metadata = return_ulens_metadata()
     tE = metadata['tE']
 
     cond_obs = observable_arr == True
@@ -210,10 +210,9 @@ def plot_ulens_eta_by_tE(eta_ulens_arr=None, eta_residual_ulens_arr=None, observ
 
 def plot_ulens_eta_by_piE(eta_ulens_arr=None, eta_residual_ulens_arr=None, observable_arr=None):
     if eta_ulens_arr is None:
-        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_eta_ulens_arrs()
+        eta_ulens_arr, eta_residual_ulens_arr, _, _, _, observable_arr = return_ulens_level2_eta_arrs()
 
-    fname = '%s/ulens_sample_metadata.total.npz' % return_data_dir()
-    metadata = np.load(fname)
+    metadata = return_ulens_metadata()
     piE = np.hypot(metadata['piE_E'], metadata['piE_N'])
 
     cond_obs = observable_arr == True
@@ -248,7 +247,7 @@ def plot_ulens_eta_by_piE(eta_ulens_arr=None, eta_residual_ulens_arr=None, obser
 
 def plot_lowest_ulens_eta(eta_ulens_arr=None, observable_arr=None):
     if eta_ulens_arr is None:
-        eta_ulens_arr, _, _, _, _, observable_arr = return_eta_ulens_arrs()
+        eta_ulens_arr, _, _, _, _, observable_arr = return_ulens_level2_eta_arrs()
 
     cond = observable_arr == True
     cond_idx = np.where(cond == True)[0]
@@ -256,7 +255,10 @@ def plot_lowest_ulens_eta(eta_ulens_arr=None, observable_arr=None):
 
     idx_arr = np.argsort(eta_ulens_obs_arr)[:8]
 
-    fname = '%s/ulens_sample.total.npz' % return_data_dir()
+    data_dir = return_data_dir()
+    fname_total_arr = glob.glob(f'{data_dir}/ulens_sample.??.total.npz')
+    fname_total_arr.sort()
+    fname = fname_total_arr[-1]
     data = load_stacked_array(fname)
 
     fig, ax = plt.subplots(4, 2, figsize=(10, 10))
@@ -283,9 +285,47 @@ def plot_lowest_ulens_eta(eta_ulens_arr=None, observable_arr=None):
     plt.close(fig)
 
 
+def plot_ulens_tE_cut():
+    tE_level2_cands, tE_level3_cands = return_cands_tE_arrs()
+    log_tE_level2_cands = np.log10(tE_level2_cands)
+    log_tE_level3_cands = np.log10(tE_level3_cands)
+
+    stats = return_ulens_stats(observableFlag=True, bhFlag=True)
+    tE_level2_ulens = stats['tE_level2']
+    tE_level3_ulens = stats['tE_level3']
+    log_tE_level2_ulens = np.log10(tE_level2_ulens)
+    log_tE_level3_ulens = np.log10(tE_level3_ulens)
+
+
+    percentile = 99
+    ulens_level2_perc = np.percentile(log_tE_level2_ulens, percentile)
+    cands_level2_cond = log_tE_level2_cands < ulens_level2_perc
+    cands_removal_rate = 100 * np.sum(~cands_level2_cond) / len(cands_level2_cond)
+
+    fig, ax = plt.subplots(figsize=(6, 5))
+    bins = np.linspace(0, 4, 25)
+    ax.set_title('%ith ulens Percentile | '
+                 '%.2f%% Cands Removed' % (percentile,
+                                           cands_removal_rate))
+    ax.hist(log_tE_level2_cands, color='k', label='cands',
+               histtype='step', density=True, bins=bins)
+    ax.hist(log_tE_level2_ulens, color='r', label='ulens',
+               histtype='step', density=True, bins=bins)
+    ax.axvline(ulens_level2_perc, color='r', linestyle='--')
+    ax.set_xlabel('LOG tE minmax')
+    ax.set_yscale('log')
+    fig.tight_layout()
+
+    figures_dir = return_figures_dir()
+    fname = f'{figures_dir}/ulens_tE_cut.png'
+    fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.01)
+    print('-- %s saved' % fname)
+    plt.close(fig)
+
+
 def generate_all_figures():
     eta_ulens_arr, eta_residual_ulens_arr, eta_residual_actual_ulens_arr, \
-    observable1_arr, observable2_arr, observable3_arr = return_eta_ulens_arrs()
+    observable1_arr, observable2_arr, observable3_arr = return_ulens_level2_eta_arrs()
     plot_ulens_tE_piE(observable_arr=observable3_arr)
     plot_ulens_tE_piE_vs_eta(eta_ulens_arr=eta_ulens_arr,
                              eta_residual_ulens_arr=eta_residual_ulens_arr,
@@ -301,6 +341,7 @@ def generate_all_figures():
                           observable_arr=observable3_arr)
     plot_lowest_ulens_eta(eta_ulens_arr=eta_ulens_arr,
                           observable_arr=observable3_arr)
+    plot_ulens_tE_cut()
 
 
 if __name__ == '__main__':

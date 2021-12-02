@@ -7,7 +7,7 @@ import os
 import glob
 import numpy as np
 from scipy.stats import expon
-from astropy.table import Table, vstack
+from astropy.stats import sigma_clip
 from shapely.geometry.polygon import Polygon
 import pickle
 import itertools
@@ -27,7 +27,8 @@ from puzle import db
 RF_THRESHOLD = 0.645
 
 
-def gather_PopSyCLE_refined_events():
+def gather_PopSyCLE_refined_events(band='r'):
+    from astropy.table import Table, vstack
     folders = glob.glob('PopSyCLE_runs_v3/l*')
     folders.sort()
     N_folders = len(folders)
@@ -35,7 +36,8 @@ def gather_PopSyCLE_refined_events():
     for i, folder in enumerate(folders):
         print(f'Processing {folder} ({i}/{N_folders})')
         lb = os.path.basename(folder)
-        fis = glob.glob(f'{folder}/*_5yrs_refined_events_ztf_r_Damineli16.fits')
+        fis = glob.glob(f'{folder}/*_5yrs_refined_events_ztf_{band}_Damineli16.fits')
+        fis.sort()
 
         tables = []
         for fi in fis:
@@ -44,7 +46,7 @@ def gather_PopSyCLE_refined_events():
             tables.append(t)
         table_new = vstack(tables)
 
-        fi_new = f'{popsycle_base_folder}/{lb}_refined_events_ztf_r_Damineli16.fits'
+        fi_new = f'{popsycle_base_folder}/{lb}_refined_events_ztf_{band}_Damineli16.fits'
         table_new.write(fi_new, overwrite=True)
 
     print(f'{N_samples} Samples')
@@ -115,6 +117,7 @@ def calculate_delta_m(u0, b_sff):
 def generate_random_lightcurves_lb(l, b, objs,
                                    tE_min=20, delta_m_min=0.25,
                                    num_3sigma_cut=5):
+    from astropy.table import Table
     popsycle_fname = f'{popsycle_base_folder}/l{l:.1f}_b{b:.1f}_refined_events_ztf_r_Damineli16.fits'
     popsycle_catalog = Table.read(popsycle_fname, format='fits')
     N_samples = len(objs)
@@ -224,6 +227,12 @@ def calculate_J(mag, magerr):
     delta = np.sqrt(n / (n - 1)) * (mag - mag_mean) / magerr
     J = np.sum(np.sign(delta[:-1]*delta[1:]) * np.sqrt(np.abs(delta[:-1]*delta[1:])))
     return J
+
+
+def return_CDF(arr):
+    x = np.sort(arr)
+    y = np.arange(len(arr)) / (len(arr) - 1)
+    return x, y
 
 
 def calculate_lightcurve_stats(lightcurves):
@@ -353,6 +362,89 @@ def return_eta_threshold(size):
             return np.log10(size) * m + b
         else:
             return None
+
+
+def calculate_chi2_model_mags(mag, magerr, mag_model, add_err=0,
+                              hmjd=None, t0=None, tE=None, clip=False):
+    if clip:
+        hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
+        _, magerr_round = average_xy_on_round_x(hmjd, magerr)
+        _, mag_model_round = average_xy_on_round_x(hmjd, mag_model)
+        # Mask out those points that are within the microlensing event
+        ulens_mask = hmjd_round > t0 - 2 * tE
+        ulens_mask *= hmjd_round < t0 + 2 * tE
+        # Use this mask to generated a masked array for sigma clipping
+        # By applying this mask, the 3-sigma will not be calculated using these points
+        mag_masked = np.ma.array(mag_round, mask=ulens_mask)
+        # Perform the sigma clipping
+        mag_masked = sigma_clip(mag_masked, sigma=3, maxiters=5)
+        # This masked array is now a mask that includes BOTH the mirolensing event and
+        # the 3-sigma outliers that we want removed. We want to remove the mask that
+        # is on the microlensing event. So we only keep the mask for those points
+        # outside of +-2 tE.
+        chi2_mask = mag_masked.mask * ~ulens_mask
+        # Using this mask, do one pass of clipping out all +- 5 sigma points.
+        # This gets points that are within the +-2 tE.
+        mag_masked = np.ma.array(mag_round, mask=chi2_mask)
+        mag_masked = sigma_clip(mag_masked, sigma=5, maxiters=1)
+        # This mask is then inverted for the chi2 calculation
+        chi2_cond = ~mag_masked.mask
+        mag_calc = mag_round
+        magerr_calc = magerr_round
+        mag_model_calc = mag_model_round
+    else:
+        chi2_cond = np.ones(len(mag)).astype(bool)
+        mag_calc = mag
+        magerr_calc = magerr
+        mag_model_calc = mag_model
+    chi2 = np.sum(((mag_calc[chi2_cond] - mag_model_calc[chi2_cond]) / np.hypot(magerr_calc[chi2_cond], add_err)) ** 2)
+    dof = np.sum(chi2_cond)
+    return chi2, dof
+
+
+def calculate_chi_squared_inside_outside(hmjd, mag, magerr, t0, tE, tE_factor):
+    hmjd_round, mag_round = average_xy_on_round_x(hmjd, mag)
+    _, magerr_round = average_xy_on_round_x(hmjd, magerr)
+
+    cond_inside = hmjd_round <= t0 + tE_factor * tE
+    cond_inside *= hmjd_round >= t0 - tE_factor * tE
+    
+    cond_low = hmjd_round < t0 - tE_factor * tE
+    if np.sum(cond_low) > 1:
+        delta_hmjd_low = np.max(hmjd_round[cond_low]) - np.min(hmjd_round[cond_low])
+    else:
+        delta_hmjd_low = 0
+
+    cond_high = hmjd_round > t0 + tE_factor * tE
+    if np.sum(cond_high) > 1:
+        delta_hmjd_high = np.max(hmjd_round[cond_high]) - np.min(hmjd_round[cond_high])
+    else:
+        delta_hmjd_high = 0
+    delta_hmjd_outside = delta_hmjd_low + delta_hmjd_high
+
+    mag_round_inside = np.ma.array(mag_round, mask=~cond_inside)
+    mag_masked_inside = sigma_clip(mag_round_inside, sigma=5, maxiters=1)
+    mag_avg_inside = mag_masked_inside.mean()
+    if type(mag_avg_inside) == np.ma.core.MaskedConstant:
+        num_days_inside = 0
+        chi_squared_inside = 0
+    else:
+        cond_inside_masked = ~mag_masked_inside.mask
+        num_days_inside = int(np.sum(cond_inside_masked))
+        chi_squared_inside = np.sum((mag_round[cond_inside_masked] - mag_avg_inside) ** 2. / magerr_round[cond_inside_masked] ** 2.)
+
+    mag_round_outside = np.ma.array(mag_round, mask=cond_inside)
+    mag_masked_outside = sigma_clip(mag_round_outside, sigma=3, maxiters=5)
+    mag_avg_outside = mag_masked_outside.mean()
+    if type(mag_avg_outside) == np.ma.core.MaskedConstant:
+        num_days_outside = 0
+        chi_squared_outside = 0
+    else:
+        cond_outside_masked = ~mag_masked_outside.mask
+        num_days_outside = int(np.sum(cond_outside_masked))
+        chi_squared_outside = np.sum((mag_round[cond_outside_masked] - mag_avg_outside) ** 2. / magerr_round[cond_outside_masked] ** 2.)
+
+    return chi_squared_inside, chi_squared_outside, num_days_inside, num_days_outside, delta_hmjd_outside
 
 
 ETA_THRESHOLDS = load_eta_thresholds()

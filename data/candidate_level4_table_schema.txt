@@ -1,0 +1,131 @@
+--
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 9.6.21
+-- Dumped by pg_dump version 10.15
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+SET default_tablespace = '';
+
+SET default_with_oids = false;
+
+--
+-- Name: candidate_level4; Type: TABLE; Schema: puzle; Owner: ulens_admin
+--
+
+CREATE TABLE puzle.candidate_level4 (
+    id character varying(128) NOT NULL,
+    ra double precision NOT NULL,
+    "dec" double precision NOT NULL,
+    source_id_arr character varying(128)[] NOT NULL,
+    color_arr character varying(8)[] NOT NULL,
+    pass_arr boolean[] NOT NULL,
+    idx_best integer NOT NULL,
+    num_objs_pass integer NOT NULL,
+    num_objs_tot integer NOT NULL,
+    num_epochs_arr double precision[],
+    num_days_arr double precision[],
+    eta_arr double precision[],
+    eta_residual_arr double precision[],
+    t0_arr double precision[],
+    u0_amp_arr double precision[],
+    "tE_arr" double precision[],
+    mag_src_arr double precision[],
+    b_sff_arr double precision[],
+    "piE_E_arr" double precision[],
+    "piE_N_arr" double precision[],
+    chi_squared_ulens_arr double precision[],
+    chi_squared_flat_arr double precision[],
+    chi_squared_flat_outside_arr double precision[],
+    num_3sigma_peaks_inside_arr integer[],
+    num_3sigma_peaks_outside_arr integer[],
+    num_5sigma_peaks_inside_arr integer[],
+    num_5sigma_peaks_outside_arr integer[],
+    comments character varying(1024),
+    _ztf_ids character varying(256),
+    ogle_target character varying(128),
+    num_days_inside_arr integer[],
+    num_days_outside_arr integer[],
+    chi_squared_flat_inside_arr double precision[],
+    delta_hmjd_outside_arr double precision[],
+    pspl_gp_fit_datetime_finished timestamp without time zone,
+    pspl_gp_fit_datetime_started timestamp without time zone,
+    pspl_gp_fit_finished boolean DEFAULT false NOT NULL,
+    pspl_gp_fit_started boolean DEFAULT false NOT NULL,
+    slurm_job_id integer,
+    node character varying(64),
+    num_pspl_gp_fit_lightcurves integer,
+    fit_type_pspl_gp character varying(128),
+    chi2_pspl_gp double precision,
+    rchi2_pspl_gp double precision,
+    "logL_pspl_gp" double precision,
+    t0_pspl_gp double precision,
+    t0_err_pspl_gp double precision,
+    u0_amp_pspl_gp double precision,
+    u0_amp_err_pspl_gp double precision,
+    "tE_pspl_gp" double precision,
+    "tE_err_pspl_gp" double precision,
+    "piE_E_pspl_gp" double precision,
+    "piE_E_err_pspl_gp" double precision,
+    "piE_N_pspl_gp" double precision,
+    "piE_N_err_pspl_gp" double precision,
+    b_sff_pspl_gp double precision,
+    b_sff_err_pspl_gp double precision,
+    mag_base_pspl_gp double precision,
+    mag_base_err_pspl_gp double precision,
+    gp_log_sigma_pspl_gp double precision,
+    gp_log_sigma_err_pspl_gp double precision,
+    gp_rho_pspl_gp double precision,
+    gp_rho_err_pspl_gp double precision,
+    "gp_log_omega04_S0_pspl_gp" double precision,
+    "gp_log_omega04_S0_err_pspl_gp" double precision,
+    gp_log_omega0_pspl_gp double precision,
+    gp_log_omega0_err_pspl_gp double precision,
+    b_sff_arr_pspl_gp double precision[],
+    b_sff_err_arr_pspl_gp double precision[],
+    mag_base_arr_pspl_gp double precision[],
+    mag_base_err_arr_pspl_gp double precision[],
+    gp_log_sigma_arr_pspl_gp double precision[],
+    gp_log_sigma_err_arr_pspl_gp double precision[],
+    gp_rho_arr_pspl_gp double precision[],
+    gp_rho_err_arr_pspl_gp double precision[],
+    "gp_log_omega04_S0_arr_pspl_gp" double precision[],
+    "gp_log_omega04_S0_err_arr_pspl_gp" double precision[],
+    gp_log_omega0_arr_pspl_gp double precision[],
+    gp_log_omega0_err_arr_pspl_gp double precision[],
+    "piE_pspl_gp" double precision,
+    "piE_err_pspl_gp" double precision,
+    source_id_arr_pspl_gp character varying(128)[],
+    color_arr_pspl_gp character varying(8)[],
+    category character varying(128),
+    level5 boolean DEFAULT false NOT NULL,
+    delta_hmjd_outside_pspl_gp double precision,
+    ongoing boolean DEFAULT false NOT NULL
+);
+
+
+ALTER TABLE puzle.candidate_level4 OWNER TO ulens_admin;
+
+--
+-- Name: candidate_level4 candidate_level4_pkey; Type: CONSTRAINT; Schema: puzle; Owner: ulens_admin
+--
+
+ALTER TABLE ONLY puzle.candidate_level4
+    ADD CONSTRAINT candidate_level4_pkey PRIMARY KEY (id);
+
+
+--
+-- PostgreSQL database dump complete
+--
+

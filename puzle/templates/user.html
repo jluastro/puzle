@@ -23,44 +23,66 @@
             <th>Candidate</th>
             <th>n<sub>objs,pass</sub></th>
             <th>n<sub>objs,tot</sub></th>
+            <th>t<sub>0</sub></th>
             <th>t<sub>E</sub></th>
+            <th>mag<sub>src</sub></th>
+            <th>b<sub>sff</sub></th>
+            <th>&pi;<sub>E</sub></th>
             <th>&#916;&#967;<super>2</super></th>
             <th>&#951;</th>
-            <th>&#951;<sub>thresh,low</sub></th>
             <th>&#951;<sub>residual</sub></th>
-            <th>&#951;<sub>thresh,high</sub></th>
-            <th>RB</th>
             <th>Source ID Best</th>
         </tr>
         <tr>
             {% for cand in cands.items %}
                 <tr>
-                <td><a href="{{ url_for('candidate', candid=cand.id) }}">Candidate {{ cand.id }}</a></td>
+                <td><a href="{{ url_for('candidate_level4', candid=cand.id) }}">Candidate {{ cand.id }}</a></td>
                 <td>{{ "%i" % cand.num_objs_pass }}</td>
                 <td>{{ "%i" % cand.num_objs_tot }}</td>
-                {% if cand.t_E_best is float %}
-                    <td>{{ "%.2f" %  cand.t_E_best }}</td>
+                {% if cand.t0_best is float %}
+                    <td>{{ "%.2f" % cand.t0_best }}</td>
                 {%  else %}
                     <td>{{ "None" }}</td>
                 {% endif %}
-                {% if cand.chi_squared_delta_best is float %}
-                    <td>{{ "%.2f" %  cand.chi_squared_delta_best }}</td>
+                {% if cand.tE_best is float %}
+                    <td>{{ "%.2f" % cand.tE_best }}</td>
                 {%  else %}
                     <td>{{ "None" }}</td>
                 {% endif %}
-                <td>{{ "%.2f" % cand.eta_best }}</td>
-                <td>{{ "%.2f" % cand.eta_threshold_low_best }}</td>
-                <td>{{ "%.2f" % cand.eta_residual_best }}</td>
-                <td>{{ "%.2f" % cand.eta_threshold_high_best }}</td>
-                {% if cand.rf_score is float %}
-                    <td>{{ "%.2f" % cand.rf_score }}</td>
+                {% if cand.mag_src_best is float %}
+                    <td>{{ "%.2f" % cand.mag_src_best }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+                {% if cand.b_sff_best is float %}
+                    <td>{{ "%.2f" % cand.b_sff_best }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+                {% if cand.piE_best is float %}
+                    <td>{{ "%.3f" % cand.piE_best }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+                {% if cand.chi_squared_ulens_best is float %}
+                    <td>{{ "%.2f" % cand.chi_squared_ulens_best }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+                {% if cand.eta_best is float %}
+                    <td>{{ "%.2f" % cand.eta_best }}</td>
+                {%  else %}
+                    <td>{{ "None" }}</td>
+                {% endif %}
+                {% if cand.eta_residual_best is float %}
+                    <td>{{ "%.2f" % cand.eta_residual_best }}</td>
                 {%  else %}
                     <td>{{ "None" }}</td>
                 {% endif %}
                 <td>{{ cand.best_source_id }}</td>
                 </tr>
                 <tr>
-                <td colspan="10">
+                <td colspan="11">
                 {% for source_id in cand.unique_source_id_arr %}
                 <img width="200" src="{{ url_for('static', filename='source/') }}{{ source_id.split('_')[0][:3] }}/{{ source_id.split('_')[0] }}/{{ source_id }}_lightcurve.png">
                 {% endfor %}
