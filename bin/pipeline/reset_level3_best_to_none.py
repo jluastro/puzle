@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """
-populate_candidate_level3.py
+reset_level3_best_to_none.py
 """
 import os
 import numpy as np
@@ -26,8 +26,6 @@ def reset_level3_best_to_none():
     if rank == 0:
         print('rank 0) %i total candidates identified' % len(cands_level3))
 
-#    cands_level3.eta_best = None
-#    cands_level3.chi_squared_flat_inside_1tE_best = None
     
     for cand in cands_level3:
         cand.eta_best = None

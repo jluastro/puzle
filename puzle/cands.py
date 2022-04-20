@@ -17,6 +17,7 @@ from puzle.models import CandidateLevel2, CandidateLevel3, CandidateLevel4, Sour
 from puzle.utils import return_figures_dir, return_DR5_dir
 from puzle import db
 
+import pdb
 
 def fetch_cand_by_id(cand_id):
     cands = CandidateLevel2.query.filter(CandidateLevel2.id==cand_id).all()
@@ -49,6 +50,7 @@ def fetch_cand_by_radec(ra, dec, radius=2):
 def return_best_obj(cand):
     idx = cand.idx_best
     source_id = cand.source_id_arr[idx]
+    pdb.set_trace()
     source = Source.query.filter(Source.id==source_id).first()
     color = cand.color_arr[idx]
     obj = getattr(source.zort_source, f'object_{color}')
