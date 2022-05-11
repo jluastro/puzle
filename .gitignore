@@ -32,3 +32,6 @@ htmlcov/
 .coverage
 .coverage.*
 *,cover
+
+# NERSC outfiles
+*.out
