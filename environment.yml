@@ -26,10 +26,12 @@ dependencies:
   - h5py
   - celerite
   - joblib
+  - ephem
   - pip
   - pip:
       - filelock
       - python-dotenv
       - shapely
       - greenlet
+      - jplephem
 prefix: /Users/michael/miniconda3/envs/puzle
