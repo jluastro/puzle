@@ -17,7 +17,8 @@ def fit_level3_candidates_to_sigma_peaks():
                                                   CandidateLevel3.t0_best,
                                                   CandidateLevel3.tE_best).\
                                     filter(CandidateLevel3.t0_best!=0,
-                                           CandidateLevel3.num_3sigma_peaks_inside_2tE_best==None).all()
+                                           CandidateLevel3.num_3sigma_peaks_inside_2tE_best==None,
+                                           CandidateLevel3.idx_best!=-99).all()
     num_cands = len(cands)
     cand_id_arr = [c[0] for c in cands]
     t0_arr = [c[1] for c in cands]

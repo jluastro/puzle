@@ -31,7 +31,8 @@ def calculate_chi2_model_params(best_params, data):
 
 def populate_candidate_level4():
     query = apply_level3_cuts_to_query(CandidateLevel3.query)
-    cands_level3 = query.order_by(CandidateLevel3.id).all()
+    cands_level3 = query.order_by(CandidateLevel3.id).\
+                                    filter(CandidateLevel3.idx_best!=-99).all()
     cands_level4 = CandidateLevel4.query.with_entities(CandidateLevel4.id).all()
     cand_ids_level4 = set([c[0] for c in cands_level4])
     cands_level3 = [c for c in cands_level3 if c.id not in cand_ids_level4]

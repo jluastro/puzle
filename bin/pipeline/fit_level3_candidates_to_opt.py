@@ -12,7 +12,8 @@ from puzle.models import CandidateLevel3
 
 def fit_level3_candidates_to_ulens():
     cand_ids = [c[0] for c in CandidateLevel3.query.order_by(CandidateLevel3.id).\
-                                    filter(CandidateLevel3.eta_best==None).\
+                                    filter(CandidateLevel3.eta_best==None,
+                                           CandidateLevel3.idx_best!=-99).\
                                     with_entities(CandidateLevel3.id).all()]
 
     if 'SLURMD_NODENAME' in os.environ:
