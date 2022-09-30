@@ -1001,8 +1001,8 @@ def generate_all_figures():
     plot_cands_on_sky()
     plot_cands_tE_overlapping_popsycle()
     plot_cands_tE_piE_overlapping_popsycle()
-    plot_lightcurve_examples()
-    plot_level6_lightcurve_examples()
+    #plot_lightcurve_examples()
+    #plot_level6_lightcurve_examples()
     plot_cands_magnitude()
     plot_cands_blend_fraction()
 

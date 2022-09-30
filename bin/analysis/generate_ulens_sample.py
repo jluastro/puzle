@@ -30,7 +30,8 @@ popsycle_base_folder = '/global/cfs/cdirs/uLens/PopSyCLE_runs/PopSyCLE_runs_v3_r
 def gather_PopSyCLE_refined_events():
     from astropy.table import Table, vstack
 
-    folders = glob.glob('PopSyCLE_runs_v3/l*')
+    #folders = glob.glob('PopSyCLE_runs_v3/l*')
+    folders = glob.glob(f'{popsycle_base_folder}/l*')
     folders.sort()
     N_folders = len(folders)
     N_samples = 0
@@ -40,9 +41,8 @@ def gather_PopSyCLE_refined_events():
     for i, folder in enumerate(folders):
         print(f'Processing {folder} ({i}/{N_folders})')
         lb = os.path.basename(folder)
-        fis = glob.glob(f'{folder}/*_5yrs_refined_events_ztf_r_Damineli16.fits')
+        fis = folder#glob.glob(f'{folder}/*_5yrs_refined_events_ztf_r_Damineli16.fits')
         print('-- %i files' % len(fis))
-
         tables = []
         for fi in fis:
             t = Table.read(fi, format='fits')
@@ -841,5 +841,5 @@ def test_lightcurve_stats(N_samples=1000):
 
 if __name__ == '__main__':
     # generate_random_lightcurves()
-    # consolidate_lightcurves()
+    #  consolidate_lightcurves()
     calculate_stats_on_lightcurves()

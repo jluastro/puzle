@@ -14,7 +14,7 @@ from microlens.jlu.model import PSPL_Phot_Par_Param1
 
 from puzle.stats import calculate_eta, average_xy_on_round_x
 from puzle.models import CandidateLevel2, CandidateLevel3, CandidateLevel4, Source
-from puzle.utils import return_figures_dir, return_DR5_dir
+from puzle.utils import return_figures_dir, return_DR5_dir, MJD_start, MJD_finish
 from puzle import db
 
 #import pdb
@@ -264,27 +264,32 @@ def return_cands_eta_resdiual_arrs():
     return eta_residual_minmax_arr, eta_residual_opt_arr
 
 
-def return_level3_cut_filters():
-    filter0 = CandidateLevel3.tE_best != 0
-    filter1 = CandidateLevel3.chi_squared_ulens_best / CandidateLevel3.num_days_best <= 4.805450553176206
-    filter2 = CandidateLevel3.delta_hmjd_outside_2tE_best >= 2 * CandidateLevel3.tE_best
-    filter3 = CandidateLevel3.chi_squared_flat_outside_2tE_best / CandidateLevel3.num_days_outside_2tE_best <= 3.327056268161699
-    filter4 = func.sqrt(func.pow(CandidateLevel3.piE_E_best, 2.) +
+def return_level3_cut_filters(ongoing_cut = False):
+    filter0 = CandidateLevel3.idx_best != -99 #at least one object with N_nights with catflat = 0 > 50
+    filter1 = CandidateLevel3.tE_best != 0 #successful 7-parameter fit
+    filter2 = CandidateLevel3.chi_squared_ulens_best / CandidateLevel3.num_days_best <= 4.805450553176206
+    filter3 = CandidateLevel3.delta_hmjd_outside_2tE_best >= 2 * CandidateLevel3.tE_best
+    filter4 = CandidateLevel3.chi_squared_flat_outside_2tE_best / CandidateLevel3.num_days_outside_2tE_best <= 3.327056268161699
+    filter5 = func.sqrt(func.pow(CandidateLevel3.piE_E_best, 2.) +
                         func.pow(CandidateLevel3.piE_N_best, 2.)) <= 1.4482240516735567
-    filter5 = CandidateLevel3.t0_best - CandidateLevel3.tE_best >= 58194.0
+    filter6 = CandidateLevel3.t0_best - CandidateLevel3.tE_best >= MJD_start
+    if ongoing_cut == True:
+        filter7 = CandidateLevel3.t0_best + CandidateLevel3.tE_best <= MJD_finish
+    else:
+        filter7 = filter6
     # filter6 = CandidateLevel3.tE_best <= 927.7536173683764
-    return filter0, filter1, filter2, filter3, filter4, filter5
+    return filter0, filter1, filter2, filter3, filter4, filter5, filter6, filter7
 
 
-def apply_level3_cuts_to_query(query):
-    filter0, filter1, filter2, filter3, filter4, filter5 = return_level3_cut_filters()
+def apply_level3_cuts_to_query(query, ongoing_cut = False):
+    filter0, filter1, filter2, filter3, filter4, filter5, filter6, filter7  = return_level3_cut_filters(ongoing_cut)
     query = query.filter(filter0, filter1, filter2,
-                         filter3, filter4, filter5)
+                         filter3, filter4, filter5, filter6, filter7)
     return query
 
 
-def print_level3_cuts():
-    filter0, filter1, filter2, filter3, filter4, filter5 = return_level3_cut_filters()
+def print_level3_cuts(ongoing_cut = False):
+    filter0, filter1, filter2, filter3, filter4, filter5, filter6, filter7 = return_level3_cut_filters(ongoing_cut)
     query = CandidateLevel3.query
     print('Filters up to 0', query.filter(filter0).count(), 'cands')
     print('Filters up to 1', query.filter(filter0, filter1).count(), 'cands')
@@ -292,7 +297,9 @@ def print_level3_cuts():
     print('Filters up to 3', query.filter(filter0, filter1, filter2, filter3).count(), 'cands')
     print('Filters up to 4', query.filter(filter0, filter1, filter2, filter3, filter4).count(), 'cands')
     print('Filters up to 5', query.filter(filter0, filter1, filter2, filter3, filter4, filter5).count(), 'cands')
-
+    print('Filters up to 6', query.filter(filter0, filter1, filter2, filter3, filter4, filter5, filter6).count(), 'cands')
+    if ongoing_cut == True:
+       print('Filters up to 7', query.filter(filter0, filter1, filter2, filter3, filter4, filter5, filter6, filter7).count(), 'cands') 
 
 def return_sigma_peaks(hmjd, mag, t0, tE, sigma_factor=3, tE_factor=2):
     # perform calculating on day averages
@@ -367,21 +374,70 @@ def load_source(source_id):
 
 
 def return_level4_cut_filters():
-    filter0 = CandidateLevel4.t0_pspl_gp != 0
-    filter1 = CandidateLevel4.t0_pspl_gp != 0
-    filter2 = CandidateLevel4.t0_pspl_gp != 0
-    return filter0, filter1, filter2
+    #filter0 = CandidateLevel4.t0_pspl_gp != 0
+    #filter1 = CandidateLevel4.t0_pspl_gp != 0
+    #filter2 = CandidateLevel4.t0_pspl_gp != 0
+    
+    cands = db.session.query(CandidateLevel4).outerjoin(CandidateLevel3,
+                                                        CandidateLevel4.id == CandidateLevel3.id). \
+        filter(#CandidateLevel3.t0_best + CandidateLevel3.tE_best < MJD_finish,
+               CandidateLevel4.pspl_gp_fit_finished == True,
+               CandidateLevel4.fit_type_pspl_gp != None).\
+        all()
+
+    keys = ['t0',
+            'u0_amp',
+            'u0_amp_err',
+            'tE',
+            'tE_err',
+            'b_sff',
+            'b_sff_err',
+            'piE_E',
+            'piE_E_err',
+            'piE_N',
+            'piE_N_err',
+            'piE',
+            'piE_err',
+            'rchi2',
+            'delta_hmjd_outside']
+    keys_err = [k for k in keys if f'{k}_err' in keys]
+
+    data = {}
+    for key in keys:
+        data[key] = np.array([getattr(c, f'{key}_pspl_gp') for c in cands])
+    data['cand_id'] = np.array([c.id for c in cands])
+
+    error_frac = {}
+    for key in keys_err:
+        key_err = f'{key}_err'
+        error_frac[key] = data[key_err] / data[key]
+    
+    cond1 = error_frac['tE'] <= 0.2
+    cond2 = np.abs(data['u0_amp']) <= 1.0
+    cond3 = data['b_sff'] <= 1.2
+    cond4 = data['rchi2'] <= 3
+    cond5 = data['delta_hmjd_outside'] / data['tE'] >= 4
+    cond6 = data['t0'] - data['tE'] >= MJD_start
+    cond7 = data['t0'] + data['tE'] <= MJD_finish
+
+
+    return cond1, cond2, cond3, cond4, cond5, cond6, cond7
 
 
 def apply_level4_cuts_to_query(query):
-    filter0, filter1, filter2 = return_level4_cut_filters()
-    query = query.filter(filter0, filter1, filter2)
+    cond1, cond2, cond3, cond4, cond5, cond6, cond7 = return_level4_cut_filters()
+    query = query.filter(cond1, cond2, cond3, cond4, cond5, cond6, cond7)
     return query
 
 
 def print_level4_cuts():
-    filter0, filter1, filter2 = return_level4_cut_filters()
-    query = CandidateLevel4.query
-    print('Filters up to 0', query.filter(filter0).count(), 'cands')
-    print('Filters up to 1', query.filter(filter0, filter1).count(), 'cands')
-    print('Filters up to 2', query.filter(filter0, filter1, filter2).count(), 'cands')
+    cond1, cond2, cond3, cond4, cond5, cond6, cond7 = return_level4_cut_filters()
+    #query = CandidateLevel4.query
+    print('No filters', len(cond1), 'cands')
+    print('Filters up to 1', np.sum(cond1), 'cands')
+    print('Filters up to 2', np.sum(cond1 * cond2), 'cands')
+    print('Filters up to 3', np.sum(cond1 * cond2 * cond3), 'cands')
+    print('Filters up to 4', np.sum(cond1 * cond2 * cond3 * cond4), 'cands')
+    print('Filters up to 5', np.sum(cond1 * cond2 * cond3 * cond4 * cond5), 'cands')
+    print('Filters up to 6', np.sum(cond1 * cond2 * cond3 * cond4 * cond5 * cond6), 'cands')
+    print('Filters up to 7', np.sum(cond1 * cond2 * cond3 * cond4 * cond5 * cond6 * cond7), 'cands')

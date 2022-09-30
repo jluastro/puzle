@@ -46,7 +46,7 @@ def load_db_ids():
 
     if identify_is_nersc():
         # remove rows that are not currently running
-        stdout, _ = execute('squeue --noheader -u mmedford --format="%i')
+        stdout, _ = execute('squeue --noheader -u nsabrams --format="%i')
         job_ids = set([s.replace('"', '') for s in stdout.decode().split('\n')])
         db_ids = set([d for d in db_ids if d.split('.')[0] in job_ids])
 

@@ -13,7 +13,7 @@ from puzle import db
 def upload_level4_candidates_level5_cut():
     cands = db.session.query(CandidateLevel4).outerjoin(CandidateLevel3,
                                                         CandidateLevel4.id == CandidateLevel3.id). \
-        filter(CandidateLevel3.t0_best + CandidateLevel3.tE_best > MJD_finish,
+        filter(#CandidateLevel3.t0_best + CandidateLevel3.tE_best < MJD_finish,
                CandidateLevel4.pspl_gp_fit_finished == True,
                CandidateLevel4.fit_type_pspl_gp != None).\
         all()

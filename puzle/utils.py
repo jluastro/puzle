@@ -79,7 +79,7 @@ def fetch_job_enddate():
     if job_id is None:
         return None
 
-    cmd = 'squeue -u mmedford -j %s --format="%%e" --noheader' % job_id
+    cmd = 'squeue -u nsabrams -j %s --format="%%e" --noheader' % job_id
     stdout, _ = execute(cmd)
     enddate_str = stdout.decode().replace('\n', '').replace('"','')
     enddate = datetime.strptime(enddate_str, '%Y-%m-%dT%H:%M:%S')
@@ -257,7 +257,7 @@ def sortsplit(array, size):
             for j in range(size)]
 
 
-def parse_nersc_nodelist():
+def parse_nersc_nodelist(perlmutter = False):
     nodelist_var = os.getenv('SLURM_NODELIST')
     if '[' not in nodelist_var:
         nodelist = [nodelist_var]
@@ -269,7 +269,10 @@ def parse_nersc_nodelist():
             if '-' in span:
                 range_low, range_high = span.split('-')
                 for i in range(int(range_low), int(range_high)+1):
-                    nodelist.append(f'{base}{i}')
+                    if perlmutter == True:
+                        nodelist.append(f'{base}{i:06d}')
+                    else:
+                        nodelist.append(f'{base}{i}')
             else:
                 nodelist.append(f'{base}{span}')
 

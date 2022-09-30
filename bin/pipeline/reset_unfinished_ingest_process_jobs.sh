@@ -6,7 +6,7 @@ then
   slurm_cond=""
 else
   db_con="psql -U ulens_admin -d ulens -h nerscdb03.nersc.gov"
-  job_ids=$(squeue -u mmedford --noheader --format="%i")
+  job_ids=$(squeue -u nsabrams --noheader --format="%i")
   job_ids=$(echo $job_ids | tr " " ,)
 
   if [ -z "$job_ids" ]

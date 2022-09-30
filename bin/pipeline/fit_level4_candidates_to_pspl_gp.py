@@ -84,7 +84,8 @@ def fit_level4_cand_to_pspl_gp(cand_id, node_name=None):
                                       n_live_points=n_live_points,
                                       evidence_tolerance=0.5,
                                       sampling_efficiency=0.8,
-                                      outputfiles_basename=outputfiles_basename)
+                                      outputfiles_basename=outputfiles_basename,
+                                      dump_callback=None)
 
     # set priors
     fitter.priors['t0'] = model_fitter.make_truncnorm_gen_with_bounds(fitter_params['t0'], fitter_params['tE']*.5,
@@ -137,6 +138,7 @@ def fit_level4_cands_to_pspl_gp(single_job=False):
     rank = comm.Get_rank()
 
     if len(sys.argv) > 1:
+        #logger.info(f'TEST {sys.argv}')
         slurm_job_id = sys.argv[1]
         node_name = sys.argv[2]
     else:
@@ -146,6 +148,7 @@ def fit_level4_cands_to_pspl_gp(single_job=False):
     while True:
 
         if rank == 0:
+            #logger.info(f'HIIII {node_name}')
             cand_id = fetch_cand(slurm_job_id=slurm_job_id,
                                  node_name=node_name)
             logger.info(f'{cand_id} : Starting fit on {node_name}')
@@ -163,4 +166,5 @@ def fit_level4_cands_to_pspl_gp(single_job=False):
 
 if __name__ == '__main__':
     logging.getLogger('ulensdb').setLevel(logging.WARNING)
+    #logger.info(f'{sys.argv[2]}, HELLO')
     fit_level4_cands_to_pspl_gp()

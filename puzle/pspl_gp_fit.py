@@ -420,7 +420,7 @@ def separate_modes(outputfiles_basename):
     empty_lines = []
     with open(mode_file, 'r') as orig_file:
         for num, line in enumerate(orig_file, start=0):
-            if line == ' \n':
+            if line == ' \n' or line == '\n':
                 empty_lines.append(num)
 
     # Error checking
