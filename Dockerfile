@@ -33,7 +33,7 @@ RUN mkdir /home/puzle/logs &&\
 ENV XDG_CACHE_HOME /home/puzle/astropy_cache
 ENV XDG_CONFIG_HOME /home/puzle/astropy_config
 
-RUN cd /home && git clone https://github.com/MichaelMedford/zort.git && cd /home/zort && git checkout 0a0450a9c
+RUN cd /home && git clone https://github.com/jluastro/zort.git && cd /home/zort && git checkout bb747ea469827c50e065b22f24cd2d7e7fdb06a5
 ENV PYTHONPATH /home/zort:$PYTHONPATH
 
 ENV PYTHONPATH /home/microlens:$PYTHONPATH

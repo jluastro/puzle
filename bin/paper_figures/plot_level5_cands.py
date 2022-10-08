@@ -398,6 +398,12 @@ def _plot_lightcurve_axis(cand, ax, color_marker='k', color_model='r', remove_ax
 
 
 def plot_level6_lightcurve_examples():
+    """
+    Plots 6 random light curves in the
+    plane and 6 in the halo. They were originally picked randomly
+    then they were hard coded with hard coded time ranges for 
+    optimal display.
+    """
     cands = CandidateLevel4.query.\
         filter(CandidateLevel4.level5 == True,
                CandidateLevel4.category == 'clear_microlensing').\
@@ -409,23 +415,25 @@ def plot_level6_lightcurve_examples():
     cands_halo = [c for c in cands if np.abs(c.glat) > 15]
     print('%i cands within the Galactic plane' % len(cands_halo))
 
-    # idx_plane = np.random.choice(np.arange(len(cands_plane)), replace=False, size=8)
-    # idx_halo = np.random.choice(np.arange(len(cands_halo)), replace=False, size=8)
+    #idx_plane = np.random.choice(np.arange(len(cands_plane)), replace=False, size=8)
+    #idx_halo = np.random.choice(np.arange(len(cands_halo)), replace=False, size=8)
+    #print('idx plane', idx_plane)
+    #print('idx halo', idx_halo)
     idx_xlim_plane = [
-        (77, [58600, 59250], [.03, .97], 'left'),
-        (28, [58250, 58800], [.97, .97], 'right'),
-        (23, [58250, 58500], [.03, .97], 'left'),
-        (53, [58600, 59250], [.03, .97], 'left'),
-        (10, [58250, 58800], [.97, .97], 'right'),
-        (30, [58600, 59250], [.03, .97], 'left')
+        (26, [58200, 59250], [.03, .97], 'left'),
+        (4, [58500, 58850], [.97, .97], 'right'),
+        (14, [58200, 59150], [.97, .97], 'right'),
+        (22, [58200, 59225], [.03, .97], 'left'),
+        (12, [58200, 59150], [.97, .97], 'right'),
+        (16, [58200, 59150], [.97, .97], 'right')
     ]
     idx_xlim_halo = [
-        (5, [58250, 59250], [.03, .97], 'left'),
-        (8, [58250, 59250], [.97, .97], 'right'),
-        (12, [58400, 59250], [.03, .97], 'left'),
-        (9, [58250, 59250], [.97, .97], 'right'),
-        (34, [58250, 59250], [.97, .97], 'right'),
-        (24, [58250, 59250], [.03, .97], 'left'),
+        (12, [58250, 59250], [.97, .97], 'right'),
+        (8, [58250, 59150], [.97, .97], 'right'),
+        (5, [58400, 59150], [.97, .97], 'right'),
+        (0, [58250, 59250], [.03, .97], 'left'),
+        (10, [58250, 59100], [.97, .97], 'right'),
+        (1, [58250, 59250], [.97, .97], 'right'),
     ]
 
     fig, ax = plt.subplots(4, 3, figsize=(12, 8))
@@ -479,13 +487,13 @@ def plot_lightcurve_examples():
         order_by(CandidateLevel4.id).\
         all()
     data = {'clear_microlensing':
-                {'label': 'clear microlensing', 'idx_arr': [13, 63, 45]},
+                {'label': 'clear microlensing', 'idx_arr': [27, 32, 15]},
             'possible_microlensing':
-                {'label': 'possible microlensing', 'idx_arr': [127, 300, 0]},
+                {'label': 'possible microlensing', 'idx_arr': [130,  87, 208]},
             'poor_model_data':
-                {'label': 'poor model / data', 'idx_arr': [85, 41, 89]},
+                {'label': 'poor model / data', 'idx_arr': [85, 89, 34]},
             'non_microlensing_variable':
-                {'label': 'non-microlensing variable', 'idx_arr': [25, 18, 65]}
+                {'label': 'non-microlensing variable', 'idx_arr': [44, 17, 11]}
             }
 
     # 125, 127, 0, 300, 50
@@ -496,6 +504,8 @@ def plot_lightcurve_examples():
         cands_cat = [c for c in cands if c.category == category]
         label = data[category]['label']
         idx_arr = data[category]['idx_arr']
+        #idx_arr = np.random.choice(np.arange(len(cands_cat)), replace=False, size=3)
+        #print('category', idx_arr)
         # if category == 'possible_microlensing':
         #     idx_arr = np.random.choice(np.arange(len(cands_cat)),
         #                                size=3, replace=False)
@@ -998,13 +1008,13 @@ def plot_cands_blend_fraction():
 
 
 def generate_all_figures():
-    plot_cands_on_sky()
-    plot_cands_tE_overlapping_popsycle()
-    plot_cands_tE_piE_overlapping_popsycle()
-    #plot_lightcurve_examples()
+    #plot_cands_on_sky()
+    #plot_cands_tE_overlapping_popsycle()
+    #plot_cands_tE_piE_overlapping_popsycle()
+    plot_lightcurve_examples()
     #plot_level6_lightcurve_examples()
-    plot_cands_magnitude()
-    plot_cands_blend_fraction()
+    #plot_cands_magnitude()
+    #plot_cands_blend_fraction()
 
 
 if __name__ == '__main__':
