@@ -11,6 +11,9 @@ from puzle.ulens import return_ulens_data, return_ulens_stats
 from puzle.models import CandidateLevel3
 from puzle.utils import return_figures_dir
 
+plt.rc('font', size=14)
+plt.rc('xtick', labelsize=13)
+plt.rc('ytick', labelsize=13)
 
 def plot_opt_fit_cuts():
     cands = CandidateLevel3.query.with_entities(CandidateLevel3.chi_squared_ulens_best,
@@ -75,6 +78,12 @@ def plot_opt_fit_cuts():
     piE_thresh = np.percentile(piE_ulens, 95)
     tE_thresh = np.percentile(tE_ulens, 95)
 
+    print('piE threshold', piE_thresh)
+
+    #if you want to check what percentile the old threshold is, uncomment below:
+    #from scipy import stats
+    #print('piE percentile 1.448', stats.percentileofscore(piE_ulens,1.4482240516735567))
+
     color_cands = '#861388'
     color_cands_cut = '#177E89'
     color_ulens = '#FF6947'
@@ -82,15 +91,16 @@ def plot_opt_fit_cuts():
     fig, ax = plt.subplots(2, 2, figsize=(14, 8))
     ax = ax.flatten()
     for a in ax: a.clear()
-
+    
+    fontsize = 20
     density=True
     bins = np.linspace(0, 10, 50)
     ax[0].hist(reduced_chi2_model_cands, bins=bins, histtype='step', color=color_cands, density=density, linewidth=2)
     ax[0].hist(reduced_chi2_model_cands_cut, bins=bins, histtype='step', color=color_cands_cut, density=density, linewidth=2)
     ax[0].hist(reduced_chi2_model_ulens, bins=bins, histtype='step', color=color_ulens, density=density, linewidth=2)
     ax[0].axvline(chi2_model_thresh, color='k', alpha=.5)
-    ax[0].set_xlabel(r'$\chi^2_{\rm reduced, model}$')
-    ax[0].set_ylabel('Frequency')
+    ax[0].set_xlabel(r'$\chi^2_{\rm reduced, model}$', fontsize=fontsize)
+    ax[0].set_ylabel('Frequency', fontsize=fontsize)
 
     bins = np.linspace(0, 10, 50)
     ax[1].hist(reduced_chi2_flat_cands, bins=bins, histtype='step', color=color_cands, density=density, label='ZTF Candidates Level 3', linewidth=2)
@@ -98,8 +108,8 @@ def plot_opt_fit_cuts():
     ax[1].hist(reduced_chi2_flat_ulens, bins=bins, histtype='step', color=color_ulens, density=density, label=r'Simulated $\mu$-lens', linewidth=2)
     ax[1].legend(framealpha=1)
     ax[1].axvline(chi2_flat_thresh, color='k', alpha=.5)
-    ax[1].set_xlabel(r'$\chi^2_{\rm reduced, flat}$')
-    ax[1].set_ylabel('Frequency')
+    ax[1].set_xlabel(r'$\chi^2_{\rm reduced, flat}$', fontsize=fontsize)
+    ax[1].set_ylabel('Frequency', fontsize=fontsize)
 
     bins = np.logspace(-3, np.log10(30), 50)
     ax[2].hist(piE_cands, bins=bins, histtype='step', color=color_cands, density=density, linewidth=2)
@@ -107,8 +117,8 @@ def plot_opt_fit_cuts():
     ax[2].hist(piE_ulens, bins=bins, histtype='step', color=color_ulens, density=density, linewidth=2)
     ax[2].axvline(piE_thresh, color='k', alpha=.5)
     ax[2].set_xscale('log')
-    ax[2].set_xlabel(r'$\pi_E$')
-    ax[2].set_ylabel('Frequency')
+    ax[2].set_xlabel(r'$\pi_E$', fontsize=fontsize)
+    ax[2].set_ylabel('Frequency', fontsize=fontsize)
 
     bins = np.logspace(1, 3, 50)
     ax[3].hist(tE_cands, bins=bins, histtype='step', color=color_cands, density=density, linewidth=2)
@@ -116,8 +126,8 @@ def plot_opt_fit_cuts():
     ax[3].hist(tE_ulens, bins=bins, histtype='step', color=color_ulens, density=density, linewidth=2)
     # ax[3].axvline(tE_thresh, color='k', alpha=.5)
     ax[3].set_xscale('log')
-    ax[3].set_xlabel(r'$t_E$ (days)')
-    ax[3].set_ylabel('Frequency')
+    ax[3].set_xlabel(r'$t_E$ (days)', fontsize=fontsize)
+    ax[3].set_ylabel('Frequency', fontsize=fontsize)
 
     fig.tight_layout()
 

@@ -22,6 +22,10 @@ from puzle.cands import return_best_obj
 from puzle.utils import return_figures_dir, return_data_dir
 
 
+plt.rc('font', size=14)
+plt.rc('xtick', labelsize=13)
+plt.rc('ytick', labelsize=13)
+
 def plot_cands_on_sky():
     cands = CandidateLevel4.query.\
         filter(CandidateLevel4.level5 == True,
@@ -228,7 +232,7 @@ def return_tE_ogle(max_num):
     return tE_ogle, tE_num_ogle
 
 
-def plot_cands_tE_overlapping_popsycle():
+def plot_cands_tE_overlapping_popsycle(include_allsky = True):
     cands = CandidateLevel4.query.\
         filter(CandidateLevel4.level5 == True,
                CandidateLevel4.category == 'clear_microlensing').\
@@ -291,9 +295,11 @@ def plot_cands_tE_overlapping_popsycle():
     x = np.append(np.append(bin_centers[0], bin_centers[cond_non_zero]), 239.75)
     y = np.append(np.append(0.5, tE_cands_num[cond_non_zero]), 0.5)
     yerr = np.append(np.append(1, tE_cands_num_err[cond_non_zero]), 1)
-    ax.errorbar(x, y, yerr=yerr,
+    
+    if include_allsky:
+        ax.errorbar(x, y, yerr=yerr,
                 linestyle='None', color='g')
-    ax.plot(x, y,
+        ax.plot(x, y,
             linewidth=2, color='g', marker='.',
             label='ZTF Events Level 6: All Sky', linestyle='--')
     # ax.errorbar(bin_centers[cond_non_zero],
@@ -312,13 +318,21 @@ def plot_cands_tE_overlapping_popsycle():
     ax.set_ylim(5e-1, 5e1)
     ax.set_xlim(3, 500)
     handles, labels = ax.get_legend_handles_labels()
-    handles = [handles[0], handles[3], handles[1], handles[2]]
-    labels = [labels[0], labels[3], labels[1], labels[2]]
+    
+    if include_allsky == False:
+        handles = [handles[0], handles[2], handles[1]]
+        labels = [labels[0], labels[2], labels[1]]
+    else:
+        handles = [handles[0], handles[3], handles[1], handles[2]]
+        labels = [labels[0], labels[3], labels[1], labels[2]]
     ax.legend(handles, labels, loc=8,
               markerscale=3, framealpha=1, fontsize=15)
     fig.tight_layout()
 
-    fname = '%s/level5_cands_tE.png' % return_figures_dir()
+    if include_allsky == False:
+        fname = '%s/level5_cands_tE_no_allsky.png' % return_figures_dir()
+    else:
+        fname = '%s/level5_cands_tE.png' % return_figures_dir()
     fig.savefig(fname, dpi=100, bbox_inches='tight', pad_inches=0.02)
     print('-- %s saved' % fname)
     plt.close(fig)
@@ -354,7 +368,7 @@ def plot_cands_tE_piE_overlapping_popsycle():
                 color='r', linestyle='', alpha=1)
     ax.scatter(tE_cands, piE_cands, color='r', s=5, label='ZTF Events Level 6')
     ax.scatter(tE_popsycle, piE_popsycle, color='b', s=5, label=r'Simulated $\mu$-Lens: Stellar Lens', alpha=.2)
-    ax.scatter(tE_BH_popsycle, piE_BH_popsycle, color='k', s=5, label=r'Simulated $\mu$-Lens: BH Lens', alpha=.6)
+    ax.scatter(tE_BH_popsycle, piE_BH_popsycle, color='k', s=5, marker = 's', label=r'Simulated $\mu$-Lens: BH Lens', alpha=.6)
     ax.set_xscale('log')
     ax.set_yscale('log')
     ax.set_xlabel(r'$t_E$ (days)', fontsize=16)
@@ -372,7 +386,7 @@ def plot_cands_tE_piE_overlapping_popsycle():
     plt.close(fig)
 
 
-def _plot_lightcurve_axis(cand, ax, color_marker='k', color_model='r', remove_axis=True):
+def _plot_lightcurve_axis(cand, ax, color_marker='k', color_model='r', remove_axis=True, avg_err = False):
     obj = return_best_obj(cand)
     ax.scatter(obj.lightcurve.hmjd,
                      obj.lightcurve.mag, color=color_marker, s=3)
@@ -388,6 +402,11 @@ def _plot_lightcurve_axis(cand, ax, color_marker='k', color_model='r', remove_ax
                              10000)
     mag_model = model.get_photometry(hmjd_model)
     ax.plot(hmjd_model, mag_model, color=color_model, alpha=.3)
+
+    if avg_err == True:
+        avg_err_val = np.mean(obj.lightcurve.magerr)
+        brightest_point = np.min([np.min(mag_model), np.min(obj.lightcurve.mag)])
+        ax.errorbar(hmjd_model[-1], brightest_point - 0.1, yerr = avg_err_val, capsize = 2, marker = '.', color = 'blue')
 
     ax.invert_yaxis()
     if remove_axis:
@@ -414,33 +433,54 @@ def plot_level6_lightcurve_examples():
     print('%i cands within the Galactic plane' % len(cands_plane))
     cands_halo = [c for c in cands if np.abs(c.glat) > 15]
     print('%i cands within the Galactic plane' % len(cands_halo))
+    
+    sorted_cands_plane = sorted(cands_plane, key = lambda x: x.tE_err_pspl_gp/x.tE_pspl_gp)
+    sorted_cands_halo = sorted(cands_halo, key = lambda x: x.tE_err_pspl_gp/x.tE_pspl_gp)
+    
+    idx_xlim_plane = [
+        (0, [58200, 59250], [.97, .97], 'right'),
+        (1, [58200, 59250], [.03, .97], 'left'),
+        (2, [58200, 59250], [.97, .97], 'right'),
+        (3, [58200, 59250], [.97, .97], 'right'),
+        (4, [58200, 59250], [.03, .97], 'left'),
+        (5, [58200, 59250], [.97, .97], 'right')
+    ]
+    idx_xlim_halo = [
+        (0, [58250, 59200], [.97, .97], 'right'),
+        (1, [58250, 59150], [.97, .97], 'right'),
+        (2, [58250, 59150], [.97, .97], 'right'),
+        (3, [58250, 59250], [.03, .97], 'left'),
+        (4, [58250, 59100], [.97, .97], 'right'),
+        (5, [58250, 59250], [.97, .97], 'right'),
+    ]
 
     #idx_plane = np.random.choice(np.arange(len(cands_plane)), replace=False, size=8)
     #idx_halo = np.random.choice(np.arange(len(cands_halo)), replace=False, size=8)
     #print('idx plane', idx_plane)
     #print('idx halo', idx_halo)
-    idx_xlim_plane = [
+    #RANDOM ONES WHICH CAN BE USED INSTEAD
+    """idx_xlim_plane = [
         (26, [58200, 59250], [.03, .97], 'left'),
         (4, [58500, 58850], [.97, .97], 'right'),
         (14, [58200, 59150], [.97, .97], 'right'),
-        (22, [58200, 59225], [.03, .97], 'left'),
+        (22, [58200, 59225], [.97, .97], 'right'),
         (12, [58200, 59150], [.97, .97], 'right'),
         (16, [58200, 59150], [.97, .97], 'right')
     ]
     idx_xlim_halo = [
-        (12, [58250, 59250], [.97, .97], 'right'),
-        (8, [58250, 59150], [.97, .97], 'right'),
+        (12, [58250, 59250], [.03, .97], 'left'),
+        (8, [58250, 59150], [.03, .97], 'left'),
         (5, [58400, 59150], [.97, .97], 'right'),
         (0, [58250, 59250], [.03, .97], 'left'),
-        (10, [58250, 59100], [.97, .97], 'right'),
+        (10, [58250, 59100], [.03, .97], 'left'),
         (1, [58250, 59250], [.97, .97], 'right'),
-    ]
+    ]"""
 
     fig, ax = plt.subplots(4, 3, figsize=(12, 8))
     ax = ax.flatten()
     for j, (idx, xlim, textcoords, halign) in enumerate(idx_xlim_plane):
         ax[j].clear()
-        cand = cands_plane[idx]
+        cand = sorted_cands_plane[idx]
         # ax[j].set_title(f'P {idx} {cand.glat:.2f}', fontsize=12)
         _plot_lightcurve_axis(cand, ax[j], color_marker='m', color_model='k', remove_axis=False)
         ax[j].set_xlim(xlim)
@@ -450,7 +490,7 @@ def plot_level6_lightcurve_examples():
                    fontsize=12, transform=ax[j].transAxes)
     for j, (idx, xlim, textcoords, halign) in enumerate(idx_xlim_halo):
         ax[j+6].clear()
-        cand = cands_halo[idx]
+        cand = sorted_cands_halo[idx]
         # ax[j+6].set_title(f'H {idx} {cand.glat:.2f}', fontsize=12)
         _plot_lightcurve_axis(cand, ax[j+6], color_marker='g', color_model='k', remove_axis=False)
         ax[j+6].set_xlim(xlim)
@@ -514,7 +554,7 @@ def plot_lightcurve_examples():
             ax[i, j].clear()
             if j == 1:
                 ax[i, j].set_title(f'{label}', fontsize=18)
-            _plot_lightcurve_axis(cand, ax[i, j], remove_axis=False)
+            _plot_lightcurve_axis(cand, ax[i, j], remove_axis=False, avg_err = True)
             if i == 3 and j == 1:
                 ax[i, j].set_xlabel('Heliocentric Modified Julian Date (days)', fontsize=16)
         if i == 2:
@@ -1009,9 +1049,9 @@ def plot_cands_blend_fraction():
 
 def generate_all_figures():
     #plot_cands_on_sky()
-    #plot_cands_tE_overlapping_popsycle()
+    plot_cands_tE_overlapping_popsycle()
     #plot_cands_tE_piE_overlapping_popsycle()
-    plot_lightcurve_examples()
+    #plot_lightcurve_examples()
     #plot_level6_lightcurve_examples()
     #plot_cands_magnitude()
     #plot_cands_blend_fraction()

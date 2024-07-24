@@ -10,6 +10,7 @@ from puzle.pspl_gp_fit import load_cand_fitter_data
 from puzle.utils import MJD_finish, return_data_dir
 from puzle.models import CandidateLevel3, CandidateLevel4
 from puzle import db
+from puzle.cands import return_level_ongoing_cond
 
 
 def return_colnames():
@@ -25,7 +26,10 @@ def return_colnames():
     return colnames.split(',')
 
 
-def construct_arrays(cands):
+def construct_arrays(cands, criteria = None):
+    #if criteria is None:
+     #   criteria = np.ones(len(cands))
+
     colnames = return_colnames()
     arrays = {}
     for colname in colnames:
@@ -41,9 +45,12 @@ def construct_arrays(cands):
                 array = ['PUZLE_%s' % getattr(c, cand_colname) for c in cands]
             else:
                 array = [getattr(c, cand_colname) for c in cands]
-        arrays[colname] = array
+        arrays[colname] = array#[criteria]
 
     for cand in cands:
+    #for cand, crit in zip(cands, criteria):    
+        #if crit == 0:
+        #    continue
         cand_fitter_data = load_cand_fitter_data(cand.id)
         filters = [p.split('_')[-1] for p in cand_fitter_data['data']['phot_files']]
         assert len(cand.b_sff_arr_pspl_gp[:3]) == len(filters)
@@ -66,8 +73,8 @@ def construct_arrays(cands):
     return arrays
 
 
-def cands_to_table(cands, fname):
-    arrays = construct_arrays(cands)
+def cands_to_table(cands, fname, criteria = None):
+    arrays = construct_arrays(cands, criteria)
     cols = []
     for colname, array in arrays.items():
         if colname == 'id':
@@ -92,6 +99,18 @@ def export_level4_ongoing_candidates():
     print('%s exported' % fname)
 
 
+def export_level_ongoing_candidates():
+    cands = CandidateLevel4.query.\
+        filter(CandidateLevel4.pspl_gp_fit_finished == True,
+               CandidateLevel4.fit_type_pspl_gp != None).\
+        all()
+    ongoing_cond = return_level_ongoing_cond()
+    ongoing_cands = np.array(cands)[np.array(ongoing_cond)].tolist()
+    fname = 'level_ongoing_candidates.fits'
+    print('Exporting %i level_ongoing candidates' % len(ongoing_cands))
+    cands_to_table(ongoing_cands, fname)
+    print('%s exported' % fname)
+
 def export_level6_events():
     cands = CandidateLevel4.query.filter(CandidateLevel4.level5 == 't',
                                          CandidateLevel4.category == 'clear_microlensing').\
@@ -103,5 +122,5 @@ def export_level6_events():
 
 
 if __name__ == '__main__':
-    export_level4_ongoing_candidates()
+    export_level_ongoing_candidates()
     export_level6_events()

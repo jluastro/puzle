@@ -447,7 +447,6 @@ class Star(db.Model):
         radius_deg = radius / 3600.
         return func.q3c_radial_query(text('ra'), text('dec'), ra, dec, radius_deg)
 
-
 class CandidateLevel2(db.Model):
     __tablename__ = 'candidate_level2'
     __table_args__ = {'schema': 'puzle'}

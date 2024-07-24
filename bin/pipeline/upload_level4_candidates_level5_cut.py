@@ -45,20 +45,20 @@ def upload_level4_candidates_level5_cut():
         key_err = f'{key}_err'
         error_frac[key] = data[key_err] / data[key]
 
-    cond1 = error_frac['tE'] <= 0.2
-    cond2 = np.abs(data['u0_amp']) <= 1.0
-    cond3 = data['b_sff'] <= 1.2
-    cond4 = data['rchi2'] <= 3
-    cond5 = data['delta_hmjd_outside'] / data['tE'] >= 4
-    cond6 = data['t0'] - data['tE'] >= MJD_start
-    cond7 = data['t0'] + data['tE'] <= MJD_finish
+    cond1 = data['rchi2'] <= 3
+    cond2 = data['t0'] - data['tE'] >= MJD_start
+    cond3 = data['t0'] + data['tE'] <= MJD_finish
+    cond4 = error_frac['tE'] <= 0.2
+    cond5 = np.abs(data['u0_amp']) <= 1.0
+    cond6 = data['b_sff'] <= 1.5
+    cond7 = data['delta_hmjd_outside'] / data['tE'] >= 4
 
     level5_cond = cond1 * cond2 * cond3 * cond4 * cond5 * cond6 * cond7
 
     print('No filters', len(cond1), 'cands')
     print('Filters up to 1', np.sum(cond1), 'cands')
     print('Filters up to 2', np.sum(cond1 * cond2), 'cands')
-    print('Filters up to 3', np.sum(cond1 * cond2 * cond3), 'cands')
+    print('Filters up to 3 (ongoing)', np.sum(cond1 * cond2 * cond3), 'cands')
     print('Filters up to 4', np.sum(cond1 * cond2 * cond3 * cond4), 'cands')
     print('Filters up to 5', np.sum(cond1 * cond2 * cond3 * cond4 * cond5), 'cands')
     print('Filters up to 6', np.sum(cond1 * cond2 * cond3 * cond4 * cond5 * cond6), 'cands')
