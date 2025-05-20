@@ -22,6 +22,7 @@ dependencies:
   - sqlalchemy=1.4.5
   - alembic=1.5.8
   - jinja2=2.11.3
+  - itsdangerous=1.1.0
   - psycopg2=2.8.6
   - numpy=1.19.1
   - astropy=4.2.1
