@@ -36,11 +36,12 @@ def ulens_con():
     """
 
     if 'NERSC_HOST' in os.environ:
+        password = os.getenv('PUZLE_DB_PWD')
         return psycopg2.connect(dbname='ulens',
                                 host='nerscdb03.nersc.gov',
                                 port=5432,
                                 user='ulens_admin',
-                                password='frer334322222t3453')
+                                password=password)
     else:
         return psycopg2.connect(dbname='ulens',
                                 host='localhost',
